@@ -1,0 +1,21 @@
+train: 
+- split_1.txt
+- split_2.txt
+- split_3.txt
+- split_4.txt
+- split_5.txt
+
+val:
+- patients/patient 01/images
+- patients/patient 02/images
+- patients/patient 03/images
+- patients/patient 04/images
+- patients/patient 05/images
+- patients/patient 06/images
+- patients/patient 07/images
+- patients/patient 08/images
+- patients/patient 09/images
+- patients/patient 10/images
+
+nc: 2
+names: ['plasma_cell', 'non_plasma_cell']

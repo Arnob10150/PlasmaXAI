@@ -1,0 +1,23 @@
+{
+  "patient_count": 10,
+  "diseased_count": 5,
+  "normal_count": 5,
+  "observed_auc": 1.0,
+  "perm_p_one_sided": 0.003968253968253968,
+  "perm_p_two_sided": 0.007936507936507936,
+  "bootstrap_auc": {
+    "mean": 1.0,
+    "low95": 1.0,
+    "high95": 1.0,
+    "n_valid": 4991
+  },
+  "lopo_mean": 1.0,
+  "lopo_min": 1.0,
+  "lopo_max": 1.0,
+  "separation_gap": 0.17408154904842382,
+  "top_features": [
+    "mean_r",
+    "mean_g",
+    "mean_b"
+  ]
+}

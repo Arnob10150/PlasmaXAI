@@ -1,0 +1,10 @@
+train:
+- split_1.txt
+- split_2.txt
+- split_3.txt
+- split_5.txt 
+
+val: split_4.txt
+
+nc: 2
+names: ['plasma_cell', 'non_plasma_cell']

@@ -1,0 +1,199 @@
+{
+  "device": "cuda",
+  "best_fusion_config": {
+    "name": "fusion_cfg_a",
+    "hidden_dim": 256,
+    "tabular_dim": 128,
+    "dropout": 0.25,
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "epochs": 60,
+    "batch_size": 128,
+    "patience": 10
+  },
+  "novel_threshold": 0.7599999999999999,
+  "novel_fusion_test_metrics": {
+    "accuracy": 93.23308270676691,
+    "weighted_f1": 93.23731973376064,
+    "plasma_precision": 91.869918699187,
+    "plasma_recall": 93.38842975206612,
+    "auc": 97.7607580507267
+  },
+  "previous_hybrid_test_metrics": {
+    "accuracy": 91.72932330827066,
+    "weighted_f1": 91.72932330827066,
+    "plasma_precision": 90.9090909090909,
+    "plasma_recall": 90.9090909090909,
+    "auc": 97.12168709033912
+  },
+  "resnet_test_metrics": {
+    "accuracy": 91.9172932330827,
+    "weighted_f1": 91.93034378180342,
+    "plasma_precision": 89.01960784313725,
+    "plasma_recall": 93.80165289256198,
+    "auc": 97.04616699914504
+  },
+  "densenet_test_metrics": {
+    "accuracy": 89.84962406015038,
+    "weighted_f1": 89.83337695980649,
+    "plasma_precision": 90.17094017094017,
+    "plasma_recall": 87.19008264462809,
+    "auc": 96.35651182673126
+  },
+  "novel_bootstrap_ci": {
+    "accuracy": {
+      "mean": 93.2528195488722,
+      "low95": 90.97744360902256,
+      "high95": 95.30075187969925
+    },
+    "weighted_f1": {
+      "mean": 93.25688496856962,
+      "low95": 90.97407508529042,
+      "high95": 95.30128841521842
+    },
+    "plasma_recall": {
+      "mean": 93.37948191511735,
+      "low95": 89.75304425554882,
+      "high95": 96.37133210260397
+    },
+    "auc": {
+      "mean": 97.76895525723677,
+      "low95": 96.56371019519563,
+      "high95": 98.62809076575805
+    }
+  },
+  "previous_bootstrap_ci": {
+    "accuracy": {
+      "mean": 91.7186090225564,
+      "low95": 89.09774436090225,
+      "high95": 93.98496240601504
+    },
+    "weighted_f1": {
+      "mean": 91.71788162792835,
+      "low95": 89.11158641845894,
+      "high95": 93.98371515410011
+    },
+    "plasma_recall": {
+      "mean": 90.81766724155686,
+      "low95": 86.63905638591315,
+      "high95": 94.35483870967742
+    },
+    "auc": {
+      "mean": 97.10819105200073,
+      "low95": 95.74568838847135,
+      "high95": 98.22851275152317
+    }
+  },
+  "ablation_summary": [
+    {
+      "mode": "image_only",
+      "label": "Image Only",
+      "threshold": 0.37499999999999994,
+      "val_metrics": {
+        "accuracy": 94.17293233082707,
+        "weighted_f1": 94.18179895621972,
+        "plasma_precision": 91.40625,
+        "plasma_recall": 96.29629629629629,
+        "auc": 98.06057499252424
+      },
+      "test_metrics": {
+        "accuracy": 93.42105263157895,
+        "weighted_f1": 93.41746312947902,
+        "plasma_precision": 93.30543933054393,
+        "plasma_recall": 92.14876033057851,
+        "auc": 97.56697064690796
+      }
+    },
+    {
+      "mode": "no_morphology",
+      "label": "Without Morphology",
+      "threshold": 0.63,
+      "val_metrics": {
+        "accuracy": 94.17293233082707,
+        "weighted_f1": 94.18311276111841,
+        "plasma_precision": 90.76923076923077,
+        "plasma_recall": 97.11934156378601,
+        "auc": 97.54581571190568
+      },
+      "test_metrics": {
+        "accuracy": 93.04511278195488,
+        "weighted_f1": 93.05220751198755,
+        "plasma_precision": 91.16465863453816,
+        "plasma_recall": 93.80165289256198,
+        "auc": 96.98347107438016
+      }
+    },
+    {
+      "mode": "no_counterfactual",
+      "label": "Without Counterfactual Path",
+      "threshold": 0.73,
+      "val_metrics": {
+        "accuracy": 93.98496240601504,
+        "weighted_f1": 93.98684552912336,
+        "plasma_precision": 93.06122448979592,
+        "plasma_recall": 93.82716049382715,
+        "auc": 98.19798652939753
+      },
+      "test_metrics": {
+        "accuracy": 90.22556390977444,
+        "weighted_f1": 90.1896800165963,
+        "plasma_precision": 92.03539823008849,
+        "plasma_recall": 85.9504132231405,
+        "auc": 97.61541749786264
+      }
+    },
+    {
+      "mode": "full",
+      "label": "Full Novel Fusion",
+      "threshold": 0.7749999999999999,
+      "val_metrics": {
+        "accuracy": 94.92481203007519,
+        "weighted_f1": 94.92396259598304,
+        "plasma_precision": 94.62809917355372,
+        "plasma_recall": 94.23868312757202,
+        "auc": 98.42225924501973
+      },
+      "test_metrics": {
+        "accuracy": 91.72932330827066,
+        "weighted_f1": 91.71217036369082,
+        "plasma_precision": 92.67241379310344,
+        "plasma_recall": 88.84297520661157,
+        "auc": 97.78569392989456
+      }
+    }
+  ],
+  "patient_p_values": {
+    "mean_novel_prob": 0.007936507936507936,
+    "cf_consistency": 0.2222222222222222
+  },
+  "patient_summary": {
+    "patient_auc_mean_novel_prob": 1.0,
+    "patient_auc_mean_cf_distance": 0.0,
+    "patient_auc_combined_signature": 1.0,
+    "corr_disease_vs_mean_novel_prob": 0.9809911897225667,
+    "corr_disease_vs_mean_cf_distance": -0.7416541963527392,
+    "top_patient_shift_features": [
+      "mean_r",
+      "mean_g",
+      "mean_b"
+    ],
+    "group_means": {
+      "mean_cf_distance_plasma": {
+        "diseased": 0.2193,
+        "normal": 0.2722
+      },
+      "cf_consistency": {
+        "diseased": 0.9847,
+        "normal": 0.9733
+      },
+      "mean_novel_prob": {
+        "diseased": 0.283,
+        "normal": 0.0506
+      },
+      "gt_plasma_fraction": {
+        "diseased": 0.3849,
+        "normal": 0.0699
+      }
+    }
+  }
+}

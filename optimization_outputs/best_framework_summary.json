@@ -1,0 +1,46 @@
+{
+  "device": "cuda",
+  "backup_dir": "F:\\BUET plasma\\backup_before_optimization",
+  "best_framework": {
+    "name": "plasmaxai_best_hybrid",
+    "type": "hybrid_ensemble",
+    "components": {
+      "resnet50_checkpoint": "optimization_outputs/checkpoints/resnet50_final.pth",
+      "densenet121_checkpoint": "optimization_outputs/checkpoints/densenet121_final.pth",
+      "morphology_model": "optimization_outputs/best_morph_model.joblib"
+    },
+    "blend": {
+      "resnet50_weight": 0.55,
+      "densenet121_weight": 0.45,
+      "morphology_weight": 0.02,
+      "threshold": 0.55
+    },
+    "validation_metrics": {
+      "accuracy": 94.3609022556391,
+      "weighted_f1": 94.36906477099983,
+      "plasma_recall": 96.29629629629629,
+      "auc": 98.02782405627465
+    },
+    "test_metrics": {
+      "accuracy": 92.4812030075188,
+      "weighted_f1": 92.48366548392853,
+      "plasma_recall": 92.14876033057851,
+      "auc": 97.38387004844687
+    }
+  },
+  "best_single_model": {
+    "name": "resnet50_final",
+    "checkpoint": "optimization_outputs/checkpoints/resnet50_final.pth",
+    "test_metrics": {
+      "accuracy": 92.29323308270678,
+      "weighted_f1": 92.30567662916141,
+      "plasma_recall": 94.21487603305785,
+      "auc": 97.30051296665717
+    }
+  },
+  "original_notebook_best": {
+    "name": "resnet50_benchmark",
+    "test_accuracy": 91.92,
+    "auc": 97.11
+  }
+}

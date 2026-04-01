@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter
+.ipynb_checkpoints/
+.jupyter_runtime/
+
+# Logs and temp
+*.log
+run.err.log
+run.out.log
+uvicorn.log
+
+# Office temp files
+~$*.docx
+~$*.pptx
+~$*.xlsx
+
+# Web build/runtime
+**/node_modules/
+**/.next/
+**/.local-data/
+**/.next-dev.pid
+**/.next-dev.log
+**/.next-dev.err.log
+
+# Local env
+.env
+.env.local
+.env.*.local
+
+# Release snapshots and old website snapshots
+plasmaxai-web-release-v1.0.0-20260402/
+plasmaxai-web-v1/
+plasmaxai-web-v2/
+
+# Redundant backup folders
+backup_*/
+backup_before_*/
+backup_after_*/
+
+# GitHub hard blockers
+PCMMD Plasma Cells for Multiple Myeloma Diagnosis.zip
+optimization_outputs/checkpoints/convnext_tiny_search.pth
+optimization_outputs/checkpoints/convnext_tiny_final.pth
+
+# System
+.DS_Store
+Thumbs.db

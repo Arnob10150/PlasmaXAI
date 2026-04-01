@@ -1,0 +1,34 @@
+{
+  "framework": "PlasmaXAI",
+  "operating_mode": "precision_recall_balanced_validation_plateau",
+  "threshold": 0.72,
+  "metrics": {
+    "accuracy": 93.42105263157895,
+    "weighted_f1": 93.42925577870817,
+    "plasma_precision": 91.23505976095618,
+    "plasma_recall": 94.62809917355372,
+    "auc": 97.7607580507267
+  },
+  "bootstrap": {
+    "accuracy": {
+      "mean": 93.45563909774437,
+      "low95": 91.16071428571428,
+      "high95": 95.30075187969925
+    },
+    "weighted_f1": {
+      "mean": 93.46374382159027,
+      "low95": 91.16586274343766,
+      "high95": 95.30822099306751
+    },
+    "plasma_recall": {
+      "mean": 94.62454543868968,
+      "low95": 91.30339851908107,
+      "high95": 97.20027888446215
+    },
+    "auc": {
+      "mean": 97.76895525723677,
+      "low95": 96.56371019519563,
+      "high95": 98.62809076575805
+    }
+  }
+}

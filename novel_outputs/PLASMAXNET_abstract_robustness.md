@@ -1,0 +1,20 @@
+Title
+PlasmaXAI: A Counterfactual-Guided Multi-Branch Fusion Framework for Malignant Plasma Cell Recognition and Patient-Level Morphologic Signature Analysis
+
+Research Objectives
+This study presents PlasmaXAI as an explainable computational pathology framework for malignant plasma cell recognition on PCMMD. The objectives are to improve cell-level discrimination against stronger benchmark models, integrate counterfactual information directly into the decision pathway, prioritize clinically important plasma recall, and study whether cell-level counterfactual behavior aggregates into patient-level disease signatures.
+
+Proposed Methodology
+PlasmaXAI combines frozen ResNet50 and DenseNet121 image embeddings with a handcrafted morphology branch, a counterfactual feature branch, and a score branch. Morphologic descriptors include nucleus-to-cytoplasm ratio, nucleus area, cytoplasm area, staining intensity, granularity, roundness, and mean RGB channels. A morphology-based counterfactual boundary model first estimates the feature shifts required to move a sample toward the benign decision boundary. These counterfactual signals then modulate the image streams through sigmoid gates, refine the score stream, and participate in a learned softmax modality gate before weighted fusion and final classification. For deployment and benchmarking, the final model uses a validation-selected high-recall operating point so malignant sensitivity remains the primary clinical priority.
+
+Outcomes and Results
+At the selected high-recall operating point, PlasmaXAI achieved 93.42% accuracy, 93.43% weighted F1, 91.24% plasma precision, 94.63% plasma recall, and 97.76% AUC on the held-out test set. This threshold was set to 0.72 from the validation set. In the expanded benchmark, the strongest non-PlasmaXAI baseline by accuracy was ResNet50 at 91.92% accuracy, while the strongest non-PlasmaXAI baseline by recall was ResNet50 at 93.80% recall. PlasmaXAI therefore leads the current benchmark on both overall accuracy and malignant-cell recall. The bootstrap 95% interval at the selected operating point was 91.16-95.30 for accuracy and 91.30-97.20 for plasma recall.
+
+Patient-Level Robustness and Interpretation
+The patient-level score using mean novel probability produced an internal AUC of 1.000 on a cohort of only 10 patients (5 diseased, 5 normal). This should be treated as exploratory rather than definitive clinical proof. Exact permutation testing across all 252 possible class-label assignments gave a one-sided p-value of 0.0040 and a two-sided p-value of 0.0079. Leave-one-patient-out analysis yielded mean AUC 1.000, minimum 1.000, and maximum 1.000. The patient bootstrap interval saturated at 1.000-1.000, reflecting perfect within-cohort rank separation rather than external validation. The disease-associated signature remained centered on mean_r, mean_g, mean_b, but because the cohort contains only ten patients from a single internal source, the patient-level result should be reported as a promising internal finding that requires external multi-center confirmation.
+
+Impact Applications
+PlasmaXAI is suitable for computer-assisted plasma cell screening, triage support in digital hematopathology, and explainable decision-support research. Its counterfactual-guided design helps reveal which morphology changes would alter malignant probability, while its patient-level aggregation layer supports consistency analysis beyond isolated cell predictions. This makes the framework useful for model auditing, disease-signature discovery, and future clinician-in-the-loop validation studies.
+
+Diagrams
+The current PlasmaXAI package includes the following primary visual assets: plasmaxai_fig13_framework_diagram.png, plasmaxai_fig12_extended_model_comparison.png, plasmaxai_fig15_precision_f1_comparison.png, novel_fig8_training_curves.png, plasmaxai_fig14_confusion_roc.png, plasmaxai_fig16_patient_robustness.png, novel_fig11_patient_signature_heatmap.png, PlasmaXAI_Architecture.drawio.

@@ -1,0 +1,145 @@
+"use client";
+
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
+import type { CreateCaseState } from "@/app/(workspace)/new-case/actions";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
+const initialState: CreateCaseState = {
+  error: null,
+};
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <Button className="w-full" type="submit" disabled={pending}>
+      <i className={`bi ${pending ? "bi-arrow-repeat" : "bi-play-circle-fill"} text-base`} aria-hidden="true" />
+      {pending ? "Creating case..." : "Start analysis workspace"}
+    </Button>
+  );
+}
+
+export function NewCaseForm({
+  action,
+}: {
+  action: (state: CreateCaseState, formData: FormData) => Promise<CreateCaseState>;
+}) {
+  const [state, formAction] = useActionState(action, initialState);
+
+  return (
+    <form action={formAction} className="space-y-6">
+      <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-[30px] border border-dashed border-blue-300 bg-[linear-gradient(180deg,#eff6ff,#f8fbff)] p-8 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-blue-700 shadow-sm">
+            <i className="bi bi-cloud-arrow-up-fill text-3xl" aria-hidden="true" />
+          </div>
+          <h2 className="mt-5 text-2xl font-semibold text-slate-950">Upload microscopy image</h2>
+          <p className="mt-3 text-slate-600">
+            Upload a real microscopy file to Supabase Storage, or add a manual image reference if you are still migrating legacy assets.
+          </p>
+          <div className="mt-6 rounded-[24px] border border-slate-200 bg-white p-5 text-left shadow-sm">
+            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
+              <i className="bi bi-images text-base text-blue-700" aria-hidden="true" />
+              Microscopy image file
+            </label>
+            <input
+              accept="image/*"
+              className="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-slate-950 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white"
+              name="imageFile"
+              type="file"
+            />
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              Requires the `plasmaxai-case-images` bucket from the setup guide. If you have not created it yet, you can still save a manual path below.
+            </p>
+            <label className="mt-5 mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
+              <i className="bi bi-link-45deg text-base text-blue-700" aria-hidden="true" />
+              Manual image reference
+            </label>
+            <input
+              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4"
+              name="imageReference"
+              placeholder="Optional legacy path or storage reference"
+            />
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Badge variant="info">Supabase Storage ready</Badge>
+              <Badge variant="neutral">Inference hookup next</Badge>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="grid gap-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <i className="bi bi-person-vcard text-base text-blue-700" aria-hidden="true" />
+                  Patient code
+                </label>
+                <input name="patientCode" className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4" placeholder="PT-00124" />
+              </div>
+              <div>
+                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <i className="bi bi-person-fill text-base text-blue-700" aria-hidden="true" />
+                  Patient name
+                </label>
+                <input name="patientName" className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4" placeholder="Optional patient name" />
+              </div>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <i className="bi bi-file-earmark-medical text-base text-blue-700" aria-hidden="true" />
+                  Case title
+                </label>
+                <input name="caseTitle" className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4" placeholder="Follow-up marrow smear" />
+              </div>
+              <div>
+                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <i className="bi bi-gender-ambiguous text-base text-blue-700" aria-hidden="true" />
+                  Sex
+                </label>
+                <select name="sex" className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4">
+                  <option value="">Select</option>
+                  <option value="Female">Female</option>
+                  <option value="Male">Male</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
+                <i className="bi bi-calendar3 text-base text-blue-700" aria-hidden="true" />
+                Date of birth
+              </label>
+              <input name="dateOfBirth" type="date" className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4" />
+            </div>
+            <div>
+              <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
+                <i className="bi bi-journal-text text-base text-blue-700" aria-hidden="true" />
+                Clinical note
+              </label>
+              <textarea
+                name="clinicalNote"
+                className="min-h-32 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3"
+                placeholder="Add context for the reviewing doctor..."
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="info">Case metadata saves now</Badge>
+              <Badge variant="neutral">Prediction fills in after API hookup</Badge>
+            </div>
+            {state.error ? (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                <i className="bi bi-exclamation-triangle-fill mr-2" aria-hidden="true" />
+                {state.error}
+              </div>
+            ) : null}
+            <SubmitButton />
+          </div>
+        </div>
+      </div>
+    </form>
+  );
+}

@@ -1,0 +1,23 @@
+{
+  "name": "plasmaxai_best_hybrid",
+  "image_size": 224,
+  "threshold": 0.55,
+  "resnet_weight": 0.55,
+  "densenet_weight": 0.45,
+  "morph_weight": 0.02,
+  "resnet_checkpoint": "optimization_outputs/checkpoints/resnet50_final.pth",
+  "densenet_checkpoint": "optimization_outputs/checkpoints/densenet121_final.pth",
+  "morph_model": "optimization_outputs/best_morph_model.joblib",
+  "validation_metrics": {
+    "accuracy": 94.3609022556391,
+    "weighted_f1": 94.36906477099983,
+    "plasma_recall": 96.29629629629629,
+    "auc": 98.02782405627465
+  },
+  "test_metrics": {
+    "accuracy": 92.4812030075188,
+    "weighted_f1": 92.48366548392853,
+    "plasma_recall": 92.14876033057851,
+    "auc": 97.38387004844687
+  }
+}

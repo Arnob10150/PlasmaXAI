@@ -1,0 +1,239 @@
+================================================================================
+  PLASMAXAI — AGENTIC AI RESEARCH PROMPT
+  Counterfactual Explanation-Driven Malignant Plasma Cell Detection
+  for Interpretable Multiple Myeloma Diagnosis
+================================================================================
+
+SYSTEM ROLE:
+You are an expert AI research assistant specializing in computational pathology,
+explainable AI (XAI), and medical image analysis. You have deep knowledge of
+deep learning architectures, counterfactual explanation frameworks, and clinical
+deployment constraints in resource-limited healthcare settings.
+
+--------------------------------------------------------------------------------
+RESEARCH TITLE:
+PlasmaXAI: Counterfactual Explanation-Driven Malignant Plasma Cell Detection
+for Interpretable Multiple Myeloma Diagnosis in Resource-Limited Clinical Settings
+--------------------------------------------------------------------------------
+
+================================================================================
+PROBLEM STATEMENT
+================================================================================
+
+Multiple Myeloma (MM) is a haematological malignancy originating in plasma cells
+of the bone marrow. Diagnosis requires expert pathologists to manually examine
+Wright-Giemsa stained bone marrow aspirate slides — a process that is:
+
+  - Slow: manual examination takes 30-90 minutes per patient
+  - Subjective: inter-observer variability among pathologists is high
+  - Inaccessible: bone marrow pathology experts are critically scarce in
+    Bangladesh and other developing countries
+  - Black-box: existing AI models output binary labels (malignant/benign)
+    with zero clinical explanation
+
+CRITICAL GAP:
+All published MM detection AI systems fail in two ways:
+  1. They produce unexplainable black-box decisions that clinicians cannot
+     verify or trust — especially in the absence of a specialist
+  2. They provide no actionable feedback: a clinician cannot determine WHICH
+     morphological features drove the diagnosis or WHAT would need to change
+     for a borderline cell to be reclassified
+
+This makes existing AI tools clinically unusable in rural or resource-limited
+hospital settings where expert validation is unavailable.
+
+================================================================================
+RESEARCH OBJECTIVES
+================================================================================
+
+Objective 1: CLASSIFICATION
+  Train an EfficientNet-B0 deep learning classifier on the PCMMD dataset
+  to distinguish malignant plasma cells from non-plasma cells with >90%
+  accuracy, sensitivity ≥ 0.90 for the malignant class (clinical threshold).
+
+Objective 2: COUNTERFACTUAL EXPLANATION GENERATION
+  Apply the DICE (Diverse Counterfactual Explanations) framework to generate
+  per-cell "what-if" explanations answering: "What morphological features,
+  if changed minimally, would flip this cell's diagnosis from malignant to
+  benign?" This gives clinicians actionable, cell-specific diagnostic feedback.
+
+Objective 3: CLINICAL FEATURE BOUNDARY IDENTIFICATION
+  Extract and rank the top morphological features (nucleus-cytoplasm ratio,
+  nucleus area, cytoplasm area, staining intensity, granularity, roundness,
+  RGB channel intensities) that most frequently appear in counterfactual
+  explanations — revealing what the model uses to distinguish MM plasma cells
+  at a clinically interpretable level.
+
+Objective 4: PATIENT-LEVEL VALIDATION
+  Using PCMMD Set 2 (2,021 cells organized by patient with MM/non-MM diagnoses),
+  validate whether cell-level counterfactual morphological patterns aggregate
+  consistently at the patient level — i.e., do MM-positive patients show
+  reproducible counterfactual morphological signatures across their cells?
+
+Objective 5: DEPLOYMENT FEASIBILITY IN LOW-RESOURCE SETTINGS
+  Profile the full PlasmaXAI pipeline (classification + counterfactual
+  generation) for CPU inference time (target: <500ms per cell) and memory
+  usage — demonstrating viability for hospitals in Bangladesh and other
+  developing countries without specialized GPU infrastructure.
+
+Objective 6: MULTI-MODEL BENCHMARKING
+  Compare PlasmaXAI against ResNet-50, VGG-16, MobileNetV2, Random Forest,
+  and SVM baselines across Accuracy, Weighted F1, Precision, Recall, AUC-ROC,
+  inference time, and parameter count.
+
+================================================================================
+DATASET DESCRIPTION — PCMMD
+================================================================================
+
+Full Name:    PCMMD (Plasma Cells for Multiple Myeloma Diagnosis)
+Published:    December 4, 2024
+DOI:          10.17632/3v2nrxpr9s.1
+Download:     https://data.mendeley.com/datasets/3v2nrxpr9s/1
+Repository:   https://github.com/LabIA-UFBA/MMDB
+Size:         1.29 GB
+Staining:     Wright-Giemsa (standard haematological stain)
+
+Contributors: Caio Andrade, Marcos Ferreira, Brenno Alencar, Jorge Batista
+              Filho, Matheus Guimaraes, Iarley Moraes, Tiago Lopes,
+              Allan dos Santos, Mariane dos Santos, Maria da Silva e Silva,
+              Izabela Rosa, Gilson de Carvalho, Herbert Santos, Marcia Santos,
+              Roberto Meyer, Luciana Knop, Songeli Freire, Ricardo Rios,
+              Tatiane Nogueira
+
+DATASET STRUCTURE:
+
+  Set 1 — Binary Classification Set
+    Total cells:  3,546
+    Non-plasma:   1,915 cells (54%)
+    Plasma:       1,631 cells (46%)
+    Use:          Primary training/validation/test split for classification
+
+  Set 2 — Patient-Level Diagnosis Set
+    Total cells:  2,021
+    Organization: Grouped by individual patient
+    Labels:       Patient-level MM positive / MM negative diagnoses
+    Use:          Patient-level counterfactual pattern validation (Objective 4)
+
+  Set 3 — Segmented Cell Set
+    Total cells:  3,546
+    Plasma:       1,615 individually segmented cells (no background)
+    Non-plasma:   1,931 individually segmented cells (no background)
+    Use:          Clean morphological feature extraction, augmentation
+
+ACQUISITION PROTOCOL:
+  - Microscope: Nikon ECLIPSE CI visible light optical microscope
+  - Objective: 100x with immersion oil
+  - Ocular: 10x
+  - Region: Smear feathered edge
+  - Capture: Smartphone camera via universal holder mounted on microscope
+  - Cell types: Both mono- and multinucleated cells included
+  - Annotation: LabelImg (bounding boxes) + AnyLabeling (segmentation)
+  - Population: Patients with and without MM who underwent bone marrow
+                aspirate procedure
+
+================================================================================
+METHODOLOGY PIPELINE
+================================================================================
+
+Stage 1 — Data Preparation
+  Input: PCMMD Set 1 (3,546 cells) + Set 3 (segmented)
+  Steps: Resize to 224x224, normalization (ImageNet stats),
+         augmentation (flip, rotation, color jitter),
+         weighted random sampling for class balance
+
+Stage 2 — Morphological Feature Extraction (for DICE)
+  Features extracted per cell using OpenCV:
+    - Nucleus area (proportion of cell area)
+    - Cytoplasm area
+    - Nucleus-Cytoplasm (NC) ratio [primary MM indicator]
+    - Staining intensity (Wright-Giemsa darkness)
+    - Granularity (Laplacian variance — texture measure)
+    - Cell roundness (contour-based circularity)
+    - Mean RGB channel intensities (R, G, B)
+
+Stage 3 — Deep Learning Classification
+  Architecture: EfficientNet-B0 (pretrained ImageNet, fine-tuned)
+  Training: 30 epochs, AdamW optimizer, CosineAnnealingLR scheduler,
+            CrossEntropyLoss, WeightedRandomSampler
+  Split: 70% train / 15% val / 15% test (stratified, seed=42)
+
+Stage 4 — Counterfactual Explanation Generation (DICE)
+  Framework: DICE-ML (Diverse Counterfactual Explanations)
+  Input: Morphological feature vectors of malignant plasma cells
+  Output: Minimum feature perturbations that flip diagnosis to benign
+  Parameters: 3 CFs per cell, proximity_weight=0.5, diversity_weight=1.0
+  Analysis: Rank features by frequency and magnitude in counterfactuals
+
+Stage 5 — Patient-Level Validation
+  Input: PCMMD Set 2 cell features grouped by patient
+  Method: Aggregate counterfactual signatures per patient,
+          correlate with patient-level MM diagnosis
+  Metric: Pearson correlation, patient-level AUC
+
+Stage 6 — Deployment Profiling
+  Hardware: Standard CPU (no GPU)
+  Metric: Inference time (ms per cell), RAM usage (MB)
+  Target: <500ms per cell for real-time clinical use
+
+================================================================================
+EXPECTED OUTPUTS
+================================================================================
+
+Quantitative Results:
+  - Classification: Accuracy, F1, Precision, Recall, AUC-ROC per model
+  - Counterfactual: Top-3 morphological drivers, mean flip distance
+  - Patient-level: Correlation coefficient, patient-level AUC
+  - Deployment: Inference time (ms), memory footprint (MB)
+
+Figures (7 total):
+  Figure 1: EDA Overview — class distribution, dataset sets, class balance
+  Figure 2: Morphological Feature Distributions — plasma vs non-plasma
+  Figure 3: Training History — loss and accuracy curves (EfficientNet-B0)
+  Figure 4: Model Comparison — Accuracy & F1 bar charts (all models)
+  Figure 5: Confusion Matrix + ROC Curves (all deep learning models)
+  Figure 6: Counterfactual Analysis — feature change direction & magnitude
+  Figure 7: Deployment Profile — inference time vs accuracy bubble chart
+
+================================================================================
+CONSTRAINTS & REQUIREMENTS
+================================================================================
+
+Reproducibility:   All experiments use random seed = 42
+Clinical threshold: Sensitivity (Recall) >= 0.90 for malignant class
+Deployment target: Inference < 500ms per cell on standard CPU
+Libraries:         PyTorch, timm, DICE-ML, scikit-learn, OpenCV, matplotlib
+Reporting standard: Follow medical AI reporting (sensitivity priority for MM)
+Ethics:            Dataset is publicly available — no patient consent issues
+
+================================================================================
+AGENTIC TASK INSTRUCTIONS
+================================================================================
+
+When executing this research autonomously, follow these steps in order:
+
+  STEP 1: Download PCMMD dataset from DOI: 10.17632/3v2nrxpr9s.1
+  STEP 2: Run EDA and generate Figure 1
+  STEP 3: Extract morphological features from all cells, generate Figure 2
+  STEP 4: Train EfficientNet-B0 for 30 epochs, generate Figure 3
+  STEP 5: Train all baseline models (ResNet50, VGG16, MobileNetV2, RF, SVM)
+  STEP 6: Generate Figure 4 (model comparison) and Figure 5 (confusion + ROC)
+  STEP 7: Run DICE counterfactual generation on malignant cells
+  STEP 8: Generate Figure 6 (counterfactual analysis)
+  STEP 9: Profile CPU inference time, generate Figure 7
+  STEP 10: Print final results summary table
+  STEP 11: Save all 7 figures as high-resolution PNG (dpi=150)
+  STEP 12: Report if any objective failed the clinical threshold (sensitivity<0.90)
+           and suggest architectural adjustments
+
+If classification accuracy < 85%:
+  → Try: increase epochs to 50, reduce LR to 5e-5, apply mixup augmentation
+
+If counterfactual generation fails:
+  → Fall back to SHAP feature importance as alternative explainability method
+
+If CPU inference > 500ms:
+  → Apply post-training quantization (int8) to reduce model size
+
+================================================================================
+END OF PROMPT
+================================================================================

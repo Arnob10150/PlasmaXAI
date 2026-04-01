@@ -1,0 +1,25 @@
+Novel PlasmaXAI Extension Summary
+================================================================================
+Best fusion config: fusion_cfg_a
+Novel fusion test accuracy: 93.23%
+Novel fusion test weighted F1: 93.24%
+Novel fusion plasma recall: 93.39%
+Novel fusion AUC: 97.76%
+
+Previous hybrid test accuracy: 91.73%
+Previous hybrid plasma recall: 90.91%
+
+Patient-level consistency findings:
+  Patient AUC using mean novel probability: 1.000
+  Patient AUC using mean counterfactual distance: 0.000
+  Patient AUC using combined disease signature: 1.000
+
+Statistical support:
+  Bootstrap novel fusion accuracy 95% CI: [90.98, 95.30]
+  Bootstrap novel fusion AUC 95% CI: [96.56, 98.63]
+  Mann-Whitney p-value for patient mean novel probability: 0.0079
+  Mann-Whitney p-value for patient counterfactual consistency: 0.2222
+
+Clinical insight:
+  Diseased patients show a reproducible counterfactual signature centered on mean_r, mean_g, mean_b.
+  This suggests myeloma burden is not just more plasma cells; it is a more coherent morphologic program.

@@ -1,0 +1,11 @@
+patient,plasma_cells, non_plasma_cells,total,percentage,diagnosis
+01,82,120,202,0.406,diseased
+02,78,127,205,0.374,diseased
+03,72,128,200,0.36,diseased
+04,82,116,198,0.414,diseased
+05,71,129,200,0.355,diseased
+06,15,185,200,0.075,normal
+07,18,187,205,0.088,normal
+08,9,199,208,0.043,normal
+09,14,188,202,0.069,normal
+10,15,188,203,0.074,normal

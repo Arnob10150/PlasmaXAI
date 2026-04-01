@@ -1,0 +1,23 @@
+PlasmaXAI Final Optimization Summary
+================================================================================
+Backup kept at: F:\BUET plasma\backup_before_optimization
+
+Best deployable framework:
+  Hybrid ensemble = 0.98 * (0.55 * ResNet50 + 0.45 * DenseNet121) + 0.02 * morphology XGBoost
+  Decision threshold = 0.55
+
+Held-out test metrics:
+  Accuracy = 92.48%
+  Weighted F1 = 92.48%
+  Plasma recall = 92.15%
+  AUC = 97.38%
+
+Best single model: ResNet50 final
+  Accuracy = 92.29%
+  Plasma recall = 94.21%
+  AUC = 97.30%
+
+Original notebook benchmark to beat:
+  ResNet-50 = 91.92% accuracy
+
+Use `python run_best_plasmaxai.py <image_path>` to run the best hybrid.

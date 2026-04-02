@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
+import { useRouter } from "next/navigation";
 import type { PatientActionState } from "@/app/(workspace)/patients/actions";
 import { Button } from "@/components/ui/button";
 
@@ -22,10 +23,12 @@ function SaveButton() {
 }
 
 function DeleteButton() {
+  const { pending } = useFormStatus();
+
   return (
-    <Button className="w-full sm:w-auto" type="submit" variant="secondary">
-      <i className="bi bi-trash3-fill text-sm" aria-hidden="true" />
-      Remove patient
+    <Button className="w-full sm:w-auto" disabled={pending} type="submit" variant="secondary">
+      <i className={`bi ${pending ? "bi-arrow-repeat" : "bi-trash3-fill"} text-sm`} aria-hidden="true" />
+      {pending ? "Removing..." : "Remove patient"}
     </Button>
   );
 }
@@ -43,9 +46,18 @@ export function PatientProfileForm({
     dateOfBirth?: string | null;
   };
   updateAction: (state: PatientActionState, formData: FormData) => Promise<PatientActionState>;
-  deleteAction: (formData: FormData) => Promise<void>;
+  deleteAction: (state: PatientActionState, formData: FormData) => Promise<PatientActionState>;
 }) {
+  const router = useRouter();
   const [updateState, updateFormAction] = useActionState(updateAction, initialState);
+  const [deleteState, deleteFormAction] = useActionState(deleteAction, initialState);
+
+  useEffect(() => {
+    if (deleteState.redirectTo) {
+      router.push(deleteState.redirectTo);
+      router.refresh();
+    }
+  }, [deleteState.redirectTo, router]);
 
   return (
     <div className="space-y-4">
@@ -104,7 +116,7 @@ export function PatientProfileForm({
         </div>
       </form>
 
-      <form action={deleteAction} className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <form action={deleteFormAction} className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <input name="patientId" type="hidden" value={patient.id} />
         <div className="mb-3">
           <h3 className="inline-flex items-center gap-2 text-base font-semibold text-slate-950">
@@ -112,9 +124,15 @@ export function PatientProfileForm({
             Remove patient record
           </h3>
           <p className="mt-1 text-sm text-slate-500">
-            This removes the patient from the directory and detaches linked cases from that patient name.
+            Patient deletion is blocked while case history is still linked, so records are not lost accidentally.
           </p>
         </div>
+        {deleteState.error ? (
+          <p className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{deleteState.error}</p>
+        ) : null}
+        {deleteState.success ? (
+          <p className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{deleteState.success}</p>
+        ) : null}
         <DeleteButton />
       </form>
     </div>

@@ -7,14 +7,12 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { LogoLockup } from "@/components/shared/logo-lockup";
-import { Badge } from "@/components/ui/badge";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", iconClass: "bi bi-grid-1x2-fill" },
   { href: "/new-case", label: "New case", iconClass: "bi bi-file-earmark-medical-fill" },
   { href: "/history", label: "History", iconClass: "bi bi-clock-history" },
   { href: "/patients", label: "Patients", iconClass: "bi bi-people-fill" },
-  { href: "/reports", label: "Reports", iconClass: "bi bi-file-earmark-pdf-fill" },
   { href: "/profile", label: "Profile", iconClass: "bi bi-person-badge-fill" },
   { href: "/settings", label: "Settings", iconClass: "bi bi-gear-fill" },
 ];
@@ -77,10 +75,6 @@ export function WorkspaceShell({
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <Badge variant="success">
-                <i className={cn("bi text-sm", "bi bi-check2-circle")} aria-hidden="true" />
-                Workspace ready
-              </Badge>
               <div className="hidden items-center gap-2 text-sm text-slate-600 lg:flex">
                 <i className="bi bi-person-badge-fill text-base text-blue-700" aria-hidden="true" />
                 <div className="min-w-0">
@@ -134,9 +128,8 @@ export function WorkspaceShell({
                 Keep urgent reviews, case history, and sign-out tasks within immediate reach.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <Badge variant="warning">Pending</Badge>
-                <Badge variant="success">Reviewed</Badge>
-                <Badge variant="info">Reports ready</Badge>
+                <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium text-blue-100">Reviewed cases</span>
+                <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium text-blue-100">Reports ready</span>
               </div>
             </div>
 

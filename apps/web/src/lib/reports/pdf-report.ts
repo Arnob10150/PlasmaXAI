@@ -1,4 +1,5 @@
 import { readFile } from "fs/promises";
+import path from "path";
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFPage } from "pdf-lib";
 import {
   buildClinicalChecklist,
@@ -59,7 +60,11 @@ async function loadImageBytes(imagePath: string | null) {
       return new Uint8Array(await response.arrayBuffer());
     }
 
-    return await readFile(/*turbopackIgnore: true*/ imagePath);
+    const resolvedPath = imagePath.startsWith("/")
+      ? path.join(/*turbopackIgnore: true*/ process.cwd(), "public", imagePath.replace(/^\/+/, ""))
+      : imagePath;
+
+    return await readFile(/*turbopackIgnore: true*/ resolvedPath);
   } catch {
     return null;
   }
@@ -300,7 +305,7 @@ function drawImagePanel(
     color: titleColor,
   });
 
-  next.page.drawText("Reference image included for doctor review and report sign-out context.", {
+  next.page.drawText("Reference image included for morphology correlation during doctor review and report sign-out.", {
     x: margin + 16,
     y: next.y - 40,
     size: 10.5,
@@ -371,7 +376,7 @@ function drawFocusMapPanel(
     borderWidth: 1,
   });
 
-  next.page.drawText("AI review focus map", {
+  next.page.drawText("AI focus map and overlay", {
     x: margin + 16,
     y: next.y - 22,
     size: 13,
@@ -379,7 +384,7 @@ function drawFocusMapPanel(
     color: titleColor,
   });
 
-  next.page.drawText("Warm overlays highlight regions receiving higher review emphasis. Use this as supportive visual guidance, not as a standalone diagnosis.", {
+  next.page.drawText("Warm overlays highlight regions receiving higher review emphasis over the microscopy image. Use this as supportive visual guidance, not as a standalone diagnosis.", {
     x: margin + 16,
     y: next.y - 40,
     size: 10.5,
@@ -757,11 +762,13 @@ export async function buildCaseReportPdf(input: ReportInput) {
   });
   state.y -= 126;
 
-  state = drawSectionTitle(state, pdfDoc, titleFont, "Doctor and case context");
+  state = drawSectionTitle(state, pdfDoc, titleFont, "Clinical case context");
   state = drawKeyValuePanel(state, pdfDoc, titleFont, bodyFont, [
     ["Doctor", input.doctorName],
     ["Specialization", input.specialization ?? "Clinical reviewer"],
-    ["Image source", input.imagePath ?? "Not attached"],
+    ["Case title", input.caseTitle],
+    ["Patient identifier", `${input.patientCode}${input.patientName ? ` - ${input.patientName}` : ""}`],
+    ["Current assessment", `${input.result.prediction.predictedClassText} (${input.result.prediction.riskLevel} suspicion)`],
     ["Doctor note", input.clinicalNote ?? "No note added at case creation."],
   ]);
 
@@ -805,6 +812,13 @@ export async function buildCaseReportPdf(input: ReportInput) {
     size: 11,
     gapAfter: 8,
   });
+
+  state = drawSectionTitle(state, pdfDoc, titleFont, "Recommended doctor actions");
+  state = drawBulletList(state, pdfDoc, bodyFont, [
+    "Correlate the highlighted morphology pattern with the smear field and any marrow findings before final sign-out.",
+    "Use the focus map as supportive localization for review, especially when checking the dominant atypical region.",
+    "Document whether the AI-supported impression agrees with the visual morphology and the patient timeline.",
+  ]);
 
   state = drawSectionTitle(state, pdfDoc, titleFont, "Doctor review checklist");
   state = drawBulletList(state, pdfDoc, bodyFont, reviewChecklist);

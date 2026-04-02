@@ -36,6 +36,7 @@ const iconClassMap: Record<string, string> = {
   AlertTriangle: "bi bi-exclamation-diamond-fill",
   Brain: "bi bi-cpu-fill",
   Clock3: "bi bi-hourglass-split",
+  FileText: "bi bi-file-earmark-check-fill",
 };
 
 interface DashboardOverviewProps {
@@ -117,12 +118,9 @@ export function DashboardOverview({ data }: DashboardOverviewProps) {
             Track active cases, inspect patient trends, and jump into PlasmaXAI review sessions from one clinical dashboard.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Badge variant="success">Auth connected</Badge>
-          <Badge variant={data.hasCases ? "info" : "neutral"}>
-            {data.hasCases ? `${data.recentCases.length} recent cases loaded` : "No cases yet"}
-          </Badge>
-        </div>
+        <Badge variant={data.hasCases ? "info" : "neutral"}>
+          {data.hasCases ? `${data.recentCases.length} recent cases loaded` : "No cases yet"}
+        </Badge>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -230,7 +228,7 @@ export function DashboardOverview({ data }: DashboardOverviewProps) {
             </div>
             <p className="text-sm text-slate-500">Quick access to saved reviews for the current doctor account</p>
           </div>
-          <Badge variant="neutral">Auto-saved history</Badge>
+          <Badge variant="neutral">Doctor archive</Badge>
         </div>
         {data.recentCases.length ? (
           <div className="overflow-x-auto rounded-[24px] border border-slate-200">

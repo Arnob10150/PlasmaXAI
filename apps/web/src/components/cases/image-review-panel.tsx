@@ -10,7 +10,6 @@ import { formatClinicalFeatureLabel } from "@/lib/clinical-explainability";
 interface ImageReviewPanelProps {
   imageUrl: string;
   imageName: string;
-  imagePath: string;
   heatmapUrl?: string | null;
   riskLevel?: string | null;
   topFeatures?: string[];
@@ -19,7 +18,6 @@ interface ImageReviewPanelProps {
 export function ImageReviewPanel({
   imageUrl,
   imageName,
-  imagePath,
   heatmapUrl = null,
   riskLevel,
   topFeatures = [],
@@ -121,7 +119,7 @@ export function ImageReviewPanel({
     }
 
     if (adaptiveOverlayUrl) {
-      return "Provisional focus map";
+      return "Adaptive focus map";
     }
 
     if (!overlayAvailable) {
@@ -164,7 +162,7 @@ export function ImageReviewPanel({
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="info">Zoom + pan enabled</Badge>
           <Badge variant={overlayAvailable ? "success" : "neutral"}>
-            {overlayAvailable ? "Heatmap available" : "Image only"}
+            {overlayAvailable ? "Focus map ready" : "Image only"}
           </Badge>
           <Badge variant={riskLevel?.toLowerCase() === "high" ? "danger" : riskLevel?.toLowerCase() === "moderate" ? "warning" : "neutral"}>
             {riskLevel ? `${riskLevel} risk` : "Awaiting inference"}
@@ -172,8 +170,8 @@ export function ImageReviewPanel({
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <div className="rounded-[24px] border border-slate-200 bg-slate-950 p-3 shadow-sm sm:p-4">
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="self-start rounded-[24px] border border-slate-200 bg-slate-950 p-3 shadow-sm sm:p-4">
           <TransformWrapper centerOnInit initialScale={1} minScale={0.8} maxScale={6} wheel={{ step: 0.15 }}>
             {({ zoomIn, zoomOut, resetTransform, centerView }) => (
               <>
@@ -249,7 +247,7 @@ export function ImageReviewPanel({
           </TransformWrapper>
         </div>
 
-        <aside className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <aside className="self-start rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <div className="flex items-center gap-2 text-base font-semibold text-slate-950">
             <i className="bi bi-sliders text-base text-blue-700" aria-hidden="true" />
             Microscopy controls
@@ -285,8 +283,10 @@ export function ImageReviewPanel({
               />
             </div>
             <div className="rounded-[22px] bg-slate-50 p-4">
-              <p className="font-medium text-slate-900">Image source</p>
-              <p className="mt-2 break-all text-xs leading-5 text-slate-500">{imagePath}</p>
+              <p className="font-medium text-slate-900">Overlay guide</p>
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                Warm regions highlight the parts of the cell receiving the strongest review emphasis. Use the overlay to support morphology review, not as a standalone diagnosis.
+              </p>
             </div>
             <div className="rounded-[22px] bg-slate-50 p-4">
               <p className="font-medium text-slate-900">Top focus cues</p>

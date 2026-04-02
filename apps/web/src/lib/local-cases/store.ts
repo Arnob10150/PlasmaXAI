@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { access, copyFile, mkdir, readFile, writeFile } from "fs/promises";
+import { access, copyFile, mkdir, readFile, unlink, writeFile } from "fs/promises";
 import path from "path";
 import { buildCaseReportPdf } from "@/lib/reports/pdf-report";
 import type { InferenceResult } from "@/lib/inference/service";
@@ -270,17 +270,12 @@ export async function deleteLocalPatient(patientId: string) {
     throw new Error("Patient record was not found.");
   }
 
+  const linkedCases = cases.filter((item) => item.patient?.id === patientId);
+  if (linkedCases.length) {
+    throw new Error("This patient still has linked cases. Remove or reassign those cases before deleting the patient profile.");
+  }
+
   await writeLocalPatients(patients.filter((item) => item.id !== patientId));
-  await writeLocalCases(
-    cases.map((item) =>
-      item.patient?.id === patientId
-        ? {
-            ...item,
-            patient: null,
-          }
-        : item,
-    ),
-  );
 }
 
 export async function createLocalCase(options: {
@@ -371,6 +366,7 @@ export async function createLocalCase(options: {
 
 export async function updateLocalCaseReview(options: {
   caseId: string;
+  title?: string | null;
   status: string;
   notes: string | null;
 }) {
@@ -379,6 +375,7 @@ export async function updateLocalCaseReview(options: {
     item.id === options.caseId
       ? {
           ...item,
+          title: options.title?.trim() ? options.title.trim() : item.title,
           status: options.status,
           notes: options.notes,
           reviewedAt:
@@ -389,6 +386,30 @@ export async function updateLocalCaseReview(options: {
       : item,
   );
   await writeLocalCases(updated);
+}
+
+export async function deleteLocalCase(caseId: string) {
+  const cases = await readLocalCases();
+  const current = cases.find((item) => item.id === caseId);
+
+  if (!current) {
+    throw new Error("Case record was not found.");
+  }
+
+  const cleanupPaths = [
+    current.images[0]?.storagePath ?? null,
+    current.reports[0]?.storagePath ?? null,
+  ].filter((value): value is string => Boolean(value) && /^[a-zA-Z]:\\/.test(value!));
+
+  for (const filePath of cleanupPaths) {
+    try {
+      await unlink(filePath);
+    } catch {
+      // Keep deletion resilient even if the file has already been removed.
+    }
+  }
+
+  await writeLocalCases(cases.filter((item) => item.id !== caseId));
 }
 
 export async function updateLocalCaseInference(
@@ -496,7 +517,13 @@ function buildFallbackInferenceResult(caseItem: DemoCaseRecord): InferenceResult
   };
 }
 
-export async function ensureLocalCaseReport(caseId: string) {
+export async function ensureLocalCaseReport(
+  caseId: string,
+  doctor?: {
+    doctorName?: string | null;
+    specialization?: string | null;
+  },
+) {
   const cases = await readLocalCases();
   const caseItem = cases.find((item) => item.id === caseId) ?? null;
 
@@ -514,8 +541,8 @@ export async function ensureLocalCaseReport(caseId: string) {
     caseTitle: caseItem.title,
     patientCode: caseItem.patient?.code ?? "PT-LOCAL",
     patientName: caseItem.patient?.name ?? null,
-    doctorName: "Dr. Ayesha Rahman",
-    specialization: "Hematopathology",
+    doctorName: doctor?.doctorName?.trim() || "Clinical reviewer",
+    specialization: doctor?.specialization?.trim() || "Hematopathology",
     clinicalNote: caseItem.notes,
     imagePath: caseItem.images[0]?.storagePath ?? null,
     result,

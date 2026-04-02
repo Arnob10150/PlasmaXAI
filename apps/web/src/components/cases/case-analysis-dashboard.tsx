@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -119,6 +119,12 @@ export function CaseAnalysisDashboard({
   intervalComment,
   timeline,
 }: CaseAnalysisDashboardProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const probabilityData = useMemo(() => {
     const resolved = probabilities && Object.keys(probabilities).length
       ? probabilities
@@ -301,22 +307,26 @@ export function CaseAnalysisDashboard({
             <Badge variant="info">Current specimen</Badge>
           </div>
           <div className="h-[220px] sm:h-[240px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={probabilityData} outerRadius="72%">
-                <PolarGrid stroke="#dbe7f4" />
-                <PolarAngleAxis dataKey="name" tick={{ fill: "#475569", fontSize: 12 }} />
-                <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
-                <Tooltip formatter={(value) => [`${value}%`, "Review support"]} />
-                <Radar
-                  name="Review support"
-                  dataKey="value"
-                  stroke="#2563eb"
-                  fill="#2563eb"
-                  fillOpacity={0.25}
-                  strokeWidth={2}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
+            {mounted ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={probabilityData} outerRadius="72%">
+                  <PolarGrid stroke="#dbe7f4" />
+                  <PolarAngleAxis dataKey="name" tick={{ fill: "#475569", fontSize: 12 }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
+                  <Tooltip formatter={(value) => [`${value}%`, "Review support"]} />
+                  <Radar
+                    name="Review support"
+                    dataKey="value"
+                    stroke="#2563eb"
+                    fill="#2563eb"
+                    fillOpacity={0.25}
+                    strokeWidth={2}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full animate-pulse rounded-[24px] bg-slate-100" />
+            )}
           </div>
         </div>
 
@@ -332,23 +342,27 @@ export function CaseAnalysisDashboard({
             <Badge variant="success">Clinical aid</Badge>
           </div>
           <div className="h-[220px] sm:h-[240px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={gateData}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={58}
-                  outerRadius={92}
-                  paddingAngle={3}
-                >
-                  {gateData.map((entry, index) => (
-                    <Cell key={entry.name} fill={gatePalette[index % gatePalette.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => [`${value}%`, "Contribution"]} />
-              </PieChart>
-            </ResponsiveContainer>
+            {mounted ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={gateData}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={58}
+                    outerRadius={92}
+                    paddingAngle={3}
+                  >
+                    {gateData.map((entry, index) => (
+                      <Cell key={entry.name} fill={gatePalette[index % gatePalette.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => [`${value}%`, "Contribution"]} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full animate-pulse rounded-[24px] bg-slate-100" />
+            )}
           </div>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
             {gateData.map((entry, index) => (
@@ -374,20 +388,24 @@ export function CaseAnalysisDashboard({
             <Badge variant="warning">Top 6 cues</Badge>
           </div>
           <div className="h-[220px] sm:h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={morphologyData} layout="vertical" margin={{ left: 22, right: 6 }}>
-                <CartesianGrid stroke="#edf2f7" horizontal={false} />
-                <XAxis type="number" tickLine={false} axisLine={false} />
-                <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} width={130} />
-                <Tooltip
-                  formatter={(value, _name, item: any) => {
-                    const rawValue = item?.payload?.rawValue;
-                    return [rawValue ?? `${value}%`, "Observed prominence"];
-                  }}
-                />
-                <Bar dataKey="value" fill="#f59e0b" radius={[0, 12, 12, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {mounted ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={morphologyData} layout="vertical" margin={{ left: 22, right: 6 }}>
+                  <CartesianGrid stroke="#edf2f7" horizontal={false} />
+                  <XAxis type="number" tickLine={false} axisLine={false} />
+                  <YAxis type="category" dataKey="name" tickLine={false} axisLine={false} width={130} />
+                  <Tooltip
+                    formatter={(value, _name, item: any) => {
+                      const rawValue = item?.payload?.rawValue;
+                      return [rawValue ?? `${value}%`, "Observed prominence"];
+                    }}
+                  />
+                  <Bar dataKey="value" fill="#f59e0b" radius={[0, 12, 12, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full animate-pulse rounded-[24px] bg-slate-100" />
+            )}
           </div>
         </div>
 
@@ -405,22 +423,26 @@ export function CaseAnalysisDashboard({
             </Badge>
           </div>
           <div className="h-[200px] sm:h-[220px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={confidenceBandData}>
-                <defs>
-                  <linearGradient id="confidenceBandFill" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.28} />
-                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0.05} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="#edf2f7" vertical={false} />
-                <XAxis dataKey="label" tickLine={false} axisLine={false} />
-                <YAxis tickLine={false} axisLine={false} unit="%" domain={[0, 100]} />
-                <Tooltip formatter={(value) => [`${value}%`, "Confidence"]} />
-                <Area type="monotone" dataKey="confidence" stroke="#2563eb" fill="url(#confidenceBandFill)" strokeWidth={3} />
-                <Line type="monotone" dataKey="upper" stroke="#94a3b8" strokeDasharray="6 6" dot={false} />
-              </AreaChart>
-            </ResponsiveContainer>
+            {mounted ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={confidenceBandData}>
+                  <defs>
+                    <linearGradient id="confidenceBandFill" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="5%" stopColor="#2563eb" stopOpacity={0.28} />
+                      <stop offset="95%" stopColor="#2563eb" stopOpacity={0.05} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="#edf2f7" vertical={false} />
+                  <XAxis dataKey="label" tickLine={false} axisLine={false} />
+                  <YAxis tickLine={false} axisLine={false} unit="%" domain={[0, 100]} />
+                  <Tooltip formatter={(value) => [`${value}%`, "Confidence"]} />
+                  <Area type="monotone" dataKey="confidence" stroke="#2563eb" fill="url(#confidenceBandFill)" strokeWidth={3} />
+                  <Line type="monotone" dataKey="upper" stroke="#94a3b8" strokeDasharray="6 6" dot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full animate-pulse rounded-[24px] bg-slate-100" />
+            )}
           </div>
         </div>
 
@@ -438,15 +460,19 @@ export function CaseAnalysisDashboard({
             </Badge>
           </div>
           <div className="h-[220px] sm:h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={timelineData}>
-                <CartesianGrid stroke="#edf2f7" vertical={false} />
-                <XAxis dataKey="label" tickLine={false} axisLine={false} />
-                <YAxis tickLine={false} axisLine={false} unit="%" />
-                <Tooltip formatter={(value) => [`${value}%`, "Review confidence"]} />
-                <Line type="monotone" dataKey="confidencePct" stroke="#7c3aed" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            {mounted ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={timelineData}>
+                  <CartesianGrid stroke="#edf2f7" vertical={false} />
+                  <XAxis dataKey="label" tickLine={false} axisLine={false} />
+                  <YAxis tickLine={false} axisLine={false} unit="%" />
+                  <Tooltip formatter={(value) => [`${value}%`, "Review confidence"]} />
+                  <Line type="monotone" dataKey="confidencePct" stroke="#7c3aed" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full animate-pulse rounded-[24px] bg-slate-100" />
+            )}
           </div>
         </div>
       </div>

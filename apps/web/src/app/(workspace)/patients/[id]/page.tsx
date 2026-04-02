@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  deletePatientRedirectAction,
+  deletePatientAction,
   updatePatientAction,
 } from "@/app/(workspace)/patients/actions";
 import { PatientProfileForm } from "@/components/patients/patient-profile-form";
@@ -47,7 +47,7 @@ export default async function PatientDetailPage({
           </div>
           <h1 className="mt-2 break-words text-3xl font-semibold tracking-tight text-slate-950">
             {detail.patient.code}
-            {detail.patient.name ? ` · ${detail.patient.name}` : ""}
+            {detail.patient.name ? ` - ${detail.patient.name}` : ""}
           </h1>
           <p className="mt-2 max-w-2xl text-base leading-7 text-slate-600">
             Review this patient&apos;s case history, update patient details, and reopen any saved case workspace or report.
@@ -104,11 +104,11 @@ export default async function PatientDetailPage({
 
       <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
         <section className="space-y-4">
-          <PatientProfileForm
-            deleteAction={deletePatientRedirectAction}
-            patient={detail.patient}
-            updateAction={updatePatientAction}
-          />
+            <PatientProfileForm
+            deleteAction={deletePatientAction}
+              patient={detail.patient}
+              updateAction={updatePatientAction}
+            />
 
           <section className="rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-2 text-lg font-semibold text-slate-950">
@@ -203,3 +203,4 @@ export default async function PatientDetailPage({
     </div>
   );
 }
+

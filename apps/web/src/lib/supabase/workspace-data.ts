@@ -339,7 +339,9 @@ export function formatCaseDate(value?: string | null) {
 export async function getDashboardData() {
   const cases = await fetchCases();
   const reviewedCases = cases.filter((item) => item.status === "reviewed");
-  const pendingCases = cases.filter((item) => item.status !== "reviewed" && item.status !== "report_ready");
+  const reportReadyCases = cases.filter(
+    (item) => item.status === "report_ready" || item.reports.length > 0,
+  );
   const confidenceValues = cases
     .map((item) => item.prediction?.confidence ?? null)
     .filter((value): value is number => typeof value === "number");
@@ -370,7 +372,7 @@ export async function getDashboardData() {
   return {
     summary: [
       {
-        title: "Cases reviewed",
+        title: "Cases saved",
         value: String(cases.length).padStart(2, "0"),
         delta: `${reviewedCases.length} marked reviewed`,
         tone: "from-blue-50 to-cyan-50",
@@ -391,11 +393,13 @@ export async function getDashboardData() {
         icon: "Brain",
       },
       {
-        title: "Pending review",
-        value: String(pendingCases.length).padStart(2, "0"),
-        delta: pendingCases.length ? `${pendingCases.length} waiting for doctor action` : "Nothing waiting right now",
+        title: "Reports ready",
+        value: String(reportReadyCases.length).padStart(2, "0"),
+        delta: reportReadyCases.length
+          ? `${reportReadyCases.length} downloadable case reports`
+          : "Reports appear after analysis completes",
         tone: "from-slate-50 to-blue-50",
-        icon: "Clock3",
+        icon: "FileText",
       },
     ],
     activityTrend,
@@ -405,7 +409,7 @@ export async function getDashboardData() {
 }
 
 export async function getCaseHistoryData() {
-  return fetchCases();
+  return fetchCases({ includeReports: true });
 }
 
 export async function getPatientsData() {
@@ -434,48 +438,48 @@ export async function getPatientsData() {
       );
   }
 
-  const cases = await fetchCases();
-  const grouped = new Map<string, {
-    id: string;
-    code: string;
-    name: string | null;
-    sex?: string | null;
-    dateOfBirth?: string | null;
-    caseCount: number;
-    latestCaseAt: string;
-    latestCaseCode: string;
-  }>();
+  const supabase = await createClient();
+  const [{ data: patientRows, error }, cases] = await Promise.all([
+    supabase
+      .from("patients")
+      .select("id, patient_code, full_name, sex, date_of_birth, created_at")
+      .order("created_at", { ascending: false }),
+    fetchCases(),
+  ]);
 
-  for (const item of cases) {
-    if (!item.patient) {
-      continue;
-    }
-
-    const existing = grouped.get(item.patient.id);
-
-    if (!existing) {
-      grouped.set(item.patient.id, {
-        id: item.patient.id,
-        code: item.patient.code,
-        name: item.patient.name,
-        caseCount: 1,
-        latestCaseAt: item.createdAt,
-        latestCaseCode: item.caseCode,
-      });
-      continue;
-    }
-
-    existing.caseCount += 1;
-
-    if (new Date(item.createdAt).getTime() > new Date(existing.latestCaseAt).getTime()) {
-      existing.latestCaseAt = item.createdAt;
-      existing.latestCaseCode = item.caseCode;
-    }
+  if (error || !patientRows) {
+    return [] as Array<{
+      id: string;
+      code: string;
+      name: string | null;
+      sex?: string | null;
+      dateOfBirth?: string | null;
+      caseCount: number;
+      latestCaseAt: string;
+      latestCaseCode: string;
+    }>;
   }
 
-  return Array.from(grouped.values()).sort(
-    (left, right) => new Date(right.latestCaseAt).getTime() - new Date(left.latestCaseAt).getTime(),
-  );
+  return patientRows
+    .map((patient) => {
+      const patientCases = cases.filter((item) => item.patient?.id === patient.id);
+      const latestCase = patientCases[0] ?? null;
+
+      return {
+        id: patient.id,
+        code: patient.patient_code,
+        name: patient.full_name ?? null,
+        sex: patient.sex ?? null,
+        dateOfBirth: patient.date_of_birth ?? null,
+        caseCount: patientCases.length,
+        latestCaseAt: latestCase?.createdAt ?? patient.created_at,
+        latestCaseCode: latestCase?.caseCode ?? "No cases yet",
+      };
+    })
+    .sort(
+      (left, right) =>
+        new Date(right.latestCaseAt).getTime() - new Date(left.latestCaseAt).getTime(),
+    );
 }
 
 export async function getPatientDetail(patientId: string): Promise<PatientDetail | null> {
@@ -514,10 +518,18 @@ export async function getPatientDetail(patientId: string): Promise<PatientDetail
     };
   }
 
-  const patientCases = await fetchCases({ patientId, includeReports: true });
-  if (!patientCases.length || !patientCases[0].patient) {
+  const supabase = await createClient();
+  const { data: patientRow, error: patientError } = await supabase
+    .from("patients")
+    .select("id, patient_code, full_name, sex, date_of_birth, created_at")
+    .eq("id", patientId)
+    .maybeSingle();
+
+  if (patientError || !patientRow) {
     return null;
   }
+
+  const patientCases = await fetchCases({ patientId, includeReports: true });
 
   const signedCases = await Promise.all(
     patientCases.map(async (item) => {
@@ -549,7 +561,14 @@ export async function getPatientDetail(patientId: string): Promise<PatientDetail
     .filter((value): value is number => typeof value === "number");
 
   return {
-    patient: signedCases[0].patient!,
+    patient: {
+      id: patientRow.id,
+      code: patientRow.patient_code,
+      name: patientRow.full_name ?? null,
+      sex: patientRow.sex ?? null,
+      dateOfBirth: patientRow.date_of_birth ?? null,
+      createdAt: patientRow.created_at,
+    },
     cases: signedCases,
     averageConfidence: confidenceValues.length
       ? confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length

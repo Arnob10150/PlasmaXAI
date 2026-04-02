@@ -156,7 +156,6 @@ export function buildCaseReportHtml(input: {
           <h3>Doctor and case context</h3>
           <p><strong>Doctor:</strong> ${escapeHtml(input.doctorName)}</p>
           <p><strong>Specialization:</strong> ${escapeHtml(input.specialization ?? "Clinical reviewer")}</p>
-          <p><strong>Image source:</strong> ${escapeHtml(input.imagePath ?? "Not attached")}</p>
           <p><strong>Framework:</strong> ${escapeHtml(input.result.framework)} (${escapeHtml(input.result.modelVersion)})</p>
         </section>
 

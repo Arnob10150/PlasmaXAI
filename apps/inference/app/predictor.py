@@ -109,6 +109,13 @@ class PlasmaXAIPredictor:
         self.device = config.device
         self._loaded = False
 
+    @property
+    def loaded(self) -> bool:
+        return self._loaded
+
+    def warmup(self) -> None:
+        self._ensure_loaded()
+
     def _load_backbone(self, model_name: str, checkpoint_path: Path):
         model = timm.create_model(model_name, pretrained=False, num_classes=2).to(self.device)
         model.load_state_dict(torch.load(checkpoint_path, map_location=self.device))

@@ -24,12 +24,16 @@ class CaseInferenceRequest(BaseModel):
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
+def health(warm: bool = False) -> dict[str, str | bool]:
     predictor = get_predictor()
+    if warm:
+        predictor.warmup()
+
     return {
         "status": "ok",
         "framework": "PlasmaXAI",
         "device": str(predictor.device),
+        "modelLoaded": predictor.loaded,
     }
 
 

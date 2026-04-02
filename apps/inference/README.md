@@ -104,11 +104,19 @@ This folder now includes a `Dockerfile` so the service can be deployed as a
 container on platforms like Render, Railway, Fly.io, or any OCI-compatible
 host.
 
+For Render:
+
+- keep `Root Directory` empty
+- set `Dockerfile Path` to `apps/inference/Dockerfile`
+
+This is important because `build.py` needs access to the repository-level
+`research/outputs/...` model artifacts during the container build.
+
 Basic flow:
 
 ```powershell
-cd "F:\BUET plasma\apps\inference"
-docker build -t plasmaxai-inference .
+cd "F:\BUET plasma"
+docker build -f apps/inference/Dockerfile -t plasmaxai-inference .
 docker run -p 8000:8000 plasmaxai-inference
 ```
 

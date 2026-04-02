@@ -1,5 +1,6 @@
 import { access, mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
+import { shouldUseFilesystemLocalStore } from "@/lib/supabase/config";
 
 export interface LocalWorkspaceSettings {
   includeFocusMapInReport: boolean;
@@ -21,6 +22,10 @@ const defaultSettings: LocalWorkspaceSettings = {
 };
 
 async function ensureSettingsStore() {
+  if (!shouldUseFilesystemLocalStore()) {
+    return;
+  }
+
   await mkdir(LOCAL_DATA_DIR, { recursive: true });
   try {
     await access(LOCAL_SETTINGS_FILE);
@@ -30,6 +35,10 @@ async function ensureSettingsStore() {
 }
 
 export async function getLocalWorkspaceSettings() {
+  if (!shouldUseFilesystemLocalStore()) {
+    return defaultSettings;
+  }
+
   await ensureSettingsStore();
   const raw = await readFile(LOCAL_SETTINGS_FILE, "utf-8");
   return {
@@ -39,6 +48,13 @@ export async function getLocalWorkspaceSettings() {
 }
 
 export async function updateLocalWorkspaceSettings(updates: Partial<LocalWorkspaceSettings>) {
+  if (!shouldUseFilesystemLocalStore()) {
+    return {
+      ...defaultSettings,
+      ...updates,
+    };
+  }
+
   const current = await getLocalWorkspaceSettings();
   const next = {
     ...current,

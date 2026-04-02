@@ -1,6 +1,7 @@
 import { access, mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import { demoDoctors, type DemoDoctor } from "@/lib/demo/mock-data";
+import { shouldUseFilesystemLocalStore } from "@/lib/supabase/config";
 
 export interface LocalDoctorProfile extends DemoDoctor {
   organizationName: string;
@@ -17,6 +18,10 @@ function seedDoctors(): LocalDoctorProfile[] {
 }
 
 async function ensureDoctorStore() {
+  if (!shouldUseFilesystemLocalStore()) {
+    return;
+  }
+
   await mkdir(LOCAL_DATA_DIR, { recursive: true });
 
   try {
@@ -31,12 +36,20 @@ async function ensureDoctorStore() {
 }
 
 async function readLocalDoctors() {
+  if (!shouldUseFilesystemLocalStore()) {
+    return seedDoctors();
+  }
+
   await ensureDoctorStore();
   const raw = await readFile(LOCAL_DOCTORS_FILE, "utf-8");
   return JSON.parse(raw) as LocalDoctorProfile[];
 }
 
 async function writeLocalDoctors(doctors: LocalDoctorProfile[]) {
+  if (!shouldUseFilesystemLocalStore()) {
+    return;
+  }
+
   await ensureDoctorStore();
   await writeFile(LOCAL_DOCTORS_FILE, JSON.stringify(doctors, null, 2), "utf-8");
 }

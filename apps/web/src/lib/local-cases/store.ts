@@ -5,6 +5,7 @@ import { buildCaseReportPdf } from "@/lib/reports/pdf-report";
 import type { InferenceResult } from "@/lib/inference/service";
 import { demoCases, type DemoCaseRecord } from "@/lib/demo/mock-data";
 import { getDisplayCaseTitle, getDisplayPatientCode, getDisplayPatientName } from "@/lib/patient-display";
+import { shouldUseFilesystemLocalStore } from "@/lib/supabase/config";
 import {
   buildDefaultReportDraft,
   buildDefaultReviewChecklist,
@@ -79,6 +80,10 @@ function seedPatientsFromCases() {
 }
 
 async function ensureStore() {
+  if (!shouldUseFilesystemLocalStore()) {
+    return;
+  }
+
   await mkdir(LOCAL_UPLOADS_DIR, { recursive: true });
   await mkdir(LOCAL_REPORTS_DIR, { recursive: true });
 
@@ -104,12 +109,20 @@ async function ensureStore() {
 }
 
 async function readLocalCases() {
+  if (!shouldUseFilesystemLocalStore()) {
+    return normalizeCaseList(demoCases);
+  }
+
   await ensureStore();
   const raw = await readFile(LOCAL_CASES_FILE, "utf-8");
   return normalizeCaseList(JSON.parse(raw) as DemoCaseRecord[]);
 }
 
 async function writeLocalCases(cases: DemoCaseRecord[]) {
+  if (!shouldUseFilesystemLocalStore()) {
+    return;
+  }
+
   await ensureStore();
   await writeFile(
     LOCAL_CASES_FILE,
@@ -119,12 +132,20 @@ async function writeLocalCases(cases: DemoCaseRecord[]) {
 }
 
 async function readLocalPatients() {
+  if (!shouldUseFilesystemLocalStore()) {
+    return seedPatientsFromCases();
+  }
+
   await ensureStore();
   const raw = await readFile(LOCAL_PATIENTS_FILE, "utf-8");
   return normalizePatientList(JSON.parse(raw) as LocalPatientRecord[]);
 }
 
 async function writeLocalPatients(patients: LocalPatientRecord[]) {
+  if (!shouldUseFilesystemLocalStore()) {
+    return;
+  }
+
   await ensureStore();
   await writeFile(
     LOCAL_PATIENTS_FILE,

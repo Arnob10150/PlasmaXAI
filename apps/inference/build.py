@@ -9,13 +9,34 @@ REPO_ROOT = SERVICE_ROOT.parents[1]
 ASSET_ROOT = SERVICE_ROOT / "model_assets"
 
 REQUIRED_FILES = [
-    ("research/outputs/novel/novel_fusion_model.pth", "novel_outputs/novel_fusion_model.pth"),
-    ("research/outputs/novel/fusion_scalers.joblib", "novel_outputs/fusion_scalers.joblib"),
-    ("research/outputs/novel/counterfactual_bundle.joblib", "novel_outputs/counterfactual_bundle.joblib"),
-    ("research/outputs/novel/novel_summary.json", "novel_outputs/novel_summary.json"),
-    ("research/outputs/novel/plasmaxai_operating_point.json", "novel_outputs/plasmaxai_operating_point.json"),
-    ("research/outputs/optimization/checkpoints/resnet50_final.pth", "optimization_outputs/checkpoints/resnet50_final.pth"),
-    ("research/outputs/optimization/checkpoints/densenet121_final.pth", "optimization_outputs/checkpoints/densenet121_final.pth"),
+    (
+        "research/outputs/novel/novel_fusion_model.pth",
+        "research/outputs/novel/novel_fusion_model.pth",
+    ),
+    (
+        "research/outputs/novel/fusion_scalers.joblib",
+        "research/outputs/novel/fusion_scalers.joblib",
+    ),
+    (
+        "research/outputs/novel/counterfactual_bundle.joblib",
+        "research/outputs/novel/counterfactual_bundle.joblib",
+    ),
+    (
+        "research/outputs/novel/novel_summary.json",
+        "research/outputs/novel/novel_summary.json",
+    ),
+    (
+        "research/outputs/novel/plasmaxai_operating_point.json",
+        "research/outputs/novel/plasmaxai_operating_point.json",
+    ),
+    (
+        "research/outputs/optimization/checkpoints/resnet50_final.pth",
+        "research/outputs/optimization/checkpoints/resnet50_final.pth",
+    ),
+    (
+        "research/outputs/optimization/checkpoints/densenet121_final.pth",
+        "research/outputs/optimization/checkpoints/densenet121_final.pth",
+    ),
 ]
 
 

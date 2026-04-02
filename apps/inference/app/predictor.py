@@ -87,6 +87,22 @@ class PredictorConfig:
     supabase_service_role_key: str
 
 
+def _resolve_asset_directories(project_root: Path) -> tuple[Path, Path]:
+    nested_novel = project_root / "research" / "outputs" / "novel"
+    nested_checkpoints = project_root / "research" / "outputs" / "optimization" / "checkpoints"
+
+    if nested_novel.exists() and nested_checkpoints.exists():
+        return nested_novel, nested_checkpoints
+
+    flat_novel = project_root / "novel_outputs"
+    flat_checkpoints = project_root / "optimization_outputs" / "checkpoints"
+
+    if flat_novel.exists() and flat_checkpoints.exists():
+        return flat_novel, flat_checkpoints
+
+    return nested_novel, nested_checkpoints
+
+
 class PlasmaXAIPredictor:
     def __init__(self, config: PredictorConfig):
         self.config = config
@@ -343,10 +359,11 @@ def get_predictor() -> PlasmaXAIPredictor:
     staged_asset_root = service_root / "model_assets"
     default_project_root = staged_asset_root if staged_asset_root.exists() else Path(__file__).resolve().parents[3]
     project_root = Path(os.environ.get("PLASMAXAI_PROJECT_ROOT", default_project_root))
+    novel_outputs_dir, checkpoints_dir = _resolve_asset_directories(project_root)
     config = PredictorConfig(
         project_root=project_root,
-        novel_outputs_dir=project_root / "research" / "outputs" / "novel",
-        checkpoints_dir=project_root / "research" / "outputs" / "optimization" / "checkpoints",
+        novel_outputs_dir=novel_outputs_dir,
+        checkpoints_dir=checkpoints_dir,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         supabase_url=os.environ.get("SUPABASE_URL", ""),
         supabase_service_role_key=os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""),

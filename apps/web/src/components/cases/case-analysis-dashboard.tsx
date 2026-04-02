@@ -430,7 +430,7 @@ export function CaseAnalysisDashboard({
           </div>
           <div className="h-[220px] sm:h-[240px]">
             {mounted ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <RadarChart data={probabilityData} outerRadius="72%">
                   <PolarGrid stroke="#dbe7f4" />
                   <PolarAngleAxis dataKey="name" tick={{ fill: "#475569", fontSize: 12 }} />
@@ -465,7 +465,7 @@ export function CaseAnalysisDashboard({
           </div>
           <div className="h-[220px] sm:h-[240px]">
             {mounted ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <PieChart>
                   <Pie
                     data={gateData}
@@ -511,7 +511,7 @@ export function CaseAnalysisDashboard({
           </div>
           <div className="h-[220px] sm:h-[250px]">
             {mounted ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <BarChart data={morphologyData} layout="vertical" margin={{ left: 22, right: 6 }}>
                   <CartesianGrid stroke="#edf2f7" horizontal={false} />
                   <XAxis type="number" tickLine={false} axisLine={false} />
@@ -546,7 +546,7 @@ export function CaseAnalysisDashboard({
           </div>
           <div className="h-[200px] sm:h-[220px]">
             {mounted ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <AreaChart data={confidenceBandData}>
                   <defs>
                     <linearGradient id="confidenceBandFill" x1="0" x2="0" y1="0" y2="1">
@@ -583,7 +583,7 @@ export function CaseAnalysisDashboard({
           </div>
           <div className="h-[220px] sm:h-[250px]">
             {mounted ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <LineChart data={timelineData}>
                   <CartesianGrid stroke="#edf2f7" vertical={false} />
                   <XAxis dataKey="label" tickLine={false} axisLine={false} />

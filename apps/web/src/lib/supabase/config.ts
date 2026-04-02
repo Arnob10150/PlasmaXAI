@@ -27,6 +27,10 @@ export function hasSupabaseConfig() {
 }
 
 export function shouldUseFilesystemLocalStore() {
+  if (process.env.NODE_ENV === "production") {
+    return false;
+  }
+
   return !hasSupabaseConfig() && !isHostedDeployment();
 }
 

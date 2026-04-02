@@ -148,33 +148,33 @@ export function CaseInterpretationOverview({
       </div>
 
       <div className="grid gap-4">
-        <div className="rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#eff6ff,#f8fbff)] p-4">
+        <div className="flex min-h-[208px] flex-col justify-between rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#eff6ff,#f8fbff)] p-5">
           <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
             <i className="bi bi-speedometer2 text-sm text-blue-700" aria-hidden="true" />
             Diagnostic confidence
           </p>
-          <p className="mt-3 text-3xl font-semibold text-slate-950">{toPercent(confidence)}</p>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
+          <p className="mt-4 text-3xl font-semibold text-slate-950">{toPercent(confidence)}</p>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
             Strength of the current diagnostic support for this cell image.
           </p>
         </div>
-        <div className="rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#ecfdf5,#f8fffb)] p-4">
+        <div className="flex min-h-[208px] flex-col justify-between rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#ecfdf5,#f8fffb)] p-5">
           <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
             <i className="bi bi-diagram-3-fill text-sm text-emerald-700" aria-hidden="true" />
             Dominant drivers
           </p>
-          <p className="mt-3 text-lg font-semibold leading-7 text-slate-950">{primaryFeatureText}</p>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
+          <p className="mt-4 text-lg font-semibold leading-7 text-slate-950">{primaryFeatureText}</p>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
             Highest-yield morphology cues influencing the current interpretation.
           </p>
         </div>
-        <div className="rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#fff7ed,#fffdf7)] p-4">
+        <div className="flex min-h-[208px] flex-col justify-between rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#fff7ed,#fffdf7)] p-5">
           <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
             <i className="bi bi-clipboard2-check-fill text-sm text-amber-600" aria-hidden="true" />
             Review priority
           </p>
-          <p className="mt-3 text-lg font-semibold leading-7 text-slate-950">{getPriorityLabel(riskLevel, confidence)}</p>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
+          <p className="mt-4 text-lg font-semibold leading-7 text-slate-950">{getPriorityLabel(riskLevel, confidence)}</p>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
             Suggested review urgency based on current model output and confidence strength.
           </p>
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useFormStatus } from "react-dom";
 import type { CreateCaseState } from "@/app/(workspace)/new-case/actions";
 import { Badge } from "@/components/ui/badge";
@@ -27,9 +27,55 @@ export function NewCaseForm({
   action: (state: CreateCaseState, formData: FormData) => Promise<CreateCaseState>;
 }) {
   const [state, formAction] = useActionState(action, initialState);
+  const [clientCaseId, setClientCaseId] = useState("");
+  const [browserImageKey, setBrowserImageKey] = useState("");
+
+  useEffect(() => {
+    const nextId = `case-${Math.random().toString(36).slice(2, 10)}`;
+    setClientCaseId(nextId);
+    setBrowserImageKey(`browser-storage://${nextId}`);
+  }, []);
+
+  const hiddenStorageKey = useMemo(
+    () => (clientCaseId ? `plasmaxai-upload:${clientCaseId}` : ""),
+    [clientCaseId],
+  );
+
+  async function handleImageSelection(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file || !hiddenStorageKey) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const result = typeof reader.result === "string" ? reader.result : "";
+        if (!result) {
+          return;
+        }
+
+        window.localStorage.setItem(
+          hiddenStorageKey,
+          JSON.stringify({
+            fileName: file.name,
+            mimeType: file.type || "image/*",
+            dataUrl: result,
+            savedAt: Date.now(),
+          }),
+        );
+      } catch {
+        // If local storage is unavailable, the server path can still use manual references.
+      }
+    };
+    reader.readAsDataURL(file);
+  }
 
   return (
     <form action={formAction} className="space-y-6">
+      <input type="hidden" name="clientCaseId" value={clientCaseId} />
+      <input type="hidden" name="browserImageKey" value={browserImageKey} />
       <div className="grid gap-5 xl:grid-cols-[1.02fr_0.98fr]">
         <div className="rounded-[30px] border border-dashed border-blue-300 bg-[linear-gradient(180deg,#eff6ff,#f8fbff)] p-6 text-center sm:p-8">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-blue-700 shadow-sm">
@@ -48,6 +94,7 @@ export function NewCaseForm({
               accept="image/*"
               className="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-slate-950 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white"
               name="imageFile"
+              onChange={handleImageSelection}
               type="file"
             />
             <p className="mt-3 text-xs leading-5 text-slate-500">

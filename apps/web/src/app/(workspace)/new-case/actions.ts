@@ -169,6 +169,8 @@ export async function createCaseAction(
   const caseTitle = toNullableString(formData.get("caseTitle"));
   const clinicalNote = toNullableString(formData.get("clinicalNote"));
   const imageReference = toNullableString(formData.get("imageReference"));
+  const clientCaseId = toNullableString(formData.get("clientCaseId"));
+  const browserImageKey = toNullableString(formData.get("browserImageKey"));
   const imageFile = formData.get("imageFile");
   const uploadedFile = imageFile instanceof File && imageFile.size > 0 ? imageFile : null;
 
@@ -185,17 +187,20 @@ export async function createCaseAction(
         : await getLocalWorkspaceSettings();
 
       const hostedImageDataUrl =
-        shouldUseHostedDemoFallback() && uploadedFile ? await fileToDataUrl(uploadedFile) : null;
+        shouldUseHostedDemoFallback() && uploadedFile && uploadedFile.size <= 200_000
+          ? await fileToDataUrl(uploadedFile)
+          : null;
 
       const localCase = shouldUseHostedDemoFallback()
         ? await createHostedDemoCase({
+            caseId: clientCaseId,
             patientCode,
             patientName,
             caseTitle,
             clinicalNote,
             initialStatus: settings.defaultCaseStatus,
             imageDataUrl: hostedImageDataUrl,
-            imageReference,
+            imageReference: hostedImageDataUrl ? imageReference : browserImageKey || imageReference,
             imageFileName: uploadedFile?.name ?? null,
             imageMimeType: uploadedFile?.type ?? null,
           })

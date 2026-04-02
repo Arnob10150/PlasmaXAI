@@ -104,6 +104,7 @@ export async function updateHostedDemoDoctorProfile(
 }
 
 export async function createHostedDemoCase(options: {
+  caseId?: string | null;
   patientCode: string;
   patientName: string | null;
   caseTitle: string;
@@ -117,7 +118,7 @@ export async function createHostedDemoCase(options: {
   const cases = await getHostedDemoCases();
   const seed = demoCases[cases.length % demoCases.length] ?? demoCases[0];
   const now = new Date().toISOString();
-  const suffix = Date.now().toString().slice(-6);
+  const suffix = (options.caseId?.replace(/^case-/, "") || Date.now().toString().slice(-6)).slice(-8);
   const normalizedImageSource = options.imageDataUrl?.trim() || options.imageReference?.trim() || null;
   const normalizedFileName =
     options.imageFileName?.trim() ||
@@ -125,7 +126,7 @@ export async function createHostedDemoCase(options: {
     `case-image-${suffix}.png`;
   const nextCase: DemoCaseRecord = {
     ...seed,
-    id: `case-${suffix}`,
+    id: options.caseId?.trim() || `case-${suffix}`,
     caseCode: `PX-${suffix}`,
     title: options.caseTitle,
     notes: options.clinicalNote,

@@ -265,7 +265,7 @@ export function CaseAnalysisDashboard({
   ];
 
   return (
-    <section className="space-y-4 rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+    <section className="min-w-0 space-y-4 rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="inline-flex items-center gap-2 text-sm font-medium uppercase tracking-[0.2em] text-blue-700">
@@ -355,8 +355,8 @@ export function CaseAnalysisDashboard({
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+      <div className="grid min-w-0 gap-4 lg:grid-cols-2">
+        <div className="min-w-0 rounded-[24px] border border-slate-200 bg-white p-4">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <p className="inline-flex items-center gap-2 text-base font-semibold text-slate-950">
@@ -384,7 +384,7 @@ export function CaseAnalysisDashboard({
           </div>
         </div>
 
-        <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+        <div className="min-w-0 rounded-[24px] border border-slate-200 bg-white p-4">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <p className="inline-flex items-center gap-2 text-base font-semibold text-slate-950">
@@ -497,8 +497,8 @@ export function CaseAnalysisDashboard({
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
-        <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="min-w-0 rounded-[24px] border border-slate-200 bg-white p-4">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <p className="inline-flex items-center gap-2 text-base font-semibold text-slate-950">
@@ -531,7 +531,7 @@ export function CaseAnalysisDashboard({
           </div>
         </div>
 
-        <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+        <div className="min-w-0 rounded-[24px] border border-slate-200 bg-white p-4">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <p className="inline-flex items-center gap-2 text-base font-semibold text-slate-950">
@@ -568,7 +568,7 @@ export function CaseAnalysisDashboard({
           </div>
         </div>
 
-        <div className="rounded-[24px] border border-slate-200 bg-white p-4 lg:col-span-2">
+        <div className="min-w-0 rounded-[24px] border border-slate-200 bg-white p-4 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <p className="inline-flex items-center gap-2 text-base font-semibold text-slate-950">

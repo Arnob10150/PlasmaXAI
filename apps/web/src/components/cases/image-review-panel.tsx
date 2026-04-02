@@ -22,6 +22,7 @@ export function ImageReviewPanel({
   riskLevel,
   topFeatures = [],
 }: ImageReviewPanelProps) {
+  const [resolvedImageUrl, setResolvedImageUrl] = useState(imageUrl);
   const [adaptiveOverlayUrl, setAdaptiveOverlayUrl] = useState<string | null>(null);
   const overlaySource = heatmapUrl ?? adaptiveOverlayUrl;
   const overlayAvailable = Boolean(overlaySource);
@@ -31,6 +32,28 @@ export function ImageReviewPanel({
   const [contrast, setContrast] = useState(100);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!imageUrl.startsWith("browser-storage://")) {
+      setResolvedImageUrl(imageUrl);
+      return;
+    }
+
+    const storageKey = `plasmaxai-upload:${imageUrl.replace("browser-storage://", "")}`;
+
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      if (!raw) {
+        setResolvedImageUrl("");
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as { dataUrl?: string };
+      setResolvedImageUrl(parsed.dataUrl ?? "");
+    } catch {
+      setResolvedImageUrl("");
+    }
+  }, [imageUrl]);
 
   useEffect(() => {
     let active = true;
@@ -45,7 +68,7 @@ export function ImageReviewPanel({
 
     const image = new window.Image();
     image.crossOrigin = "anonymous";
-    image.src = imageUrl;
+    image.src = resolvedImageUrl;
 
     image.onload = () => {
       if (!active) {
@@ -107,7 +130,7 @@ export function ImageReviewPanel({
     return () => {
       active = false;
     };
-  }, [heatmapUrl, imageUrl]);
+  }, [heatmapUrl, resolvedImageUrl]);
 
   const overlayLabel = useMemo(() => {
     if (heatmapUrl) {
@@ -216,7 +239,7 @@ export function ImageReviewPanel({
                         alt={imageName}
                         className="h-full w-full object-contain select-none"
                         draggable={false}
-                        src={imageUrl}
+                        src={resolvedImageUrl}
                         style={filterStyle}
                       />
                       {showOverlay && overlaySource ? (

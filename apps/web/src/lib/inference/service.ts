@@ -181,15 +181,7 @@ function getInferenceApiUrl() {
     process.env.NEXT_PUBLIC_INFERENCE_URL?.trim() ||
     "";
 
-  if (explicit) {
-    return explicit;
-  }
-
-  if (isHostedDeployment() && process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}/api/inference`;
-  }
-
-  return "";
+  return explicit;
 }
 
 function isHostedDeployment() {
@@ -303,7 +295,7 @@ export async function queueCaseInference(payload: QueueInferencePayload) {
   return {
     queued: false,
     reason:
-      "Inference is not configured for this deployment. Set INFERENCE_API_URL or use the Vercel inference service route.",
+      "Inference is not configured for this deployment. Set INFERENCE_API_URL, INFERENCE_URL, or NEXT_PUBLIC_INFERENCE_URL to your deployed PlasmaXAI inference service.",
     result: null,
   };
 }

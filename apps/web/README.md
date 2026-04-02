@@ -57,11 +57,12 @@ Copy `.env.example` to `.env.local` and configure:
 - `NEXT_PUBLIC_SUPABASE_REPORT_BUCKET`
 - `PLASMAXAI_DISABLE_LOCAL_INFERENCE`
 
-Optional:
+Required for real model inference in hosted deployments:
 - `INFERENCE_API_URL`
 
-On Vercel Services, the site can also use the auto-generated `INFERENCE_URL`
-or `NEXT_PUBLIC_INFERENCE_URL` values from the `inference` service.
+Also supported:
+- `INFERENCE_URL`
+- `NEXT_PUBLIC_INFERENCE_URL`
 
 ## Vercel deployment
 
@@ -77,4 +78,4 @@ See:
 ## Notes
 
 - Local fallback mode is useful for demos and offline review.
-- For hosted clinical behavior, configure Supabase and the inference service.
+- For hosted clinical behavior, configure Supabase and point the web app to an external inference service.

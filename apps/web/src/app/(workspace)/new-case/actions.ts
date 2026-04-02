@@ -227,7 +227,7 @@ export async function createCaseAction(
           return {
             error:
               hostedInferenceReason ??
-              "Hosted inference service is unavailable right now. Please redeploy and try again.",
+              "The website is deployed, but real inference is not connected. Set INFERENCE_API_URL to your deployed PlasmaXAI inference service and try again.",
           };
         }
       }

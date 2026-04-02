@@ -5,15 +5,6 @@
       "entrypoint": "apps/web",
       "routePrefix": "/",
       "framework": "nextjs"
-    },
-    "inference": {
-      "entrypoint": "apps/inference/app/app.py",
-      "routePrefix": "/api/inference",
-      "memory": 3009,
-      "maxDuration": 60,
-      "includeFiles": [
-        "apps/inference/model_assets/**"
-      ]
     }
   }
 }

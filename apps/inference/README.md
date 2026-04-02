@@ -5,7 +5,7 @@ FastAPI wrapper around the final PlasmaXAI model artifacts.
 ## Location
 
 - Repository path: `apps/inference`
-- Deployment route in Vercel Services: `/api/inference`
+- intended deployment target: external Python host such as `Render`, `Railway`, `Fly.io`, or a VM
 
 ## What it does
 
@@ -53,12 +53,22 @@ cd "F:\BUET plasma\apps\inference"
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-## Vercel behavior
+## Why this is not deployed on Vercel
 
-The service is intended to be deployed through the root repository
-`vercel.json`, not a nested per-service Vercel config.
+The real PlasmaXAI inference stack includes:
 
-During hosted builds:
+- `torch`
+- `torchvision`
+- `timm`
+- `opencv-python-headless`
+- staged model checkpoints
+
+That package set exceeds Vercel's Python function bundle limits. The website is
+therefore deployed on Vercel, while the real model should be deployed on an
+external Python host.
+
+During hosted builds on an external Python platform:
+
 - `build.py` stages required model files into `model_assets/`
 - `app/predictor.py` prefers `model_assets/` automatically
 
@@ -67,11 +77,38 @@ During hosted builds:
 - `GET /health`
 - `POST /cases`
 
-When mounted under Vercel Services, those routes become:
-- `/api/inference/health`
-- `/api/inference/cases`
+Typical external deployment routes:
+
+- `https://your-inference-host/health`
+- `https://your-inference-host/cases`
 
 ## Website integration
 
 `apps/web` calls this service through `src/lib/inference/service.ts`.
+
+Set one of these in the Vercel web project:
+
+- `INFERENCE_API_URL`
+- `INFERENCE_URL`
+- `NEXT_PUBLIC_INFERENCE_URL`
+
+Example:
+
+```env
+INFERENCE_API_URL=https://plasmaxai-inference.onrender.com
+```
+
+## Docker deployment
+
+This folder now includes a `Dockerfile` so the service can be deployed as a
+container on platforms like Render, Railway, Fly.io, or any OCI-compatible
+host.
+
+Basic flow:
+
+```powershell
+cd "F:\BUET plasma\apps\inference"
+docker build -t plasmaxai-inference .
+docker run -p 8000:8000 plasmaxai-inference
+```
 

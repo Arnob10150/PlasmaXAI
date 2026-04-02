@@ -144,10 +144,16 @@ Research outputs:
 
 ## Deployment
 
-This repository is organized for a root-level Vercel **Services** deployment.
+This repository is organized for:
 
-- `apps/web` is mounted at `/`
-- `apps/inference` is mounted at `/api/inference`
+- `apps/web` deployed on `Vercel`
+- `apps/inference` deployed on an external Python host
+
+Why the split:
+
+- the real PlasmaXAI inference runtime exceeds Vercel Python function bundle limits
+- the website deploys cleanly on Vercel
+- the real model remains available through `INFERENCE_API_URL`
 
 Main deployment guide:
 

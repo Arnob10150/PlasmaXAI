@@ -13,6 +13,11 @@ app = FastAPI(
 )
 
 
+@app.on_event("startup")
+def warmup_predictor() -> None:
+    get_predictor()
+
+
 class CaseInferenceRequest(BaseModel):
     caseId: str = Field(..., min_length=1)
     caseCode: str = Field(..., min_length=1)

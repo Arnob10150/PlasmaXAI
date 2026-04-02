@@ -55,6 +55,7 @@ interface CaseAnalysisDashboardProps {
     riskScore: number;
     caseCode: string;
   }>;
+  showOverview?: boolean;
 }
 
 const probabilityPalette = ["#2563eb", "#0f766e", "#7c3aed", "#f97316"];
@@ -106,6 +107,82 @@ function getPriorityLabel(riskLevel: string | null, confidence: number | null) {
   return "Analysis pending";
 }
 
+interface CaseInterpretationOverviewProps {
+  predictedClass: string | null;
+  confidence: number | null;
+  riskLevel: string | null;
+  topFeatures: string[];
+}
+
+export function CaseInterpretationOverview({
+  predictedClass,
+  confidence,
+  riskLevel,
+  topFeatures,
+}: CaseInterpretationOverviewProps) {
+  const primaryFeatureText = topFeatures.length
+    ? topFeatures.slice(0, 3).map((item) => formatFeatureLabel(item)).join(", ")
+    : "case-specific morphology drivers";
+
+  return (
+    <section className="min-w-0 space-y-4 rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <div className="flex flex-col gap-3">
+        <div>
+          <p className="inline-flex items-center gap-2 text-sm font-medium uppercase tracking-[0.2em] text-blue-700">
+            <i className="bi bi-activity text-base" aria-hidden="true" />
+            Clinical interpretation
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+            {predictedClass ?? "Analysis in progress"}
+          </h2>
+          <p className="mt-2 text-sm leading-7 text-slate-600">
+            This review panel summarizes the fused PlasmaXAI decision, highlights the strongest morphology drivers, and places the result in patient context for hematopathology correlation.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Badge variant={riskLevel?.toLowerCase() === "high" ? "danger" : riskLevel?.toLowerCase() === "moderate" ? "warning" : riskLevel ? "success" : "neutral"}>
+            {riskLevel ? `${riskLevel} suspicion` : "Awaiting analysis"}
+          </Badge>
+          <Badge variant="info">{getPriorityLabel(riskLevel, confidence)}</Badge>
+        </div>
+      </div>
+
+      <div className="grid gap-4">
+        <div className="rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#eff6ff,#f8fbff)] p-4">
+          <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+            <i className="bi bi-speedometer2 text-sm text-blue-700" aria-hidden="true" />
+            Diagnostic confidence
+          </p>
+          <p className="mt-3 text-3xl font-semibold text-slate-950">{toPercent(confidence)}</p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Strength of the current diagnostic support for this cell image.
+          </p>
+        </div>
+        <div className="rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#ecfdf5,#f8fffb)] p-4">
+          <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+            <i className="bi bi-diagram-3-fill text-sm text-emerald-700" aria-hidden="true" />
+            Dominant drivers
+          </p>
+          <p className="mt-3 text-lg font-semibold leading-7 text-slate-950">{primaryFeatureText}</p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Highest-yield morphology cues influencing the current interpretation.
+          </p>
+        </div>
+        <div className="rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#fff7ed,#fffdf7)] p-4">
+          <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+            <i className="bi bi-clipboard2-check-fill text-sm text-amber-600" aria-hidden="true" />
+            Review priority
+          </p>
+          <p className="mt-3 text-lg font-semibold leading-7 text-slate-950">{getPriorityLabel(riskLevel, confidence)}</p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Suggested review urgency based on current model output and confidence strength.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function CaseAnalysisDashboard({
   predictedClass,
   confidence,
@@ -118,6 +195,7 @@ export function CaseAnalysisDashboard({
   recommendedAction,
   intervalComment,
   timeline,
+  showOverview = true,
 }: CaseAnalysisDashboardProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -266,59 +344,14 @@ export function CaseAnalysisDashboard({
 
   return (
     <section className="min-w-0 space-y-4 rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <p className="inline-flex items-center gap-2 text-sm font-medium uppercase tracking-[0.2em] text-blue-700">
-            <i className="bi bi-activity text-base" aria-hidden="true" />
-            Clinical interpretation
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-            {predictedClass ?? "Analysis in progress"}
-          </h2>
-          <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-            This review panel summarizes the fused PlasmaXAI decision, highlights the strongest morphology drivers, and places the result in patient context for hematopathology correlation.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge variant={riskLevel?.toLowerCase() === "high" ? "danger" : riskLevel?.toLowerCase() === "moderate" ? "warning" : riskLevel ? "success" : "neutral"}>
-            {riskLevel ? `${riskLevel} suspicion` : "Awaiting analysis"}
-          </Badge>
-          <Badge variant="info">{getPriorityLabel(riskLevel, confidence)}</Badge>
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <div className="rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#eff6ff,#f8fbff)] p-4">
-          <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
-            <i className="bi bi-speedometer2 text-sm text-blue-700" aria-hidden="true" />
-            Diagnostic confidence
-          </p>
-          <p className="mt-3 text-3xl font-semibold text-slate-950">{toPercent(confidence)}</p>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Strength of the current diagnostic support for this cell image.
-          </p>
-        </div>
-        <div className="rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#ecfdf5,#f8fffb)] p-4">
-          <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
-            <i className="bi bi-diagram-3-fill text-sm text-emerald-700" aria-hidden="true" />
-            Dominant drivers
-          </p>
-          <p className="mt-3 text-lg font-semibold leading-7 text-slate-950">{primaryFeatureText}</p>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Highest-yield morphology cues influencing the current interpretation.
-          </p>
-        </div>
-        <div className="rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#fff7ed,#fffdf7)] p-4">
-          <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
-            <i className="bi bi-clipboard2-check-fill text-sm text-amber-600" aria-hidden="true" />
-            Review priority
-          </p>
-          <p className="mt-3 text-lg font-semibold leading-7 text-slate-950">{getPriorityLabel(riskLevel, confidence)}</p>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Suggested review urgency based on current model output and confidence strength.
-          </p>
-        </div>
-      </div>
+      {showOverview ? (
+        <CaseInterpretationOverview
+          confidence={confidence}
+          predictedClass={predictedClass}
+          riskLevel={riskLevel}
+          topFeatures={topFeatures}
+        />
+      ) : null}
 
       <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
         <div className="mb-4">

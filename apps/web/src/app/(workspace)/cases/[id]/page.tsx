@@ -4,7 +4,7 @@ import {
   saveCaseWorkbenchAction,
   updateCaseReviewAction,
 } from "@/app/(workspace)/cases/[id]/actions";
-import { CaseAnalysisDashboard } from "@/components/cases/case-analysis-dashboard";
+import { CaseAnalysisDashboard, CaseInterpretationOverview } from "@/components/cases/case-analysis-dashboard";
 import { DoctorReviewWorkboard } from "@/components/cases/doctor-review-workboard";
 import { ImageReviewPanel } from "@/components/cases/image-review-panel";
 import { Badge } from "@/components/ui/badge";
@@ -168,46 +168,33 @@ export default async function CaseReviewPage({
 
       <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.2fr)_360px]">
         <div className="min-w-0 space-y-4">
-          <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            {image?.signedUrl ? (
-              <ImageReviewPanel
-                imageName={image.fileName}
-                imageUrl={image.signedUrl}
-                heatmapUrl={caseItem.explanation?.heatmapPath ?? null}
-                riskLevel={caseItem.prediction?.riskLevel ?? null}
-                topFeatures={caseItem.explanation?.topFeatures ?? []}
-              />
-            ) : (
-              <div className="flex aspect-[4/3] items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
-                No previewable image is available for this case yet.
-              </div>
-            )}
-          </section>
+          <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.92fr)]">
+            <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+              {image?.signedUrl ? (
+                <ImageReviewPanel
+                  imageName={image.fileName}
+                  imageUrl={image.signedUrl}
+                  heatmapUrl={caseItem.explanation?.heatmapPath ?? null}
+                  riskLevel={caseItem.prediction?.riskLevel ?? null}
+                  topFeatures={caseItem.explanation?.topFeatures ?? []}
+                />
+              ) : (
+                <div className="flex aspect-[4/3] items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
+                  No previewable image is available for this case yet.
+                </div>
+              )}
+            </section>
+
+            <CaseInterpretationOverview
+              confidence={caseItem.prediction?.confidence ?? null}
+              predictedClass={caseItem.prediction?.predictedClass ?? null}
+              riskLevel={caseItem.prediction?.riskLevel ?? null}
+              topFeatures={caseItem.explanation?.topFeatures ?? []}
+            />
+          </div>
 
           <section className="space-y-4 rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
-                <p className="text-sm font-medium text-slate-700">Predicted class</p>
-                <p className="mt-2 text-lg font-semibold text-slate-950">
-                  {caseItem.prediction?.predictedClass ?? "Awaiting analysis"}
-                </p>
-              </div>
-              <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
-                <p className="text-sm font-medium text-slate-700">Diagnostic confidence</p>
-                <p className="mt-2 text-lg font-semibold text-slate-950">
-                  {formatConfidence(caseItem.prediction?.confidence ?? null)}
-                </p>
-              </div>
-            </div>
-
             <div className="grid gap-4 lg:grid-cols-3">
-              <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4 lg:col-span-2">
-                <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
-                  <i className="bi bi-journal-medical text-sm text-blue-700" aria-hidden="true" />
-                  Clinical interpretation
-                </p>
-                <p className="mt-3 text-sm leading-7 text-slate-600">{doctorInsight}</p>
-              </div>
               <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
                 <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
                   <i className="bi bi-layers-half text-sm text-violet-700" aria-hidden="true" />
@@ -217,9 +204,6 @@ export default async function CaseReviewPage({
                   Warm overlay regions represent the cell areas receiving the strongest review emphasis. Use them to guide microscopy correlation, not as a standalone diagnosis.
                 </p>
               </div>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-2">
               <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
                 <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
                   <i className="bi bi-arrow-left-right text-sm text-emerald-700" aria-hidden="true" />
@@ -227,7 +211,6 @@ export default async function CaseReviewPage({
                 </p>
                 <p className="mt-3 text-sm leading-7 text-slate-600">{counterfactualNote}</p>
               </div>
-
               <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
                 <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
                   <i className="bi bi-clipboard2-check text-sm text-amber-600" aria-hidden="true" />
@@ -368,6 +351,7 @@ export default async function CaseReviewPage({
         probabilities={caseItem.analysis?.probabilities ?? null}
         recommendedAction={buildRecommendedAction(caseItem.prediction?.riskLevel, caseItem.prediction?.confidence)}
         riskLevel={caseItem.prediction?.riskLevel ?? null}
+        showOverview={false}
         timeline={timeline}
         topFeatures={caseItem.explanation?.topFeatures ?? []}
       />

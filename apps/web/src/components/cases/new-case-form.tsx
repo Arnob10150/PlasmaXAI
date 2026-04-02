@@ -67,7 +67,7 @@ export function NewCaseForm({
       nextImage.src = fileDataUrl;
     });
 
-    const maxDimension = 512;
+    const maxDimension = 384;
     const scale = Math.min(1, maxDimension / Math.max(image.width, image.height, 1));
     const width = Math.max(1, Math.round(image.width * scale));
     const height = Math.max(1, Math.round(image.height * scale));
@@ -81,7 +81,7 @@ export function NewCaseForm({
     }
 
     context.drawImage(image, 0, 0, width, height);
-    return canvas.toDataURL("image/jpeg", 0.9);
+    return canvas.toDataURL("image/jpeg", 0.82);
   }
 
   async function handleImageSelection(event: ChangeEvent<HTMLInputElement>) {

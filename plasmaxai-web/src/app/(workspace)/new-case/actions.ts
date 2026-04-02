@@ -384,7 +384,7 @@ export async function createCaseAction(
             .from("cases")
             .update({ status: "report_ready" })
             .eq("id", createdCaseId);
-        } else if (result.queued) {
+        } else {
           await supabase
             .from("cases")
             .update({ status: "queued_for_inference" })

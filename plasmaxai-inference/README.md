@@ -13,8 +13,12 @@ FastAPI wrapper around the current PlasmaXAI model artifacts.
 
 ## Files
 - `app/main.py` - FastAPI entrypoint
+- `app/app.py` - Vercel-compatible FastAPI entrypoint
 - `app/predictor.py` - model loading and inference logic
+- `build.py` - stages required model assets into the service for hosted builds
 - `requirements.txt` - Python dependencies
+- `pyproject.toml` - Vercel build script hook
+- `vercel.json` - Vercel function configuration
 - `.env.example` - runtime environment template
 
 ## Environment
@@ -43,6 +47,28 @@ python -m pip install -r requirements.txt
 cd "F:\BUET plasma\plasmaxai-inference"
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
+
+## Vercel deployment
+
+Create a second Vercel project for the inference service:
+
+1. Import the same GitHub repository.
+2. Set the Root Directory to `plasmaxai-inference`.
+3. In the Root Directory project settings, enable `Include source files outside of the Root Directory`.
+4. Add the environment variables from `.env.example`.
+5. Deploy.
+
+Hosted build notes:
+
+- `build.py` stages the required PlasmaXAI model assets into `model_assets/` during the Vercel build.
+- `app/app.py` exposes the FastAPI application at a Vercel-supported entrypoint.
+- `vercel.json` configures the Python function memory and duration budget.
+
+Important practical note:
+
+- This service is deployment-ready from a code/configuration perspective.
+- Real-world performance still depends on Vercel plan limits, cold starts, and PyTorch runtime size.
+- For the strongest production throughput, a dedicated GPU or persistent Python host is still the better long-term inference target.
 
 ## Endpoints
 ### `GET /health`

@@ -47,13 +47,31 @@ interface QueueInferencePayload {
   imageBucket?: string;
 }
 
+interface QueueInferenceResult {
+  queued: boolean;
+  reason: string | null;
+  result: InferenceResult | null;
+}
+
 const execFileAsync = promisify(execFile);
 
 function getInferenceApiUrl() {
-  return process.env.INFERENCE_API_URL?.trim() || "http://127.0.0.1:8000";
+  return process.env.INFERENCE_API_URL?.trim() || "";
 }
 
-async function runLocalInference(payload: QueueInferencePayload) {
+function isHostedDeployment() {
+  return Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+}
+
+function canUseLocalPythonFallback() {
+  if (process.env.PLASMAXAI_DISABLE_LOCAL_INFERENCE === "1") {
+    return false;
+  }
+
+  return !isHostedDeployment();
+}
+
+async function runLocalInference(payload: QueueInferencePayload): Promise<QueueInferenceResult> {
   const scriptPath = path.join(
     process.cwd(),
     "..",
@@ -113,10 +131,28 @@ export async function queueCaseInference(payload: QueueInferencePayload) {
 
       const result = (await response.json()) as InferenceResult;
       return { queued: true as const, reason: null, result };
-    } catch {
-      return runLocalInference(payload);
+    } catch (error) {
+      if (!canUseLocalPythonFallback()) {
+        return {
+          queued: false,
+          reason:
+            error instanceof Error
+              ? `Hosted inference service could not be reached: ${error.message}`
+              : "Hosted inference service could not be reached.",
+          result: null,
+        };
+      }
     }
   }
 
-  return runLocalInference(payload);
+  if (canUseLocalPythonFallback()) {
+    return runLocalInference(payload);
+  }
+
+  return {
+    queued: false,
+    reason:
+      "Inference is not configured for this deployment. Set INFERENCE_API_URL to a live PlasmaXAI inference endpoint.",
+    result: null,
+  };
 }

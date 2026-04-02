@@ -6,7 +6,7 @@ This version is prepared as a website-only release so it can be pushed to GitHub
 
 ## Release
 
-- Version: `v1.0.0`
+- Version: `v1.2.0`
 - Release date: `2026-04-02`
 - Target: `Vercel hosting`
 
@@ -55,22 +55,33 @@ bun run build
 
 Copy `.env.example` to `.env.local` and set the required variables if you want live Supabase mode.
 
-If no Supabase environment is configured, the site runs in local doctor/demo mode.
+If no Supabase environment is configured, the site falls back to local workstation mode for local evaluation only.
 
 ## Vercel Deployment
 
-1. Import this repo into Vercel.
-2. Set the project root to the website folder if needed.
-3. Add the environment variables from `.env.example`.
-4. Deploy.
+Create one Vercel project for the website:
+
+1. Import `Arnob10150/PlasmaXAI` into Vercel.
+2. Set the Root Directory to `plasmaxai-web`.
+3. Vercel will detect the local `vercel.json`.
+4. Add the environment variables from `.env.example`.
+5. Set `INFERENCE_API_URL` to the live PlasmaXAI inference service URL.
+6. Deploy.
 
 Recommended Vercel settings:
 
 - Framework preset: `Next.js`
+- Root Directory: `plasmaxai-web`
 - Install command: `bun install`
 - Build command: `bun run build`
+- Output directory: default
+
+Important production note:
+
+- For a real hosted deployment, configure `Supabase` and `INFERENCE_API_URL`.
+- The local filesystem fallback is intended for local review/testing, not persistent production hosting.
 
 ## Notes
 
 - `.next`, `node_modules`, local temp files, and env files are ignored.
-- This repo snapshot is intended to contain only the website app needed for hosting.
+- The website project is prepared for Vercel, but the full end-to-end workflow depends on the separate PlasmaXAI inference service being reachable.

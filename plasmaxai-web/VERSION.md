@@ -1,8 +1,8 @@
-PlasmaXAI Web v1.1.0
+PlasmaXAI Web v1.2.0
 ======================================================================
 
 Release name:
-Competition-ready clinical workspace release
+Vercel-ready clinical workspace release
 
 Release date:
 2026-04-02
@@ -16,7 +16,11 @@ What this version includes:
 - Case history, report, patient directory, and patient profile screens
 - Local patient CRUD support
 - Improved case review presentation for clinicians
+- Safer hosted inference behavior for Vercel deployments
+- Vercel project configuration for the website
+- Companion FastAPI Vercel deployment scaffolding in `plasmaxai-inference`
 - Research master package with archived diagrams and master records
+- Ultra-detailed full technical dossier for the competition and long-form review
 
 Primary app folder:
 F:\BUET plasma\plasmaxai-web

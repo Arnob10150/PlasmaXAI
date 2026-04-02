@@ -696,18 +696,22 @@ export async function getReportsData() {
     if (!shouldUseFilesystemLocalStore()) {
       const hostedCases = shouldUseHostedDemoFallback() ? await getSessionDemoCases() : getHostedDemoCases();
       return hostedCases.flatMap((item) =>
-        item.reports.map((report) => ({
-          id: report.id,
-          title: `${item.caseCode} report`,
-          generatedAt: report.generatedAt,
-          storagePath: report.storagePath,
-          reportType: report.reportType,
-          patientCode: item.patient?.code ?? "Unknown",
-          patientName: item.patient?.name ?? null,
-          caseId: item.id,
-          caseCode: item.caseCode,
-          signedUrl: report.signedUrl ?? null,
-        })),
+        (item.prediction
+          ? [
+              {
+                id: item.reports[0]?.id ?? `report-${item.id}`,
+                title: `${item.caseCode} report`,
+                generatedAt: item.reports[0]?.generatedAt ?? item.reviewedAt ?? item.createdAt,
+                storagePath: item.reports[0]?.storagePath ?? `/api/local-report-file/${item.id}`,
+                reportType: item.reports[0]?.reportType ?? "pdf",
+                patientCode: item.patient?.code ?? "Unknown",
+                patientName: item.patient?.name ?? null,
+                caseId: item.id,
+                caseCode: item.caseCode,
+                signedUrl: item.reports[0]?.signedUrl ?? `/api/local-report-file/${item.id}`,
+              },
+            ]
+          : []),
       );
     }
 
@@ -847,6 +851,18 @@ export async function getCaseDetail(caseId: string) {
           doctorInsight: localCase.explanation?.clinicalInsightText ?? null,
           recommendedAction: null,
         }),
+      reports:
+        !shouldUseFilesystemLocalStore() && localCase.prediction
+          ? [
+              {
+                id: localCase.reports[0]?.id ?? `report-${localCase.id}`,
+                storagePath: localCase.reports[0]?.storagePath ?? `/api/local-report-file/${localCase.id}`,
+                reportType: localCase.reports[0]?.reportType ?? "pdf",
+                generatedAt: localCase.reports[0]?.generatedAt ?? localCase.reviewedAt ?? localCase.createdAt,
+                signedUrl: localCase.reports[0]?.signedUrl ?? `/api/local-report-file/${localCase.id}`,
+              },
+            ]
+          : localCase.reports,
     };
   }
 

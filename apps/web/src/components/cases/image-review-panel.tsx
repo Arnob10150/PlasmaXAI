@@ -170,8 +170,8 @@ export function ImageReviewPanel({
         </div>
       </div>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <div className="self-start rounded-[24px] border border-slate-200 bg-slate-950 p-3 shadow-sm sm:p-4">
+      <div className="space-y-4">
+        <div className="rounded-[24px] border border-slate-200 bg-slate-950 p-3 shadow-sm sm:p-4">
           <TransformWrapper centerOnInit initialScale={1} minScale={0.8} maxScale={6} wheel={{ step: 0.15 }}>
             {({ zoomIn, zoomOut, resetTransform, centerView }) => (
               <>
@@ -247,53 +247,58 @@ export function ImageReviewPanel({
           </TransformWrapper>
         </div>
 
-        <aside className="self-start rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <div className="flex items-center gap-2 text-base font-semibold text-slate-950">
-            <i className="bi bi-sliders text-base text-blue-700" aria-hidden="true" />
-            Microscopy controls
-          </div>
-          <div className="mt-5 space-y-5 text-sm text-slate-600">
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <label className="font-medium text-slate-700">Brightness</label>
-                <span>{brightness}%</span>
-              </div>
-              <input className="w-full" max={160} min={70} onChange={(event) => setBrightness(Number(event.target.value))} type="range" value={brightness} />
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <section className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <div className="flex items-center gap-2 text-base font-semibold text-slate-950">
+              <i className="bi bi-sliders text-base text-blue-700" aria-hidden="true" />
+              Microscopy controls
             </div>
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <label className="font-medium text-slate-700">Contrast</label>
-                <span>{contrast}%</span>
+            <div className="mt-5 grid gap-5 text-sm text-slate-600 md:grid-cols-3">
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <label className="font-medium text-slate-700">Brightness</label>
+                  <span>{brightness}%</span>
+                </div>
+                <input className="w-full" max={160} min={70} onChange={(event) => setBrightness(Number(event.target.value))} type="range" value={brightness} />
               </div>
-              <input className="w-full" max={170} min={70} onChange={(event) => setContrast(Number(event.target.value))} type="range" value={contrast} />
-            </div>
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <label className="font-medium text-slate-700">Overlay opacity</label>
-                <span>{overlayOpacity}%</span>
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <label className="font-medium text-slate-700">Contrast</label>
+                  <span>{contrast}%</span>
+                </div>
+                <input className="w-full" max={170} min={70} onChange={(event) => setContrast(Number(event.target.value))} type="range" value={contrast} />
               </div>
-              <input
-                className="w-full disabled:opacity-40"
-                disabled={!overlayAvailable}
-                max={100}
-                min={0}
-                onChange={(event) => setOverlayOpacity(Number(event.target.value))}
-                type="range"
-                value={overlayOpacity}
-              />
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <label className="font-medium text-slate-700">Overlay opacity</label>
+                  <span>{overlayOpacity}%</span>
+                </div>
+                <input
+                  className="w-full disabled:opacity-40"
+                  disabled={!overlayAvailable}
+                  max={100}
+                  min={0}
+                  onChange={(event) => setOverlayOpacity(Number(event.target.value))}
+                  type="range"
+                  value={overlayOpacity}
+                />
+              </div>
             </div>
-            <div className="rounded-[22px] bg-slate-50 p-4">
+            <div className="mt-5 rounded-[22px] bg-slate-50 p-4">
               <p className="font-medium text-slate-900">Overlay guide</p>
               <p className="mt-2 text-xs leading-5 text-slate-500">
                 Warm regions highlight the parts of the cell receiving the strongest review emphasis. Use the overlay to support morphology review, not as a standalone diagnosis.
               </p>
             </div>
-            <div className="rounded-[22px] bg-slate-50 p-4">
+          </section>
+
+          <aside className="space-y-4">
+            <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
               <p className="font-medium text-slate-900">Top focus cues</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {topFeatures.length ? (
                   topFeatures.map((feature) => (
-                    <span key={feature} className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-sm">
+                    <span key={feature} className="rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700 shadow-sm">
                       {formatClinicalFeatureLabel(feature)}
                     </span>
                   ))
@@ -302,7 +307,8 @@ export function ImageReviewPanel({
                 )}
               </div>
             </div>
-            <div className="rounded-[22px] bg-slate-50 p-4">
+
+            <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
               <div className="flex items-center gap-2">
                 <i className="bi bi-badge-ad text-sm text-blue-700" aria-hidden="true" />
                 <p className="font-medium text-slate-900">Focus map preview</p>
@@ -321,8 +327,8 @@ export function ImageReviewPanel({
                 )}
               </div>
             </div>
-          </div>
-        </aside>
+          </aside>
+        </div>
       </div>
     </div>
   );

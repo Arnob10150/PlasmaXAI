@@ -19,7 +19,6 @@ const navigation = [
 
 interface WorkspaceShellProps {
   children: React.ReactNode;
-  doctorEmail: string;
   doctorName: string;
   specialization: string;
   demoMode?: boolean;
@@ -27,7 +26,6 @@ interface WorkspaceShellProps {
 
 export function WorkspaceShell({
   children,
-  doctorEmail,
   doctorName,
   specialization,
   demoMode = false,
@@ -82,9 +80,6 @@ export function WorkspaceShell({
                   <p className="truncate text-xs text-slate-500">{specialization}</p>
                 </div>
               </div>
-              <button className="flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:text-slate-950 hover:shadow-sm">
-                <i className="bi bi-bell-fill text-base" aria-hidden="true" />
-              </button>
             </div>
         </div>
         <nav className="border-t border-slate-200/80 bg-white/92 px-3 py-2 lg:hidden">
@@ -170,7 +165,6 @@ export function WorkspaceShell({
                   <p className="text-sm font-semibold text-slate-900">Doctor account</p>
                   <p className="mt-1 truncate text-sm font-medium text-slate-700">{doctorName}</p>
                   <p className="mt-1 text-sm text-slate-500">{specialization}</p>
-                  <p className="mt-1 truncate text-xs text-slate-400">{doctorEmail}</p>
                 </div>
               </div>
               <button

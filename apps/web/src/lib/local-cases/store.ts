@@ -4,6 +4,7 @@ import path from "path";
 import { buildCaseReportPdf } from "@/lib/reports/pdf-report";
 import type { InferenceResult } from "@/lib/inference/service";
 import { demoCases, type DemoCaseRecord } from "@/lib/demo/mock-data";
+import { getDisplayCaseTitle, getDisplayPatientCode, getDisplayPatientName } from "@/lib/patient-display";
 
 export interface LocalPatientRecord {
   id: string;
@@ -285,6 +286,7 @@ export async function createLocalCase(options: {
   dateOfBirth?: string | null;
   caseTitle: string;
   clinicalNote: string | null;
+  initialStatus?: string | null;
   imageFile?: File | null;
   imageReference?: string | null;
 }) {
@@ -335,7 +337,7 @@ export async function createLocalCase(options: {
     id: caseId,
     caseCode,
     title: options.caseTitle,
-    status: "new",
+    status: options.initialStatus?.trim() || "new",
     notes: options.clinicalNote,
     createdAt: now,
     reviewedAt: null,
@@ -538,9 +540,9 @@ export async function ensureLocalCaseReport(
 
   const pdfBytes = await buildCaseReportPdf({
     caseCode: caseItem.caseCode,
-    caseTitle: caseItem.title,
-    patientCode: caseItem.patient?.code ?? "PT-LOCAL",
-    patientName: caseItem.patient?.name ?? null,
+    caseTitle: getDisplayCaseTitle(caseItem.caseCode, caseItem.title),
+    patientCode: getDisplayPatientCode(caseItem.patient?.id ?? null, caseItem.patient?.code ?? null),
+    patientName: getDisplayPatientName(caseItem.patient?.id ?? null, caseItem.patient?.code ?? null, caseItem.patient?.name ?? null),
     doctorName: doctor?.doctorName?.trim() || "Clinical reviewer",
     specialization: doctor?.specialization?.trim() || "Hematopathology",
     clinicalNote: caseItem.notes,

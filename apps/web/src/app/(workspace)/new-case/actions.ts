@@ -7,6 +7,7 @@ import { buildCaseReportPdf } from "@/lib/reports/pdf-report";
 import { storageConfig } from "@/lib/constants";
 import { queueCaseInference, type InferenceResult } from "@/lib/inference/service";
 import { createLocalCase, updateLocalCaseInference } from "@/lib/local-cases/store";
+import { getLocalWorkspaceSettings } from "@/lib/local-settings/store";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/auth";
 
@@ -172,6 +173,7 @@ export async function createCaseAction(
     let localCaseId: string | null = null;
 
     try {
+      const settings = await getLocalWorkspaceSettings();
       const localCase = await createLocalCase({
         patientCode,
         patientName,
@@ -179,6 +181,7 @@ export async function createCaseAction(
         dateOfBirth,
         caseTitle,
         clinicalNote,
+        initialStatus: settings.defaultCaseStatus,
         imageFile: uploadedFile,
         imageReference,
       });

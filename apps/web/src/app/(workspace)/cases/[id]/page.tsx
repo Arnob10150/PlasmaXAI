@@ -156,65 +156,82 @@ export default async function CaseReviewPage({
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_370px]">
-        <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          {image?.signedUrl ? (
-            <ImageReviewPanel
-              imageName={image.fileName}
-              imageUrl={image.signedUrl}
-              heatmapUrl={caseItem.explanation?.heatmapPath ?? null}
-              riskLevel={caseItem.prediction?.riskLevel ?? null}
-              topFeatures={caseItem.explanation?.topFeatures ?? []}
-            />
-          ) : (
-            <div className="flex aspect-[4/3] items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
-              No previewable image is available for this case yet.
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_360px]">
+        <div className="space-y-4">
+          <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            {image?.signedUrl ? (
+              <ImageReviewPanel
+                imageName={image.fileName}
+                imageUrl={image.signedUrl}
+                heatmapUrl={caseItem.explanation?.heatmapPath ?? null}
+                riskLevel={caseItem.prediction?.riskLevel ?? null}
+                topFeatures={caseItem.explanation?.topFeatures ?? []}
+              />
+            ) : (
+              <div className="flex aspect-[4/3] items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
+                No previewable image is available for this case yet.
+              </div>
+            )}
+          </section>
+
+          <section className="space-y-4 rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-medium text-slate-700">Predicted class</p>
+                <p className="mt-2 text-lg font-semibold text-slate-950">
+                  {caseItem.prediction?.predictedClass ?? "Awaiting analysis"}
+                </p>
+              </div>
+              <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-medium text-slate-700">Diagnostic confidence</p>
+                <p className="mt-2 text-lg font-semibold text-slate-950">
+                  {formatConfidence(caseItem.prediction?.confidence ?? null)}
+                </p>
+              </div>
             </div>
-          )}
-        </section>
+
+            <div className="grid gap-4 lg:grid-cols-3">
+              <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4 lg:col-span-2">
+                <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
+                  <i className="bi bi-journal-medical text-sm text-blue-700" aria-hidden="true" />
+                  Clinical interpretation
+                </p>
+                <p className="mt-3 text-sm leading-7 text-slate-600">{doctorInsight}</p>
+              </div>
+              <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
+                <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
+                  <i className="bi bi-layers-half text-sm text-violet-700" aria-hidden="true" />
+                  Focus map reading
+                </p>
+                <p className="mt-3 text-sm leading-7 text-slate-600">
+                  Warm overlay regions represent the cell areas receiving the strongest review emphasis. Use them to guide microscopy correlation, not as a standalone diagnosis.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
+                <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
+                  <i className="bi bi-arrow-left-right text-sm text-emerald-700" aria-hidden="true" />
+                  What would lower suspicion
+                </p>
+                <p className="mt-3 text-sm leading-7 text-slate-600">{counterfactualNote}</p>
+              </div>
+
+              <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
+                <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
+                  <i className="bi bi-clipboard2-check text-sm text-amber-600" aria-hidden="true" />
+                  Recommended correlation
+                </p>
+                <p className="mt-3 text-sm leading-7 text-slate-600">
+                  {buildRecommendedAction(caseItem.prediction?.riskLevel, caseItem.prediction?.confidence)}
+                </p>
+              </div>
+            </div>
+          </section>
+        </div>
 
         <section className="space-y-4 rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
-            <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm font-medium text-slate-700">Predicted class</p>
-              <p className="mt-2 text-lg font-semibold text-slate-950">
-                {caseItem.prediction?.predictedClass ?? "Awaiting analysis"}
-              </p>
-            </div>
-            <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm font-medium text-slate-700">Diagnostic confidence</p>
-              <p className="mt-2 text-lg font-semibold text-slate-950">
-                {formatConfidence(caseItem.prediction?.confidence ?? null)}
-              </p>
-            </div>
-          </div>
-
-          <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
-            <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
-              <i className="bi bi-journal-medical text-sm text-blue-700" aria-hidden="true" />
-              Clinical interpretation
-            </p>
-            <p className="mt-3 text-sm leading-7 text-slate-600">{doctorInsight}</p>
-          </div>
-
-          <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
-            <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
-              <i className="bi bi-arrow-left-right text-sm text-emerald-700" aria-hidden="true" />
-              What would lower suspicion
-            </p>
-            <p className="mt-3 text-sm leading-7 text-slate-600">{counterfactualNote}</p>
-          </div>
-
-          <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
-            <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
-              <i className="bi bi-clipboard2-check text-sm text-amber-600" aria-hidden="true" />
-              Recommended correlation
-            </p>
-            <p className="mt-3 text-sm leading-7 text-slate-600">
-              {buildRecommendedAction(caseItem.prediction?.riskLevel, caseItem.prediction?.confidence)}
-            </p>
-          </div>
-
           <form action={updateCaseReviewAction} className="space-y-4 rounded-[22px] border border-slate-200 bg-slate-50 p-4">
             <input type="hidden" name="caseId" value={caseItem.id} />
             <input type="hidden" name="redirectTo" value="/history" />
@@ -275,11 +292,11 @@ export default async function CaseReviewPage({
 
             <div className="grid gap-3">
               <div className="grid gap-3 sm:grid-cols-2">
-                <Button type="submit">
+                <Button size="sm" type="submit">
                   <i className="bi bi-save2-fill text-sm" aria-hidden="true" />
                   Save review updates
                 </Button>
-                <Button className="w-full" formAction={deleteCaseAction} type="submit" variant="secondary">
+                <Button className="w-full" formAction={deleteCaseAction} size="sm" type="submit" variant="secondary">
                   <i className="bi bi-trash3-fill text-sm" aria-hidden="true" />
                   Delete case
                 </Button>
@@ -302,6 +319,32 @@ export default async function CaseReviewPage({
               )}
             </div>
           </form>
+
+          <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-4">
+            <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
+              <i className="bi bi-bezier2 text-sm text-blue-700" aria-hidden="true" />
+              Explainability cues
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {(caseItem.explanation?.topFeatures ?? []).length ? (
+                (caseItem.explanation?.topFeatures ?? []).map((feature) => (
+                  <span key={feature} className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-sm">
+                    {formatClinicalFeatureLabel(feature)}
+                  </span>
+                ))
+              ) : (
+                <span className="text-sm text-slate-500">Case-specific cues will appear after analysis.</span>
+              )}
+            </div>
+            <ul className="mt-4 space-y-2 text-sm leading-7 text-slate-600">
+              {morphologyFindings.slice(0, 3).map((finding) => (
+                <li key={finding} className="flex gap-2">
+                  <span className="mt-1 text-blue-700">-</span>
+                  <span>{finding}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </section>
       </div>
 
@@ -319,33 +362,7 @@ export default async function CaseReviewPage({
         topFeatures={caseItem.explanation?.topFeatures ?? []}
       />
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <h3 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-950">
-            <i className="bi bi-bezier2 text-base text-blue-700" aria-hidden="true" />
-            Explainable review cues
-          </h3>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {(caseItem.explanation?.topFeatures ?? []).length ? (
-              (caseItem.explanation?.topFeatures ?? []).map((feature) => (
-                <span key={feature} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                  {formatClinicalFeatureLabel(feature)}
-                </span>
-              ))
-            ) : (
-              <span className="text-sm text-slate-500">Case-specific cues will appear after analysis.</span>
-            )}
-          </div>
-          <ul className="mt-4 space-y-2 text-sm leading-7 text-slate-600">
-            {morphologyFindings.map((finding) => (
-              <li key={finding} className="flex gap-2">
-                <span className="mt-1 text-blue-700">-</span>
-                <span>{finding}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-
+      <div className="grid gap-4 xl:grid-cols-1">
         <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <h3 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-950">
             <i className="bi bi-clipboard-heart text-base text-blue-700" aria-hidden="true" />

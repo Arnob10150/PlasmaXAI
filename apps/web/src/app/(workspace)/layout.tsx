@@ -19,7 +19,6 @@ export default async function WorkspaceLayout({
   return (
     <WorkspaceShell
       demoMode={!hasSupabaseConfig()}
-      doctorEmail={user.email ?? ""}
       doctorName={getDoctorName(user)}
       specialization={user.user_metadata?.specialization ?? "Clinical reviewer"}
     >

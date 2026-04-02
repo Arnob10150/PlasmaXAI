@@ -27,7 +27,6 @@ export function DoctorProfileForm({
 }: {
   doctor: {
     fullName: string;
-    email: string;
     specialization: string;
     organizationName: string;
   };
@@ -63,16 +62,6 @@ export function DoctorProfileForm({
             defaultValue={doctor.fullName}
             name="fullName"
           />
-        </div>
-
-        <div>
-          <label className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-slate-700">
-            <i className="bi bi-envelope-fill text-sm text-blue-700" aria-hidden="true" />
-            Work email
-          </label>
-          <div className="flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-600">
-            {doctor.email}
-          </div>
         </div>
 
         <div>

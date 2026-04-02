@@ -141,14 +141,14 @@ export function buildDoctorFacingCounterfactual(input: ClinicalExplainabilityInp
   }
 
   if (risk === "high" || confidence >= 0.9) {
-    return `A lower-suspicion interpretation would require a visibly reduced emphasis in ${featureText}. In practical review terms, the cell would need to look less atypical and more consistent with a benign plasma-cell pattern.`;
+    return `A lower-suspicion interpretation would require a visibly reduced emphasis in ${featureText}. In review terms, the cell would need to show less nuclear dominance, less abnormal stain behavior, and a morphology pattern closer to a benign or treatment-responsive plasma-cell appearance.`;
   }
 
   if (risk === "moderate" || confidence >= 0.75) {
-    return `This case would move toward a lower-suspicion reading if ${featureText} became less pronounced. At present, these cues are still prominent enough to justify closer clinical correlation.`;
+    return `This case would move toward a lower-suspicion reading if ${featureText} became less pronounced. At present, these cues remain strong enough that the cell still sits near the suspicious range and merits clinical correlation or second-reader review.`;
   }
 
-  return `The image already sits in a lower-suspicion range, but even less prominence in ${featureText} would further strengthen a benign-leaning interpretation.`;
+  return `The image already sits in a lower-suspicion range, but even less prominence in ${featureText} would further strengthen a benign-leaning interpretation and support routine follow-up rather than escalation.`;
 }
 
 export function buildDoctorFacingInsight(input: ClinicalExplainabilityInput) {
@@ -158,16 +158,16 @@ export function buildDoctorFacingInsight(input: ClinicalExplainabilityInput) {
   const confidence = input.confidence ?? 0;
 
   if (risk === "high") {
-    return `PlasmaXAI identifies a high-suspicion plasma-cell morphology profile. The strongest support comes from ${featureText}, and the overall pattern remains well separated from the lower-suspicion range. Correlation with smear findings, plasma-cell burden, and ancillary studies is recommended before final sign-out.`;
+    return `PlasmaXAI identifies a high-suspicion plasma-cell morphology profile. The strongest support comes from ${featureText}, and the combined image-plus-morphology pattern remains clearly separated from the lower-suspicion range. This should be correlated with the smear field, plasma-cell burden, marrow context, and any ancillary studies before final sign-out.`;
   }
 
   if (risk === "moderate") {
-    return `PlasmaXAI places this image in an intermediate review zone. The strongest support comes from ${featureText}, but the case remains closer to the decision boundary than clearly high-suspicion examples. This is best interpreted alongside prior morphology and the broader clinical picture.`;
+    return `PlasmaXAI places this image in an intermediate review zone. The strongest support comes from ${featureText}, but the case remains closer to the decision boundary than clearly high-suspicion examples. It is best interpreted alongside prior morphology, the current focus map, and the broader clinical picture.`;
   }
 
   if (confidence >= 0.8) {
-    return `PlasmaXAI supports a lower-suspicion morphology profile for this image. The observed pattern is less consistent with malignant plasma-cell references, although ${featureText} still remain part of the interpretive context. Routine clinical and morphologic correlation is still appropriate.`;
+    return `PlasmaXAI supports a lower-suspicion morphology profile for this image. The observed pattern is less consistent with malignant plasma-cell references, although ${featureText} still remain part of the interpretive context. Routine morphologic correlation remains appropriate before closing the case.`;
   }
 
-  return `PlasmaXAI currently favors a lower-suspicion interpretation, but the signal is not intended to replace microscopy review. The image should still be correlated with morphologic impression, prior cases, and laboratory context.`;
+  return `PlasmaXAI currently favors a lower-suspicion interpretation, but the signal is not intended to replace microscopy review. The image should still be correlated with the morphologic impression, prior cases, laboratory context, and any relevant treatment interval.`;
 }

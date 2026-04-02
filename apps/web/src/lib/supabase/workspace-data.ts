@@ -4,6 +4,7 @@ import {
   listLocalCases,
   listLocalPatients,
 } from "@/lib/local-cases/store";
+import { getDisplayCaseTitle, getDisplayPatientCode, getDisplayPatientName } from "@/lib/patient-display";
 import { hasSupabaseConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -128,11 +129,15 @@ function formatCase(raw: any): CaseSummary {
   const patient = asSingle(raw.patient);
   const prediction = asSingle(raw.prediction);
   const explanation = asSingle(raw.explanation);
+  const normalizedPatientCode = patient ? getDisplayPatientCode(patient.id, patient.patient_code) : null;
+  const normalizedPatientName = patient
+    ? getDisplayPatientName(patient.id, patient.patient_code, patient.full_name ?? null)
+    : null;
 
   return {
     id: raw.id,
     caseCode: raw.case_code,
-    title: raw.title,
+    title: getDisplayCaseTitle(raw.case_code, raw.title),
     status: raw.status,
     notes: raw.notes ?? null,
     createdAt: raw.created_at,
@@ -140,8 +145,8 @@ function formatCase(raw: any): CaseSummary {
     patient: patient
       ? {
           id: patient.id,
-          code: patient.patient_code,
-          name: patient.full_name ?? null,
+          code: normalizedPatientCode ?? patient.patient_code,
+          name: normalizedPatientName,
         }
       : null,
     prediction: prediction
@@ -225,6 +230,14 @@ async function fetchCases(options: FetchCaseOptions = {}) {
 
     return items.map((item) => ({
       ...item,
+      title: getDisplayCaseTitle(item.caseCode, item.title),
+      patient: item.patient
+        ? {
+            ...item.patient,
+            code: getDisplayPatientCode(item.patient.id, item.patient.code),
+            name: getDisplayPatientName(item.patient.id, item.patient.code, item.patient.name),
+          }
+        : null,
       reports: options.includeReports ? item.reports : [],
       images: options.includeImages ? item.images : [],
       explanation: options.includeExplanation ? item.explanation : null,
@@ -420,16 +433,18 @@ export async function getPatientsData() {
       .map((patient) => {
         const patientCases = cases.filter((item) => item.patient?.id === patient.id);
         const latestCase = patientCases[0] ?? null;
+        const displayCode = getDisplayPatientCode(patient.id, patient.code);
+        const displayName = getDisplayPatientName(patient.id, patient.code, patient.name);
 
-        return {
-          id: patient.id,
-          code: patient.code,
-          name: patient.name,
-          sex: patient.sex,
-          dateOfBirth: patient.dateOfBirth,
-          caseCount: patientCases.length,
-          latestCaseAt: latestCase?.createdAt ?? patient.updatedAt,
-          latestCaseCode: latestCase?.caseCode ?? "No cases yet",
+      return {
+        id: patient.id,
+        code: displayCode,
+        name: displayName,
+        sex: patient.sex,
+        dateOfBirth: patient.dateOfBirth,
+        caseCount: patientCases.length,
+        latestCaseAt: latestCase?.createdAt ?? patient.updatedAt,
+        latestCaseCode: latestCase ? `${latestCase.caseCode} - ${getDisplayCaseTitle(latestCase.caseCode, latestCase.title)}` : "No cases yet",
         };
       })
       .sort(
@@ -464,16 +479,18 @@ export async function getPatientsData() {
     .map((patient) => {
       const patientCases = cases.filter((item) => item.patient?.id === patient.id);
       const latestCase = patientCases[0] ?? null;
+      const displayCode = getDisplayPatientCode(patient.id, patient.patient_code);
+      const displayName = getDisplayPatientName(patient.id, patient.patient_code, patient.full_name ?? null);
 
       return {
         id: patient.id,
-        code: patient.patient_code,
-        name: patient.full_name ?? null,
+        code: displayCode,
+        name: displayName,
         sex: patient.sex ?? null,
         dateOfBirth: patient.date_of_birth ?? null,
         caseCount: patientCases.length,
         latestCaseAt: latestCase?.createdAt ?? patient.created_at,
-        latestCaseCode: latestCase?.caseCode ?? "No cases yet",
+        latestCaseCode: latestCase ? `${latestCase.caseCode} - ${getDisplayCaseTitle(latestCase.caseCode, latestCase.title)}` : "No cases yet",
       };
     })
     .sort(
@@ -501,8 +518,8 @@ export async function getPatientDetail(patientId: string): Promise<PatientDetail
     return {
       patient: {
         id: patient.id,
-        code: patient.code,
-        name: patient.name,
+        code: getDisplayPatientCode(patient.id, patient.code),
+        name: getDisplayPatientName(patient.id, patient.code, patient.name),
         sex: patient.sex,
         dateOfBirth: patient.dateOfBirth,
         createdAt: patient.createdAt,
@@ -563,8 +580,8 @@ export async function getPatientDetail(patientId: string): Promise<PatientDetail
   return {
     patient: {
       id: patientRow.id,
-      code: patientRow.patient_code,
-      name: patientRow.full_name ?? null,
+      code: getDisplayPatientCode(patientRow.id, patientRow.patient_code),
+      name: getDisplayPatientName(patientRow.id, patientRow.patient_code, patientRow.full_name ?? null),
       sex: patientRow.sex ?? null,
       dateOfBirth: patientRow.date_of_birth ?? null,
       createdAt: patientRow.created_at,
@@ -657,6 +674,14 @@ export async function getCaseDetail(caseId: string) {
     if (localCase.prediction && !localCase.reports.length) {
       return {
         ...localCase,
+        title: getDisplayCaseTitle(localCase.caseCode, localCase.title),
+        patient: localCase.patient
+          ? {
+              ...localCase.patient,
+              code: getDisplayPatientCode(localCase.patient.id, localCase.patient.code),
+              name: getDisplayPatientName(localCase.patient.id, localCase.patient.code, localCase.patient.name),
+            }
+          : null,
         reports: [
           {
             id: `report-${localCase.id}`,
@@ -669,7 +694,17 @@ export async function getCaseDetail(caseId: string) {
       };
     }
 
-    return localCase;
+    return {
+      ...localCase,
+      title: getDisplayCaseTitle(localCase.caseCode, localCase.title),
+      patient: localCase.patient
+        ? {
+            ...localCase.patient,
+            code: getDisplayPatientCode(localCase.patient.id, localCase.patient.code),
+            name: getDisplayPatientName(localCase.patient.id, localCase.patient.code, localCase.patient.name),
+          }
+        : null,
+    };
   }
 
   const supabase = await createClient();

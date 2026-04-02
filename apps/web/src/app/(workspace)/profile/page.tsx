@@ -36,7 +36,6 @@ export default async function ProfilePage() {
         action={updateProfileAction}
         doctor={{
           fullName,
-          email: user.email ?? "",
           specialization,
           organizationName,
         }}

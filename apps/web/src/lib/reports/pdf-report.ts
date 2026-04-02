@@ -658,6 +658,121 @@ function drawCueBars(
   return next;
 }
 
+function drawExplainabilityDiagramPanel(
+  state: { page: PDFPage; y: number },
+  pdfDoc: PDFDocument,
+  titleFont: PDFFont,
+  bodyFont: PDFFont,
+  cueLabels: string[],
+) {
+  const panelHeight = 188;
+  let next = ensureSpace(state, pdfDoc, panelHeight + 10);
+
+  next.page.drawRectangle({
+    x: margin,
+    y: next.y - panelHeight,
+    width: contentWidth,
+    height: panelHeight,
+    color: panelFill,
+    borderColor,
+    borderWidth: 1,
+  });
+
+  next.page.drawText("Explainability diagram", {
+    x: margin + 16,
+    y: next.y - 22,
+    size: 13,
+    font: titleFont,
+    color: titleColor,
+  });
+
+  next.page.drawText("PlasmaXAI review path from image reading to doctor-facing interpretation.", {
+    x: margin + 16,
+    y: next.y - 40,
+    size: 10.5,
+    font: bodyFont,
+    color: bodyColor,
+  });
+
+  const boxes = [
+    {
+      x: margin + 18,
+      label: "Microscopy image",
+      detail: "Original cell image\nused for review",
+      color: softBlue,
+    },
+    {
+      x: margin + 195,
+      label: "Focus map + cues",
+      detail: cueLabels.slice(0, 2).join("\n") || "Morphology cues",
+      color: softTeal,
+    },
+    {
+      x: margin + 372,
+      label: "Clinical interpretation",
+      detail: "Doctor-facing\nreview summary",
+      color: softAmber,
+    },
+  ];
+
+  for (const [index, box] of boxes.entries()) {
+    next.page.drawRectangle({
+      x: box.x,
+      y: next.y - 146,
+      width: 150,
+      height: 86,
+      color: box.color,
+      borderColor,
+      borderWidth: 1,
+    });
+
+    next.page.drawText(box.label, {
+      x: box.x + 12,
+      y: next.y - 84,
+      size: 11,
+      font: titleFont,
+      color: titleColor,
+    });
+
+    const detailLines = box.detail.split("\n");
+    detailLines.forEach((line, lineIndex) => {
+      next.page.drawText(line, {
+        x: box.x + 12,
+        y: next.y - 106 - lineIndex * 14,
+        size: 9.5,
+        font: bodyFont,
+        color: bodyColor,
+      });
+    });
+
+    if (index < boxes.length - 1) {
+      const arrowStartX = box.x + 150;
+      const arrowY = next.y - 103;
+      next.page.drawLine({
+        start: { x: arrowStartX + 8, y: arrowY },
+        end: { x: arrowStartX + 24, y: arrowY },
+        thickness: 2,
+        color: accentBlue,
+      });
+      next.page.drawLine({
+        start: { x: arrowStartX + 24, y: arrowY },
+        end: { x: arrowStartX + 18, y: arrowY + 5 },
+        thickness: 2,
+        color: accentBlue,
+      });
+      next.page.drawLine({
+        start: { x: arrowStartX + 24, y: arrowY },
+        end: { x: arrowStartX + 18, y: arrowY - 5 },
+        thickness: 2,
+        color: accentBlue,
+      });
+    }
+  }
+
+  next.y -= panelHeight + 10;
+  return next;
+}
+
 export async function buildCaseReportPdf(input: ReportInput) {
   const pdfDoc = await PDFDocument.create();
   const titleFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -781,6 +896,14 @@ export async function buildCaseReportPdf(input: ReportInput) {
     caseImage,
     cueBars,
     input.result.prediction.riskLevel,
+  );
+  state = drawSectionTitle(state, pdfDoc, titleFont, "Explainability diagrams");
+  state = drawExplainabilityDiagramPanel(
+    state,
+    pdfDoc,
+    titleFont,
+    bodyFont,
+    cueBars.map((item) => item.label),
   );
   state = drawConfidenceBand(
     state,

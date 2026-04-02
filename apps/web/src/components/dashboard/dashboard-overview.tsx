@@ -152,8 +152,8 @@ export function DashboardOverview({ data }: DashboardOverviewProps) {
         })}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.35fr_1fr]">
-        <div className="rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[1.35fr_1fr]">
+        <div className="min-w-0 rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-5 flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2 text-lg font-semibold text-slate-950">
@@ -164,9 +164,9 @@ export function DashboardOverview({ data }: DashboardOverviewProps) {
             </div>
             <Badge variant="info">{totalActivity} cases this week</Badge>
           </div>
-          <div className="h-[220px] sm:h-[280px]">
+          <div className="h-[220px] min-w-0 sm:h-[280px]">
             {mounted ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={220}>
                 <AreaChart data={data.activityTrend}>
                   <defs>
                     <linearGradient id="confidenceFill" x1="0" x2="0" y1="0" y2="1">
@@ -187,7 +187,7 @@ export function DashboardOverview({ data }: DashboardOverviewProps) {
           </div>
         </div>
 
-        <div className="rounded-[30px] border border-slate-200 bg-slate-950 p-5 text-white shadow-[0_20px_50px_rgba(15,23,42,0.14)]">
+        <div className="min-w-0 rounded-[30px] border border-slate-200 bg-slate-950 p-5 text-white shadow-[0_20px_50px_rgba(15,23,42,0.14)]">
           <div className="mb-5">
             <div className="flex items-center gap-2 text-lg font-semibold">
               <i className="bi bi-bar-chart-line-fill text-base text-cyan-300" aria-hidden="true" />
@@ -195,9 +195,9 @@ export function DashboardOverview({ data }: DashboardOverviewProps) {
             </div>
             <p className="text-sm text-slate-300">Daily created cases across the last seven days</p>
           </div>
-          <div className="h-[220px] sm:h-[280px]">
+          <div className="h-[220px] min-w-0 sm:h-[280px]">
             {mounted ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={220}>
                 <BarChart data={data.activityTrend}>
                   <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
                   <XAxis dataKey="day" tick={{ fill: "#cbd5e1" }} tickLine={false} axisLine={false} />

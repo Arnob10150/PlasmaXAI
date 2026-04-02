@@ -33,7 +33,29 @@ export function ImageReviewPanel({
   const [brightness, setBrightness] = useState(100);
   const [contrast, setContrast] = useState(100);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFocusMapViewerOpen, setIsFocusMapViewerOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isFocusMapViewerOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsFocusMapViewerOpen(false);
+      }
+    };
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isFocusMapViewerOpen]);
 
   useEffect(() => {
     if (!imageUrl.startsWith("browser-storage://")) {
@@ -362,11 +384,25 @@ export function ImageReviewPanel({
               </div>
               <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950/90">
                 {overlaySource ? (
-                  <img
-                    alt="Focus map preview"
-                    className="aspect-square w-full object-contain"
-                    src={overlaySource}
-                  />
+                  <button
+                    aria-label="Open focus map preview"
+                    className="group block w-full text-left"
+                    onClick={() => setIsFocusMapViewerOpen(true)}
+                    type="button"
+                  >
+                    <div className="relative overflow-hidden">
+                      <img
+                        alt="Focus map preview"
+                        className="aspect-square w-full object-contain transition duration-300 group-hover:scale-[1.02]"
+                        src={overlaySource}
+                      />
+                      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_35%,rgba(2,6,23,0.4)_100%)]" />
+                      <div className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-slate-950/75 px-3 py-1 text-xs font-medium text-white backdrop-blur">
+                        <i className="bi bi-arrows-fullscreen text-xs" aria-hidden="true" />
+                        Click to expand
+                      </div>
+                    </div>
+                  </button>
                 ) : (
                   <div className="flex aspect-square items-center justify-center px-4 text-center text-xs leading-5 text-slate-500">
                     The focus map appears as soon as the viewer derives one from the current image or a model heatmap is attached.
@@ -377,6 +413,41 @@ export function ImageReviewPanel({
           </aside>
         </div>
       </div>
+
+      {isFocusMapViewerOpen && overlaySource ? (
+        <motion.div
+          animate={{ opacity: 1 }}
+          aria-modal="true"
+          className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-950/74 px-4 py-6 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          onClick={() => setIsFocusMapViewerOpen(false)}
+          role="dialog"
+        >
+          <motion.div
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="relative flex max-h-full max-w-[92vw] items-center justify-center"
+            initial={{ opacity: 0, scale: 0.96, y: 10 }}
+            onClick={(event) => event.stopPropagation()}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+          >
+            <Button
+              className="absolute right-3 top-3 z-10"
+              onClick={() => setIsFocusMapViewerOpen(false)}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
+              <i className="bi bi-x-lg text-sm" aria-hidden="true" />
+              Close
+            </Button>
+            <img
+              alt="Expanded focus map preview"
+              className="max-h-[88vh] max-w-[88vw] rounded-[28px] border border-white/10 bg-slate-950/90 object-contain shadow-2xl"
+              src={overlaySource}
+            />
+          </motion.div>
+        </motion.div>
+      ) : null}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useFormStatus } from "react-dom";
 import type { CreateCaseState } from "@/app/(workspace)/new-case/actions";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,11 @@ const initialState: CreateCaseState = {
 };
 
 const NEW_CASE_SESSION_KEY = "plasmaxai-new-case-draft";
+const NEW_CASE_BACKUP_KEY = "plasmaxai-new-case-draft-backup";
+const PREPARED_IMAGE_STORAGE_PREFIX = "plasmaxai-upload:";
+const MAX_PREPARED_IMAGE_DIMENSION = 336;
+const PREPARED_IMAGE_QUALITY = 0.88;
+const INFERENCE_WARMUP_INTERVAL_MS = 45_000;
 
 interface NewCaseDraftState {
   clientCaseId: string;
@@ -25,6 +30,15 @@ interface NewCaseDraftState {
   preparedImageDataUrl: string;
   preparedImageFileName: string;
   preparedImageMimeType: string;
+}
+
+interface PersistedNewCaseDraftState extends Omit<NewCaseDraftState, "preparedImageDataUrl"> {}
+
+interface StoredPreparedImageAsset {
+  fileName: string;
+  mimeType: string;
+  dataUrl: string;
+  savedAt: number;
 }
 
 function createDraftIdentifiers() {
@@ -48,6 +62,117 @@ function createEmptyDraftState(): NewCaseDraftState {
     preparedImageDataUrl: "",
     preparedImageFileName: "",
     preparedImageMimeType: "",
+  };
+}
+
+function getPreparedImageStorageKey(clientCaseId: string) {
+  return clientCaseId ? `${PREPARED_IMAGE_STORAGE_PREFIX}${clientCaseId}` : "";
+}
+
+function replaceFileExtension(fileName: string, nextExtension: string) {
+  const base = fileName.replace(/\.[^.]+$/, "");
+  return `${base || "prepared-image"}${nextExtension}`;
+}
+
+function readStoredJson<T>(storage: Storage, key: string) {
+  const raw = storage.getItem(key);
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
+function readPreparedImageAsset(storageKey: string) {
+  if (!storageKey) {
+    return null;
+  }
+
+  try {
+    const stored = readStoredJson<StoredPreparedImageAsset>(window.localStorage, storageKey);
+    if (!stored?.dataUrl) {
+      return null;
+    }
+
+    return stored;
+  } catch {
+    return null;
+  }
+}
+
+function writePreparedImageAsset(storageKey: string, asset: StoredPreparedImageAsset) {
+  if (!storageKey) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(storageKey, JSON.stringify(asset));
+  } catch {
+    // Ignore storage quota issues; the in-memory draft can still submit.
+  }
+}
+
+function clearPreparedImageAsset(storageKey: string) {
+  if (!storageKey) {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(storageKey);
+  } catch {
+    // Ignore storage cleanup failures.
+  }
+}
+
+function persistDraftState(draft: NewCaseDraftState) {
+  const { preparedImageDataUrl: _preparedImageDataUrl, ...safeDraft } = draft;
+  const serialized = JSON.stringify(safeDraft);
+
+  try {
+    window.sessionStorage.setItem(NEW_CASE_SESSION_KEY, serialized);
+  } catch {
+    // Session persistence is opportunistic.
+  }
+
+  try {
+    window.localStorage.setItem(NEW_CASE_BACKUP_KEY, serialized);
+  } catch {
+    // Backup persistence is opportunistic.
+  }
+}
+
+function restoreDraftState() {
+  const storedDraft =
+    readStoredJson<PersistedNewCaseDraftState>(window.sessionStorage, NEW_CASE_SESSION_KEY) ??
+    readStoredJson<PersistedNewCaseDraftState>(window.localStorage, NEW_CASE_BACKUP_KEY);
+
+  if (!storedDraft) {
+    return createEmptyDraftState();
+  }
+
+  const identifiers =
+    storedDraft.clientCaseId && storedDraft.browserImageKey
+      ? {
+          clientCaseId: storedDraft.clientCaseId,
+          browserImageKey: storedDraft.browserImageKey,
+        }
+      : createDraftIdentifiers();
+
+  const preparedImageAsset = readPreparedImageAsset(getPreparedImageStorageKey(identifiers.clientCaseId));
+
+  return {
+    ...createEmptyDraftState(),
+    ...storedDraft,
+    ...identifiers,
+    preparedImageDataUrl: preparedImageAsset?.dataUrl ?? "",
+    preparedImageFileName:
+      preparedImageAsset?.fileName ?? storedDraft.preparedImageFileName ?? "",
+    preparedImageMimeType:
+      preparedImageAsset?.mimeType ?? storedDraft.preparedImageMimeType ?? "",
   };
 }
 
@@ -104,89 +229,106 @@ export function NewCaseForm({
   const [draft, setDraft] = useState<NewCaseDraftState>(createEmptyDraftState);
   const [isImagePrepared, setIsImagePrepared] = useState(true);
   const [isHydrated, setIsHydrated] = useState(false);
+  const warmupStateRef = useRef<{
+    inFlight: Promise<void> | null;
+    lastAttemptAt: number;
+  }>({
+    inFlight: null,
+    lastAttemptAt: 0,
+  });
+
+  function updateDraft(nextDraft: NewCaseDraftState | ((current: NewCaseDraftState) => NewCaseDraftState)) {
+    setDraft((current) => {
+      const resolved = typeof nextDraft === "function" ? nextDraft(current) : nextDraft;
+      persistDraftState(resolved);
+      return resolved;
+    });
+  }
 
   useEffect(() => {
     try {
-      const raw = window.sessionStorage.getItem(NEW_CASE_SESSION_KEY);
-      if (!raw) {
-        setDraft(createEmptyDraftState());
-        setIsHydrated(true);
-        return;
-      }
-
-      const parsed = JSON.parse(raw) as Partial<NewCaseDraftState>;
-      const identifiers =
-        parsed.clientCaseId && parsed.browserImageKey
-          ? {
-              clientCaseId: parsed.clientCaseId,
-              browserImageKey: parsed.browserImageKey,
-            }
-          : createDraftIdentifiers();
-
-      setDraft({
-        ...createEmptyDraftState(),
-        ...parsed,
-        ...identifiers,
-      });
+      const restoredDraft = restoreDraftState();
+      setDraft(restoredDraft);
+      persistDraftState(restoredDraft);
     } catch {
-      setDraft(createEmptyDraftState());
+      const emptyDraft = createEmptyDraftState();
+      setDraft(emptyDraft);
+      persistDraftState(emptyDraft);
     } finally {
       setIsHydrated(true);
     }
   }, []);
 
-  useEffect(() => {
-    if (!isHydrated) {
-      return;
-    }
-
-    window.sessionStorage.setItem(NEW_CASE_SESSION_KEY, JSON.stringify(draft));
-  }, [draft, isHydrated]);
-
   const hiddenStorageKey = useMemo(
-    () => (draft.clientCaseId ? `plasmaxai-upload:${draft.clientCaseId}` : ""),
+    () => getPreparedImageStorageKey(draft.clientCaseId),
     [draft.clientCaseId],
   );
 
-  useEffect(() => {
-    if (!hiddenStorageKey || !draft.preparedImageDataUrl) {
-      return;
+  function warmInferenceService(force = false) {
+    if (!isHydrated) {
+      return Promise.resolve();
     }
 
-    window.localStorage.setItem(
-      hiddenStorageKey,
-      JSON.stringify({
-        fileName: draft.preparedImageFileName || "prepared-image.jpg",
-        mimeType: draft.preparedImageMimeType || "image/jpeg",
-        dataUrl: draft.preparedImageDataUrl,
-        savedAt: Date.now(),
-      }),
-    );
-  }, [
-    draft.preparedImageDataUrl,
-    draft.preparedImageFileName,
-    draft.preparedImageMimeType,
-    hiddenStorageKey,
-  ]);
+    const now = Date.now();
+    if (
+      !force &&
+      warmupStateRef.current.lastAttemptAt &&
+      now - warmupStateRef.current.lastAttemptAt < INFERENCE_WARMUP_INTERVAL_MS
+    ) {
+      return warmupStateRef.current.inFlight ?? Promise.resolve();
+    }
+
+    if (warmupStateRef.current.inFlight) {
+      return warmupStateRef.current.inFlight;
+    }
+
+    warmupStateRef.current.lastAttemptAt = now;
+    let request: Promise<void> | null = null;
+    request = fetch("/api/inference/health", {
+      cache: "no-store",
+      keepalive: true,
+    })
+      .then(() => undefined)
+      .catch(() => {
+        // Warmup is opportunistic; submit still handles real failures.
+      })
+      .finally(() => {
+        if (warmupStateRef.current.inFlight === request) {
+          warmupStateRef.current.inFlight = null;
+        }
+      });
+
+    warmupStateRef.current.inFlight = request;
+    return request;
+  }
 
   useEffect(() => {
     if (!isHydrated) {
       return;
     }
 
-    const controller = new AbortController();
-    fetch("/api/inference/health", {
-      cache: "no-store",
-      signal: controller.signal,
-    }).catch(() => {
-      // Warmup is opportunistic; the actual submit path still handles errors.
-    });
+    void warmInferenceService(true);
 
-    return () => controller.abort();
+    const handleFocus = () => {
+      void warmInferenceService();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void warmInferenceService();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [isHydrated]);
 
-  async function buildPreparedImageDataUrl(file: File) {
-    const fileDataUrl = await new Promise<string>((resolve, reject) => {
+  async function readFileAsDataUrl(file: File) {
+    return new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
         if (typeof reader.result === "string" && reader.result) {
@@ -199,16 +341,31 @@ export function NewCaseForm({
       reader.onerror = () => reject(new Error("Unable to read image file."));
       reader.readAsDataURL(file);
     });
+  }
 
-    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+  async function decodeImageDataUrl(dataUrl: string) {
+    return new Promise<HTMLImageElement>((resolve, reject) => {
       const nextImage = new window.Image();
       nextImage.onload = () => resolve(nextImage);
       nextImage.onerror = () => reject(new Error("Unable to decode image."));
-      nextImage.src = fileDataUrl;
+      nextImage.src = dataUrl;
     });
+  }
 
-    const maxDimension = 384;
-    const scale = Math.min(1, maxDimension / Math.max(image.width, image.height, 1));
+  async function optimizeSubmittedImage(file: File, fileDataUrl: string): Promise<StoredPreparedImageAsset> {
+    const image = await decodeImageDataUrl(fileDataUrl);
+    const currentLargestDimension = Math.max(image.width, image.height, 1);
+
+    if (currentLargestDimension <= MAX_PREPARED_IMAGE_DIMENSION) {
+      return {
+        fileName: file.name,
+        mimeType: file.type || "image/jpeg",
+        dataUrl: fileDataUrl,
+        savedAt: Date.now(),
+      };
+    }
+
+    const scale = Math.min(1, MAX_PREPARED_IMAGE_DIMENSION / currentLargestDimension);
     const width = Math.max(1, Math.round(image.width * scale));
     const height = Math.max(1, Math.round(image.height * scale));
     const canvas = document.createElement("canvas");
@@ -217,11 +374,23 @@ export function NewCaseForm({
     const context = canvas.getContext("2d");
 
     if (!context) {
-      return fileDataUrl;
+      return {
+        fileName: file.name,
+        mimeType: file.type || "image/jpeg",
+        dataUrl: fileDataUrl,
+        savedAt: Date.now(),
+      };
     }
 
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
     context.drawImage(image, 0, 0, width, height);
-    return canvas.toDataURL("image/jpeg", 0.82);
+    return {
+      fileName: replaceFileExtension(file.name, ".jpg"),
+      mimeType: "image/jpeg",
+      dataUrl: canvas.toDataURL("image/jpeg", PREPARED_IMAGE_QUALITY),
+      savedAt: Date.now(),
+    };
   }
 
   async function handleImageSelection(event: ChangeEvent<HTMLInputElement>) {
@@ -229,7 +398,8 @@ export function NewCaseForm({
 
     if (!file || !hiddenStorageKey) {
       setIsImagePrepared(true);
-      setDraft((current) => ({
+      clearPreparedImageAsset(hiddenStorageKey);
+      updateDraft((current) => ({
         ...current,
         preparedImageDataUrl: "",
         preparedImageFileName: "",
@@ -239,32 +409,57 @@ export function NewCaseForm({
     }
 
     setIsImagePrepared(false);
+    void warmInferenceService(true);
+    let restoredAsset: StoredPreparedImageAsset | null = null;
 
     try {
-      const result = await buildPreparedImageDataUrl(file);
-      window.localStorage.setItem(
-        hiddenStorageKey,
-        JSON.stringify({
-          fileName: file.name,
-          mimeType: "image/jpeg",
-          dataUrl: result,
-          savedAt: Date.now(),
-        }),
-      );
-      setDraft((current) => ({
+      const originalDataUrl = await readFileAsDataUrl(file);
+      restoredAsset = {
+        fileName: file.name,
+        mimeType: file.type || "image/jpeg",
+        dataUrl: originalDataUrl,
+        savedAt: Date.now(),
+      };
+      writePreparedImageAsset(hiddenStorageKey, restoredAsset);
+      updateDraft((current) => ({
         ...current,
-        preparedImageDataUrl: result,
-        preparedImageFileName: file.name,
-        preparedImageMimeType: "image/jpeg",
+        preparedImageDataUrl: restoredAsset?.dataUrl ?? "",
+        preparedImageFileName: restoredAsset?.fileName ?? "",
+        preparedImageMimeType: restoredAsset?.mimeType ?? "",
       }));
-      setIsImagePrepared(true);
+
+      const optimizedAsset = await optimizeSubmittedImage(file, originalDataUrl);
+      restoredAsset = optimizedAsset;
+      writePreparedImageAsset(hiddenStorageKey, optimizedAsset);
+      updateDraft((current) => ({
+        ...current,
+        preparedImageDataUrl: optimizedAsset.dataUrl,
+        preparedImageFileName: optimizedAsset.fileName,
+        preparedImageMimeType: optimizedAsset.mimeType,
+      }));
     } catch {
-      setIsImagePrepared(false);
+      if (!restoredAsset) {
+        clearPreparedImageAsset(hiddenStorageKey);
+        updateDraft((current) => ({
+          ...current,
+          preparedImageDataUrl: "",
+          preparedImageFileName: "",
+          preparedImageMimeType: "",
+        }));
+      }
+    } finally {
+      setIsImagePrepared(Boolean(restoredAsset));
     }
   }
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form
+      action={formAction}
+      className="space-y-6"
+      onSubmitCapture={() => {
+        void warmInferenceService(true);
+      }}
+    >
       <AnalysisLaunchOverlay />
       <input type="hidden" name="clientCaseId" value={draft.clientCaseId} />
       <input type="hidden" name="browserImageKey" value={draft.browserImageKey} />
@@ -303,7 +498,9 @@ export function NewCaseForm({
               name="imageReference"
               placeholder="Optional legacy path or storage reference"
               value={draft.imageReference}
-              onChange={(event) => setDraft((current) => ({ ...current, imageReference: event.target.value }))}
+              onChange={(event) =>
+                updateDraft((current) => ({ ...current, imageReference: event.target.value }))
+              }
             />
             <div className="mt-4 flex flex-wrap gap-2">
               <Badge variant="info">Microscopy upload</Badge>
@@ -327,7 +524,9 @@ export function NewCaseForm({
                   className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4"
                   placeholder="PT-00124"
                   value={draft.patientCode}
-                  onChange={(event) => setDraft((current) => ({ ...current, patientCode: event.target.value }))}
+                  onChange={(event) =>
+                    updateDraft((current) => ({ ...current, patientCode: event.target.value }))
+                  }
                 />
               </div>
               <div>
@@ -340,7 +539,9 @@ export function NewCaseForm({
                   className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4"
                   placeholder="Optional patient name"
                   value={draft.patientName}
-                  onChange={(event) => setDraft((current) => ({ ...current, patientName: event.target.value }))}
+                  onChange={(event) =>
+                    updateDraft((current) => ({ ...current, patientName: event.target.value }))
+                  }
                 />
               </div>
             </div>
@@ -355,7 +556,9 @@ export function NewCaseForm({
                   className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4"
                   placeholder="Follow-up marrow smear"
                   value={draft.caseTitle}
-                  onChange={(event) => setDraft((current) => ({ ...current, caseTitle: event.target.value }))}
+                  onChange={(event) =>
+                    updateDraft((current) => ({ ...current, caseTitle: event.target.value }))
+                  }
                 />
               </div>
               <div>
@@ -367,7 +570,9 @@ export function NewCaseForm({
                   name="sex"
                   className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4"
                   value={draft.sex}
-                  onChange={(event) => setDraft((current) => ({ ...current, sex: event.target.value }))}
+                  onChange={(event) =>
+                    updateDraft((current) => ({ ...current, sex: event.target.value }))
+                  }
                 >
                   <option value="">Select</option>
                   <option value="Female">Female</option>
@@ -386,7 +591,9 @@ export function NewCaseForm({
                 type="date"
                 className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4"
                 value={draft.dateOfBirth}
-                onChange={(event) => setDraft((current) => ({ ...current, dateOfBirth: event.target.value }))}
+                onChange={(event) =>
+                  updateDraft((current) => ({ ...current, dateOfBirth: event.target.value }))
+                }
               />
             </div>
             <div>
@@ -399,7 +606,9 @@ export function NewCaseForm({
                 className="min-h-32 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3"
                 placeholder="Add context for the reviewing doctor..."
                 value={draft.clinicalNote}
-                onChange={(event) => setDraft((current) => ({ ...current, clinicalNote: event.target.value }))}
+                onChange={(event) =>
+                  updateDraft((current) => ({ ...current, clinicalNote: event.target.value }))
+                }
               />
             </div>
             <div className="flex flex-wrap gap-2">

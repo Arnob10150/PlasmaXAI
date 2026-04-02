@@ -5,6 +5,7 @@ import {
   type DemoCaseRecord,
   type DemoDoctor,
 } from "@/lib/demo/mock-data";
+import type { InferenceResult } from "@/lib/inference/service";
 import { buildDefaultReportDraft, buildDefaultReviewChecklist } from "@/lib/review-workspace";
 
 const CASES_COOKIE = "plasmaxai-demo-cases";
@@ -114,6 +115,7 @@ export async function createHostedDemoCase(options: {
   imageReference?: string | null;
   imageFileName?: string | null;
   imageMimeType?: string | null;
+  inferenceResult?: InferenceResult | null;
 }) {
   const cases = await getHostedDemoCases();
   const seed = demoCases[cases.length % demoCases.length] ?? demoCases[0];
@@ -124,15 +126,16 @@ export async function createHostedDemoCase(options: {
     options.imageFileName?.trim() ||
     normalizedImageSource?.split(/[\\/]/).pop() ||
     `case-image-${suffix}.png`;
+  const result = options.inferenceResult ?? null;
   const nextCase: DemoCaseRecord = {
     ...seed,
     id: options.caseId?.trim() || `case-${suffix}`,
     caseCode: `PX-${suffix}`,
     title: options.caseTitle,
     notes: options.clinicalNote,
-    status: options.initialStatus?.trim() || "report_ready",
+    status: options.initialStatus?.trim() || (result ? "report_ready" : "new"),
     createdAt: now,
-    reviewedAt: now,
+    reviewedAt: result ? now : null,
     patient: {
       id: `patient-${options.patientCode.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
       code: options.patientCode,
@@ -150,12 +153,35 @@ export async function createHostedDemoCase(options: {
         ]
       : [],
     reports: [],
-    reviewChecklist: buildDefaultReviewChecklist(seed.explanation?.topFeatures ?? []),
+    prediction: result
+      ? {
+          predictedClass: result.prediction.predictedClassText,
+          confidence: result.prediction.confidence,
+          riskLevel: result.prediction.riskLevel,
+          modelVersion: result.modelVersion,
+        }
+      : null,
+    explanation: result
+      ? {
+          counterfactualText: result.explanation.counterfactualText,
+          clinicalInsightText: result.explanation.clinicalInsightText,
+          topFeatures: result.explanation.topFeatures,
+          heatmapPath: null,
+        }
+      : null,
+    analysis: result
+      ? {
+          probabilities: result.probabilities,
+          modalityGates: result.modalityGates,
+          morphology: result.morphology,
+        }
+      : null,
+    reviewChecklist: buildDefaultReviewChecklist(result?.explanation.topFeatures ?? []),
     reportDraft: buildDefaultReportDraft({
-      predictedClass: seed.prediction?.predictedClass ?? null,
-      confidence: seed.prediction?.confidence ?? null,
-      topFeatures: seed.explanation?.topFeatures ?? [],
-      doctorInsight: seed.explanation?.clinicalInsightText ?? null,
+      predictedClass: result?.prediction.predictedClassText ?? null,
+      confidence: result?.prediction.confidence ?? null,
+      topFeatures: result?.explanation.topFeatures ?? [],
+      doctorInsight: result?.explanation.clinicalInsightText ?? null,
       recommendedAction: null,
     }),
   };

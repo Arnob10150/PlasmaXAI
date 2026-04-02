@@ -20,6 +20,7 @@ class CaseInferenceRequest(BaseModel):
     title: str = Field(..., min_length=1)
     imagePath: str = Field(..., min_length=1)
     imageBucket: str | None = None
+    imageDataUrl: str | None = None
 
 
 @app.get("/health")
@@ -37,7 +38,11 @@ def analyze_case(payload: CaseInferenceRequest) -> dict[str, object]:
     predictor = get_predictor()
 
     try:
-        result = predictor.predict(payload.imagePath, image_bucket=payload.imageBucket)
+        result = predictor.predict(
+            payload.imagePath,
+            image_bucket=payload.imageBucket,
+            image_data_url=payload.imageDataUrl,
+        )
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:  # pragma: no cover - runtime inference protection

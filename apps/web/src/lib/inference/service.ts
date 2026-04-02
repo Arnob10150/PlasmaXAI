@@ -45,6 +45,7 @@ interface QueueInferencePayload {
   title: string;
   imagePath: string;
   imageBucket?: string;
+  imageDataUrl?: string;
 }
 
 interface QueueInferenceResult {
@@ -56,12 +57,21 @@ interface QueueInferenceResult {
 const execFileAsync = promisify(execFile);
 
 function getInferenceApiUrl() {
-  return (
+  const explicit =
     process.env.INFERENCE_API_URL?.trim() ||
     process.env.INFERENCE_URL?.trim() ||
     process.env.NEXT_PUBLIC_INFERENCE_URL?.trim() ||
-    ""
-  );
+    "";
+
+  if (explicit) {
+    return explicit;
+  }
+
+  if (isHostedDeployment() && process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}/api/inference`;
+  }
+
+  return "";
 }
 
 function isHostedDeployment() {

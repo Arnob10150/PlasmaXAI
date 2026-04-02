@@ -36,6 +36,11 @@ function sanitizeFileName(fileName: string) {
     .replace(/^-|-$/g, "");
 }
 
+async function fileToDataUrl(file: File) {
+  const bytes = Buffer.from(await file.arrayBuffer());
+  return `data:${file.type || "application/octet-stream"};base64,${bytes.toString("base64")}`;
+}
+
 async function resolveOrganizationId(userId: string) {
   const supabase = await createClient();
   const { data: profile } = await supabase
@@ -180,6 +185,31 @@ export async function createCaseAction(
       const settings = shouldUseHostedDemoFallback()
         ? await getHostedDemoWorkspaceSettings()
         : await getLocalWorkspaceSettings();
+      let hostedInferenceResult: InferenceResult | null = null;
+
+      if (shouldUseHostedDemoFallback()) {
+        const hostedImageDataUrl = uploadedFile ? await fileToDataUrl(uploadedFile) : null;
+        const hostedImagePath = imageReference || uploadedFile?.name || "uploaded-image";
+
+        if (hostedImageDataUrl || imageReference) {
+          try {
+            const inferenceResponse = await queueCaseInference({
+              caseId: clientCaseId ?? `case-${Date.now().toString().slice(-8)}`,
+              caseCode: buildCaseCode(),
+              patientCode,
+              title: caseTitle,
+              imagePath: hostedImagePath,
+              imageDataUrl: hostedImageDataUrl ?? undefined,
+            });
+
+            if (inferenceResponse.queued && inferenceResponse.result) {
+              hostedInferenceResult = inferenceResponse.result;
+            }
+          } catch {
+            hostedInferenceResult = null;
+          }
+        }
+      }
 
       const localCase = shouldUseHostedDemoFallback()
         ? await createHostedDemoCase({
@@ -188,10 +218,11 @@ export async function createCaseAction(
             patientName,
             caseTitle,
             clinicalNote,
-            initialStatus: settings.defaultCaseStatus,
+            initialStatus: hostedInferenceResult ? "report_ready" : settings.defaultCaseStatus,
             imageReference: uploadedFile ? browserImageKey || imageReference : imageReference,
             imageFileName: uploadedFile?.name ?? null,
             imageMimeType: uploadedFile?.type ?? null,
+            inferenceResult: hostedInferenceResult,
           })
         : await createLocalCase({
             patientCode,

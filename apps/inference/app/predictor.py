@@ -5,6 +5,7 @@ import json
 import os
 import urllib.parse
 import urllib.request
+import base64
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -134,7 +135,20 @@ class PlasmaXAIPredictor:
         )
         self._loaded = True
 
-    def _fetch_bytes(self, image_path: str, image_bucket: str | None = None) -> bytes:
+    def _fetch_bytes(
+        self,
+        image_path: str,
+        image_bucket: str | None = None,
+        image_data_url: str | None = None,
+    ) -> bytes:
+        source = image_data_url or image_path
+        if source.startswith("data:"):
+            try:
+                _, payload = source.split(",", 1)
+                return base64.b64decode(payload)
+            except Exception as exc:
+                raise RuntimeError("Unable to decode provided image data URL.") from exc
+
         parsed = urllib.parse.urlparse(image_path)
         if parsed.scheme in {"http", "https"}:
             with urllib.request.urlopen(image_path) as response:
@@ -224,9 +238,18 @@ class PlasmaXAIPredictor:
             return "moderate"
         return "low"
 
-    def predict(self, image_path: str, image_bucket: str | None = None) -> dict[str, Any]:
+    def predict(
+        self,
+        image_path: str,
+        image_bucket: str | None = None,
+        image_data_url: str | None = None,
+    ) -> dict[str, Any]:
         self._ensure_loaded()
-        image_bytes = self._fetch_bytes(image_path, image_bucket=image_bucket)
+        image_bytes = self._fetch_bytes(
+            image_path,
+            image_bucket=image_bucket,
+            image_data_url=image_data_url,
+        )
         image_rgb = self._decode_rgb(image_bytes)
         image_tensor = self._image_tensor(image_bytes)
 

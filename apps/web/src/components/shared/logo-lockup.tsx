@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 export function LogoLockup({
@@ -7,8 +8,22 @@ export function LogoLockup({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#2563eb,#0f766e)] text-white shadow-lg">
-        <i className="bi bi-activity text-lg" aria-hidden="true" />
+      <div
+        className={cn(
+          "flex h-12 w-12 items-center justify-center overflow-hidden rounded-[18px] border shadow-lg",
+          invert
+            ? "border-white/10 bg-white/10"
+            : "border-slate-200/80 bg-white",
+        )}
+      >
+        <Image
+          alt="PlasmaXAI icon"
+          className="h-10 w-10 object-contain"
+          height={40}
+          priority
+          src="/icon.png"
+          width={40}
+        />
       </div>
       <div>
         <p className={cn("text-sm font-medium", invert ? "text-white/80" : "text-slate-500")}>Clinical AI workspace</p>

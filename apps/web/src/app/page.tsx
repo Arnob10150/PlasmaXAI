@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MotionDiv } from "@/components/motion/motion-div";
+import { LogoLockup } from "@/components/shared/logo-lockup";
 import { PublicFooter } from "@/components/shared/public-footer";
 import { Button } from "@/components/ui/button";
 
@@ -33,15 +34,7 @@ export default function Home() {
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.16),_transparent_34%),radial-gradient(circle_at_80%_20%,_rgba(15,118,110,0.18),_transparent_28%),linear-gradient(180deg,_#f8fbff_0%,_#eef5fb_48%,_#f8fafc_100%)]" />
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/92 backdrop-blur">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4 lg:px-10">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#2563eb,#0f766e)] text-white">
-              <i className="bi bi-activity text-lg" aria-hidden="true" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Clinical workstation</p>
-              <p className="text-lg font-semibold text-slate-900">PlasmaXAI</p>
-            </div>
-          </div>
+          <LogoLockup />
           <div className="flex items-center gap-3">
             <Link href="/login" className="hidden text-sm font-medium text-slate-600 transition hover:text-slate-900 sm:block">
               Sign in

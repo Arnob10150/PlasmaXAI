@@ -294,25 +294,31 @@ export function ImageReviewPanel({
               <i className="bi bi-sliders text-base text-blue-700" aria-hidden="true" />
               Microscopy controls
             </div>
-            <div className="mt-5 grid gap-5 text-sm text-slate-600 xl:grid-cols-3">
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="font-medium text-slate-700">Brightness</label>
-                  <span>{brightness}%</span>
+            <div className="mt-5 grid gap-5 text-sm text-slate-600 md:grid-cols-2 2xl:grid-cols-3">
+              <div className="min-w-0">
+                <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
+                  <label className="min-w-0 font-medium text-slate-700">Brightness</label>
+                  <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                    {brightness}%
+                  </span>
                 </div>
                 <input className="w-full" max={160} min={70} onChange={(event) => setBrightness(Number(event.target.value))} type="range" value={brightness} />
               </div>
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="font-medium text-slate-700">Contrast</label>
-                  <span>{contrast}%</span>
+              <div className="min-w-0">
+                <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
+                  <label className="min-w-0 font-medium text-slate-700">Contrast</label>
+                  <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                    {contrast}%
+                  </span>
                 </div>
                 <input className="w-full" max={170} min={70} onChange={(event) => setContrast(Number(event.target.value))} type="range" value={contrast} />
               </div>
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="font-medium text-slate-700">Overlay opacity</label>
-                  <span>{overlayOpacity}%</span>
+              <div className="min-w-0">
+                <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
+                  <label className="min-w-0 font-medium text-slate-700">Overlay opacity</label>
+                  <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                    {overlayOpacity}%
+                  </span>
                 </div>
                 <input
                   className="w-full disabled:opacity-40"
@@ -327,7 +333,7 @@ export function ImageReviewPanel({
             </div>
             <div className="mt-5 rounded-[22px] bg-slate-50 p-4">
               <p className="font-medium text-slate-900">Overlay guide</p>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
+              <p className="mt-2 text-sm leading-6 text-slate-500 break-words">
                 Warm regions highlight the parts of the cell receiving the strongest review emphasis. Use the overlay to support morphology review, not as a standalone diagnosis.
               </p>
             </div>

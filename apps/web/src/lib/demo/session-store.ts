@@ -109,11 +109,20 @@ export async function createHostedDemoCase(options: {
   caseTitle: string;
   clinicalNote: string | null;
   initialStatus?: string | null;
+  imageDataUrl?: string | null;
+  imageReference?: string | null;
+  imageFileName?: string | null;
+  imageMimeType?: string | null;
 }) {
   const cases = await getHostedDemoCases();
   const seed = demoCases[cases.length % demoCases.length] ?? demoCases[0];
   const now = new Date().toISOString();
   const suffix = Date.now().toString().slice(-6);
+  const normalizedImageSource = options.imageDataUrl?.trim() || options.imageReference?.trim() || null;
+  const normalizedFileName =
+    options.imageFileName?.trim() ||
+    normalizedImageSource?.split(/[\\/]/).pop() ||
+    `case-image-${suffix}.png`;
   const nextCase: DemoCaseRecord = {
     ...seed,
     id: `case-${suffix}`,
@@ -128,10 +137,17 @@ export async function createHostedDemoCase(options: {
       code: options.patientCode,
       name: options.patientName,
     },
-    images: seed.images.map((image) => ({
-      ...image,
-      id: `image-${suffix}`,
-    })),
+    images: normalizedImageSource
+      ? [
+          {
+            id: `image-${suffix}`,
+            fileName: normalizedFileName,
+            storagePath: normalizedImageSource,
+            mimeType: options.imageMimeType?.trim() || null,
+            signedUrl: normalizedImageSource,
+          },
+        ]
+      : [],
     reports: [],
     reviewChecklist: buildDefaultReviewChecklist(seed.explanation?.topFeatures ?? []),
     reportDraft: buildDefaultReportDraft({

@@ -36,6 +36,11 @@ function sanitizeFileName(fileName: string) {
     .replace(/^-|-$/g, "");
 }
 
+async function fileToDataUrl(file: File) {
+  const bytes = Buffer.from(await file.arrayBuffer());
+  return `data:${file.type || "application/octet-stream"};base64,${bytes.toString("base64")}`;
+}
+
 async function resolveOrganizationId(userId: string) {
   const supabase = await createClient();
   const { data: profile } = await supabase
@@ -179,6 +184,9 @@ export async function createCaseAction(
         ? await getHostedDemoWorkspaceSettings()
         : await getLocalWorkspaceSettings();
 
+      const hostedImageDataUrl =
+        shouldUseHostedDemoFallback() && uploadedFile ? await fileToDataUrl(uploadedFile) : null;
+
       const localCase = shouldUseHostedDemoFallback()
         ? await createHostedDemoCase({
             patientCode,
@@ -186,6 +194,10 @@ export async function createCaseAction(
             caseTitle,
             clinicalNote,
             initialStatus: settings.defaultCaseStatus,
+            imageDataUrl: hostedImageDataUrl,
+            imageReference,
+            imageFileName: uploadedFile?.name ?? null,
+            imageMimeType: uploadedFile?.type ?? null,
           })
         : await createLocalCase({
             patientCode,

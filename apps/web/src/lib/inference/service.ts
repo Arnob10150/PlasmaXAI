@@ -55,9 +55,15 @@ interface QueueInferenceResult {
 }
 
 const execFileAsync = promisify(execFile);
+const HOSTED_INFERENCE_RETRY_STATUSES = new Set([429, 502, 503, 504]);
+const HOSTED_INFERENCE_RETRY_DELAYS_MS = [0, 1200, 2600];
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function buildHeuristicInference(payload: QueueInferencePayload): QueueInferenceResult | null {
@@ -200,6 +206,61 @@ function canUseHostedHeuristicFallback() {
   return process.env.PLASMAXAI_ENABLE_HEURISTIC_FALLBACK === "1";
 }
 
+async function warmHostedInference(baseUrl: string) {
+  try {
+    await fetch(`${baseUrl.replace(/\/$/, "")}/health?warm=1`, {
+      method: "GET",
+      cache: "no-store",
+    });
+  } catch {
+    // Warmup is opportunistic; retries below still handle hard failures.
+  }
+}
+
+async function callHostedInference(baseUrl: string, payload: QueueInferencePayload) {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < HOSTED_INFERENCE_RETRY_DELAYS_MS.length; attempt += 1) {
+    if (attempt > 0) {
+      await sleep(HOSTED_INFERENCE_RETRY_DELAYS_MS[attempt] ?? 0);
+      await warmHostedInference(baseUrl);
+    }
+
+    try {
+      const response = await fetch(`${baseUrl.replace(/\/$/, "")}/cases`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        if (
+          HOSTED_INFERENCE_RETRY_STATUSES.has(response.status) &&
+          attempt < HOSTED_INFERENCE_RETRY_DELAYS_MS.length - 1
+        ) {
+          lastError = new Error(`Inference API returned ${response.status}.`);
+          continue;
+        }
+
+        throw new Error(`Inference API returned ${response.status}.`);
+      }
+
+      return (await response.json()) as InferenceResult;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("Inference request failed.");
+
+      if (attempt >= HOSTED_INFERENCE_RETRY_DELAYS_MS.length - 1) {
+        throw lastError;
+      }
+    }
+  }
+
+  throw lastError ?? new Error("Inference request failed.");
+}
+
 async function runLocalInference(payload: QueueInferencePayload): Promise<QueueInferenceResult> {
   const scriptPath = path.join(
     process.cwd(),
@@ -245,20 +306,7 @@ export async function queueCaseInference(payload: QueueInferencePayload) {
 
   if (baseUrl) {
     try {
-      const response = await fetch(`${baseUrl.replace(/\/$/, "")}/cases`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        throw new Error(`Inference API returned ${response.status}.`);
-      }
-
-      const result = (await response.json()) as InferenceResult;
+      const result = await callHostedInference(baseUrl, payload);
       return { queued: true as const, reason: null, result };
     } catch (error) {
       if (!canUseLocalPythonFallback()) {

@@ -161,9 +161,9 @@ Phase 3: novel framework stage
 
 Phase 4: doctor-facing website and inference integration
 - Website folder:
-  F:\BUET plasma\plasmaxai-web
+  F:\BUET plasma\apps\web
 - Inference service folder:
-  F:\BUET plasma\plasmaxai-inference
+  F:\BUET plasma\apps\inference
 - Added case review workflow, reports, patient pages, login/doctor
   workspace, and research-to-interface translation
 
@@ -662,10 +662,10 @@ Relevance to competition research domains:
 20. Doctor-facing website and deployment translation
 --------------------------------------------------------------------------
 Website folder:
-F:\BUET plasma\plasmaxai-web
+F:\BUET plasma\apps\web
 
 Inference service folder:
-F:\BUET plasma\plasmaxai-inference
+F:\BUET plasma\apps\inference
 
 Current website purpose:
 To package the research into a doctor-facing workspace with:
@@ -710,10 +710,10 @@ GitHub repository:
 https://github.com/Arnob10150/PlasmaXAI.git
 
 Current pushed website version tag:
-v1.1.0
+v1.2.0
 
 Current website version file:
-F:\BUET plasma\plasmaxai-web\VERSION.md
+F:\BUET plasma\apps\web\VERSION.md
 
 Core website code pushed:
 Yes
@@ -727,8 +727,8 @@ Yes, critical ones
 Examples confirmed in Git:
 - best_plasmaxai.pth
 - novel_outputs/novel_fusion_model.pth
-- full plasmaxai-web source tree
-- full plasmaxai-inference source tree
+- full apps/web source tree
+- full apps/inference source tree
 - research_master_package
 
 Important honesty note:
@@ -775,10 +775,10 @@ Main baseline model:
 F:\BUET plasma\best_plasmaxai.pth
 
 Website:
-F:\BUET plasma\plasmaxai-web
+F:\BUET plasma\apps\web
 
 Inference service:
-F:\BUET plasma\plasmaxai-inference
+F:\BUET plasma\apps\inference
 
 Competition brief:
 F:\BUET plasma\research_master_package\PlasmaXAI_competition_master_brief.txt
@@ -924,4 +924,5 @@ The strongest honest claim is:
 PlasmaXAI is a high-performing, explainable, counterfactual-guided
 screening framework for malignant plasma-cell recognition that also
 demonstrates a practical path toward doctor-facing clinical review.
+
 

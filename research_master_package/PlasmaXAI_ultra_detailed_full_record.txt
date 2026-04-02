@@ -100,10 +100,10 @@ Final novel framework:
 F:\BUET plasma\novel_plasmaxai_pipeline.py
 
 Website:
-F:\BUET plasma\plasmaxai-web
+F:\BUET plasma\apps\web
 
 Inference service:
-F:\BUET plasma\plasmaxai-inference
+F:\BUET plasma\apps\inference
 
 Research package:
 F:\BUET plasma\research_master_package
@@ -922,7 +922,7 @@ final externally validated biological proof.
 25. Website translation and doctor-facing workflow
 ------------------------------------------------------------------------------
 Website folder:
-- F:\BUET plasma\plasmaxai-web
+- F:\BUET plasma\apps\web
 
 The website includes:
 - login and registration screens
@@ -954,25 +954,26 @@ The website stack includes:
 To make the repository Vercel-deployment-ready, the following were added:
 
 Website side:
-- `plasmaxai-web/vercel.json`
-- updated `plasmaxai-web/README.md`
-- updated `.env.example`
+- updated `apps/web/README.md`
+- updated `apps/web/.env.example`
 - safer hosted inference behavior in `src/lib/inference/service.ts`
 
 Inference side:
-- `plasmaxai-inference/app/app.py`
-- `plasmaxai-inference/build.py`
-- `plasmaxai-inference/pyproject.toml`
-- `plasmaxai-inference/vercel.json`
-- updated `plasmaxai-inference/README.md`
+- `apps/inference/app/app.py`
+- `apps/inference/build.py`
+- `apps/inference/pyproject.toml`
+- updated `apps/inference/README.md`
 - switched to `opencv-python-headless`
 
 Repo-level deployment guide:
 - `VERCEL_DEPLOYMENT_READY.md`
+- root `vercel.json`
 
 Recommended deployment shape:
-- one Vercel project for `plasmaxai-web`
-- one Vercel project for `plasmaxai-inference`
+- one Vercel project from the repository root
+- Framework Preset = `Services`
+- `apps/web` mounted at `/`
+- `apps/inference` mounted at `/api/inference`
 - Supabase for auth, data, and storage
 
 Important honesty note:
@@ -988,13 +989,13 @@ Repository:
 https://github.com/Arnob10150/PlasmaXAI.git
 
 Pushed website tag:
-- v1.1.0
+- v1.2.0
 
 Pushed core items include:
 - best_plasmaxai.pth
 - novel_outputs/novel_fusion_model.pth
-- plasmaxai-web
-- plasmaxai-inference
+- apps/web
+- apps/inference
 - research_master_package
 
 Not literally every local file was pushed. A few large or redundant files were
@@ -1058,10 +1059,10 @@ Patient summaries:
 - novel_outputs/plasmaxai_patient_robustness.json
 
 Website:
-- plasmaxai-web
+- apps/web
 
 Inference service:
-- plasmaxai-inference
+- apps/inference
 
 Short competition brief:
 - research_master_package/PlasmaXAI_competition_master_brief.txt
@@ -1457,9 +1458,10 @@ hosted build. This is a practical deployment step, not just a documentation
 note.
 
 38.4 Function limits
-`vercel.json` was added on the inference side to give the Python function a
-larger memory and duration budget. This does not solve every production
-constraint, but it makes the deployment more realistic.
+The root `vercel.json` now defines the `inference` service with an increased
+memory and duration budget. This does not solve every production constraint,
+but it makes the hosted deployment more realistic than leaving the Python
+service completely unbounded or implicit.
 
 
 39. Competition-oriented interpretation of the whole project
@@ -1517,3 +1519,4 @@ The word "framework" is appropriate here because the project includes:
 If the work had ended at a single trained `.pth` file and one ROC curve, it
 would be more accurate to call it a model. Because it includes the broader
 design, interpretability, and translation layer, "framework" is the right word.
+

@@ -52,10 +52,10 @@ LaTeX paper materials:
 F:\BUET plasma\Latex\Contribution_Title__11_
 
 Doctor-facing website:
-F:\BUET plasma\plasmaxai-web
+F:\BUET plasma\apps\web
 
 Inference service for website:
-F:\BUET plasma\plasmaxai-inference
+F:\BUET plasma\apps\inference
 
 
 3. Data and split information
@@ -384,7 +384,7 @@ F:\BUET plasma\Latex\Contribution_Title__11_\figures
 13. Website and deployment work
 ----------------------------------------------------------------------
 Website folder:
-F:\BUET plasma\plasmaxai-web
+F:\BUET plasma\apps\web
 
 Website purpose:
 - Doctor-facing workspace
@@ -397,7 +397,7 @@ Website purpose:
 - Explainability and clinical interpretation panels
 
 Inference service folder:
-F:\BUET plasma\plasmaxai-inference
+F:\BUET plasma\apps\inference
 
 Current website note:
 The website was built as a clinical review interface for the research,
@@ -505,4 +505,5 @@ The cell-level classification results are strong and well supported.
 The patient-level findings are promising and statistically supported
 internally, but they remain exploratory and should be described
 carefully until external validation is completed.
+
 

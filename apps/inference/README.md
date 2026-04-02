@@ -1,0 +1,76 @@
+# PlasmaXAI Inference Service
+
+FastAPI wrapper around the final PlasmaXAI model artifacts.
+
+## Location
+
+- Repository path: `apps/inference`
+- Deployment route in Vercel Services: `/api/inference`
+
+## What it does
+
+- lazily loads the final PlasmaXAI fusion model
+- reads microscopy images from local paths, URLs, or Supabase Storage
+- returns prediction, confidence, clinical explanation, and morphology cues
+
+## Key files
+
+- `app/main.py`
+- `app/app.py`
+- `app/predictor.py`
+- `build.py`
+- `requirements.txt`
+- `pyproject.toml`
+- `.env.example`
+
+## Local environment
+
+Copy `.env.example` to `.env` and set:
+
+```env
+PLASMAXAI_PROJECT_ROOT=F:\BUET plasma
+SUPABASE_URL=...
+SUPABASE_SERVICE_ROLE_KEY=...
+HOST=0.0.0.0
+PORT=8000
+```
+
+`PLASMAXAI_PROJECT_ROOT` should point to the repository root containing:
+- `novel_outputs/`
+- `optimization_outputs/checkpoints/`
+
+## Local install
+
+```powershell
+cd "F:\BUET plasma\apps\inference"
+python -m pip install -r requirements.txt
+```
+
+## Local run
+
+```powershell
+cd "F:\BUET plasma\apps\inference"
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+## Vercel behavior
+
+The service is intended to be deployed through the root repository
+`vercel.json`, not a nested per-service Vercel config.
+
+During hosted builds:
+- `build.py` stages required model files into `model_assets/`
+- `app/predictor.py` prefers `model_assets/` automatically
+
+## Routes
+
+- `GET /health`
+- `POST /cases`
+
+When mounted under Vercel Services, those routes become:
+- `/api/inference/health`
+- `/api/inference/cases`
+
+## Website integration
+
+`apps/web` calls this service through `src/lib/inference/service.ts`.

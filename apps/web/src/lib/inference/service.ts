@@ -56,7 +56,12 @@ interface QueueInferenceResult {
 const execFileAsync = promisify(execFile);
 
 function getInferenceApiUrl() {
-  return process.env.INFERENCE_API_URL?.trim() || "";
+  return (
+    process.env.INFERENCE_API_URL?.trim() ||
+    process.env.INFERENCE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_INFERENCE_URL?.trim() ||
+    ""
+  );
 }
 
 function isHostedDeployment() {
@@ -75,7 +80,7 @@ async function runLocalInference(payload: QueueInferencePayload): Promise<QueueI
   const scriptPath = path.join(
     process.cwd(),
     "..",
-    "plasmaxai-inference",
+    "inference",
     "run_case_inference.py",
   );
   const args = [
@@ -100,7 +105,7 @@ async function runLocalInference(payload: QueueInferencePayload): Promise<QueueI
     cwd: process.cwd(),
     env: {
       ...process.env,
-      PLASMAXAI_PROJECT_ROOT: path.join(process.cwd(), ".."),
+      PLASMAXAI_PROJECT_ROOT: path.join(process.cwd(), "..", ".."),
       PYTHONUTF8: "1",
     },
     timeout: 120000,
@@ -152,7 +157,7 @@ export async function queueCaseInference(payload: QueueInferencePayload) {
   return {
     queued: false,
     reason:
-      "Inference is not configured for this deployment. Set INFERENCE_API_URL to a live PlasmaXAI inference endpoint.",
+      "Inference is not configured for this deployment. Set INFERENCE_API_URL or use the Vercel inference service route.",
     result: null,
   };
 }

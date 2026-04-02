@@ -17,13 +17,13 @@ What this version includes:
 - Local patient CRUD support
 - Improved case review presentation for clinicians
 - Safer hosted inference behavior for Vercel deployments
-- Vercel project configuration for the website
-- Companion FastAPI Vercel deployment scaffolding in `plasmaxai-inference`
+- Root-level Vercel Services configuration for unified deployment
+- Companion FastAPI inference service in `apps/inference`
 - Research master package with archived diagrams and master records
 - Ultra-detailed full technical dossier for the competition and long-form review
 
 Primary app folder:
-F:\BUET plasma\plasmaxai-web
+F:\BUET plasma\apps\web
 
 GitHub repository:
 https://github.com/Arnob10150/PlasmaXAI.git

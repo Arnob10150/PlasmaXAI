@@ -400,7 +400,7 @@ Novel framework pipeline:
 F:\BUET plasma\novel_plasmaxai_pipeline.py
 
 Current website:
-F:\BUET plasma\plasmaxai-web
+F:\BUET plasma\apps\web
 
 Master research record:
 F:\BUET plasma\research_master_package\PlasmaXAI_research_master_record.txt
@@ -514,3 +514,4 @@ Its strongest competition advantages are:
 For a competition that values clarity, impact, methodology, originality,
 realistic outcomes, and domain relevance, PlasmaXAI is a strong and
 credible submission.
+

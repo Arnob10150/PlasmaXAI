@@ -318,7 +318,7 @@ class PlasmaXAIPredictor:
 def get_predictor() -> PlasmaXAIPredictor:
     service_root = Path(__file__).resolve().parents[1]
     staged_asset_root = service_root / "model_assets"
-    default_project_root = staged_asset_root if staged_asset_root.exists() else Path(__file__).resolve().parents[2]
+    default_project_root = staged_asset_root if staged_asset_root.exists() else Path(__file__).resolve().parents[3]
     project_root = Path(os.environ.get("PLASMAXAI_PROJECT_ROOT", default_project_root))
     config = PredictorConfig(
         project_root=project_root,

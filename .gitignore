@@ -23,6 +23,7 @@ uvicorn.log
 **/node_modules/
 **/.next/
 **/.local-data/
+apps/inference/model_assets/
 **/.next-dev.pid
 **/.next-dev.log
 **/.next-dev.err.log
@@ -35,6 +36,7 @@ uvicorn.log
 # Release snapshots and old website snapshots
 plasmaxai-web-release-v1.0.0-20260402/
 plasmaxai-web-v1/
+plasmaxai-web-v1.1.0-competition-20260402/
 plasmaxai-web-v2/
 
 # Redundant backup folders

@@ -23,7 +23,7 @@ def main() -> None:
     args = parse_args()
     os.environ.setdefault(
         "PLASMAXAI_PROJECT_ROOT",
-        str(Path(__file__).resolve().parents[1]),
+        str(Path(__file__).resolve().parents[2]),
     )
 
     predictor = get_predictor()
@@ -41,4 +41,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

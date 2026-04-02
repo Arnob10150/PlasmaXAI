@@ -1,41 +1,119 @@
 PlasmaXAI Vercel Deployment Guide
 ==========================================================================
 
-This repository is prepared for a two-project Vercel deployment:
+This repository is now organized as a single Vercel **Services** project.
 
-1. `plasmaxai-web`
-   - Next.js doctor-facing workspace
-2. `plasmaxai-inference`
+Deployable applications
+--------------------------------------------------------------------------
+
+1. `apps/web`
+   - Next.js clinical workspace
+   - mounted at `/`
+
+2. `apps/inference`
    - FastAPI inference service
+   - mounted at `/api/inference`
 
 
-Recommended deployment layout
+Root-level Vercel config
 --------------------------------------------------------------------------
-Project A: Web application
-- Repository: `Arnob10150/PlasmaXAI`
-- Root Directory: `plasmaxai-web`
-- Framework: `Next.js`
-- Install Command: `bun install`
-- Build Command: `bun run build`
 
-Project B: Inference service
-- Repository: `Arnob10150/PlasmaXAI`
-- Root Directory: `plasmaxai-inference`
-- Framework: `FastAPI`
-- Important project setting:
-  Enable `Include source files outside of the Root Directory`
+The repository root now contains the only Vercel config that matters:
+
+- `vercel.json`
+
+It declares two services:
+- `web` -> `apps/web`
+- `inference` -> `apps/inference/app/app.py`
+
+Important Vercel setting:
+- Framework Preset: `Services`
 
 
-Why two Vercel projects are used
+Why this structure is better
 --------------------------------------------------------------------------
-The web app and the inference API have different runtime requirements.
-Separating them keeps deployment simpler and lets the web application
-point at the inference URL through an environment variable.
+
+Before this reorganization, the repo expected two separate root directories
+and separate nested `vercel.json` files. That worked, but it was awkward to
+understand and easy to misconfigure.
+
+Now the deployment shape is explicit:
+- one repository root
+- one root `vercel.json`
+- one web service
+- one inference service
+- clean `apps/` folder for deployable code
+- research assets kept outside the app folders
+
+
+Repository structure
+--------------------------------------------------------------------------
+
+```text
+apps/
+  web/
+    src/
+    public/
+    supabase/
+    package.json
+    README.md
+    VERSION.md
+  inference/
+    app/
+    build.py
+    pyproject.toml
+    requirements.txt
+    README.md
+
+novel_outputs/
+optimization_outputs/
+research_master_package/
+Latex/
+vercel.json
+README.md
+```
+
+
+How routing works
+--------------------------------------------------------------------------
+
+`apps/web` serves the main website at `/`.
+
+`apps/inference` is mounted at `/api/inference`.
+
+That means:
+- service health route becomes `/api/inference/health`
+- case inference route becomes `/api/inference/cases`
+
+The FastAPI code does **not** repeat `/api/inference` in its route
+definitions because Vercel strips the service prefix before forwarding.
+
+
+Auto-generated service URLs
+--------------------------------------------------------------------------
+
+With Vercel Services, Vercel automatically exposes cross-service URLs.
+
+For the `inference` service, the important generated variables are:
+- `INFERENCE_URL`
+- `NEXT_PUBLIC_INFERENCE_URL`
+
+The website now supports this directly.
+
+`apps/web/src/lib/inference/service.ts` resolves inference in this order:
+1. `INFERENCE_API_URL`
+2. `INFERENCE_URL`
+3. `NEXT_PUBLIC_INFERENCE_URL`
+4. local Python fallback when not hosted
+
+So in production, the website can work without manually hardcoding the
+inference URL if the Vercel Services deployment is configured correctly.
 
 
 Website environment variables
 --------------------------------------------------------------------------
-Set these in the `plasmaxai-web` Vercel project:
+
+Set these for the Vercel project:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
@@ -44,18 +122,20 @@ Set these in the `plasmaxai-web` Vercel project:
 - `NEXT_PUBLIC_APP_URL`
 - `NEXT_PUBLIC_SUPABASE_CASE_IMAGE_BUCKET`
 - `NEXT_PUBLIC_SUPABASE_REPORT_BUCKET`
-- `INFERENCE_API_URL`
 - `PLASMAXAI_DISABLE_LOCAL_INFERENCE=1`
 
-Important:
-- `INFERENCE_API_URL` should point to the deployed FastAPI service URL
-- `PLASMAXAI_DISABLE_LOCAL_INFERENCE=1` prevents the hosted web app from
-  trying to spawn the local Python fallback
+Optional:
+- `INFERENCE_API_URL`
+
+If you use the single-project Services setup, the auto-generated
+`INFERENCE_URL` is usually enough. `INFERENCE_API_URL` is only needed if you
+want to override the service target with an external deployment.
 
 
 Inference environment variables
 --------------------------------------------------------------------------
-Set these in the `plasmaxai-inference` Vercel project:
+
+Set these for the same Vercel project:
 
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
@@ -63,54 +143,105 @@ Set these in the `plasmaxai-inference` Vercel project:
 Optional:
 - `PLASMAXAI_PROJECT_ROOT`
 
-If omitted, the service will prefer staged `model_assets/` generated
-during the build, then fall back to the repository root layout.
+In hosted builds, the inference service stages required model assets into
+`apps/inference/model_assets/` during the build. The predictor prefers that
+staged asset directory automatically.
 
 
-What makes the repo deployment-ready now
+How inference assets are staged
 --------------------------------------------------------------------------
-Website:
-- `plasmaxai-web/vercel.json`
-- `plasmaxai-web/README.md`
-- `plasmaxai-web/.env.example`
-- production-safe inference behavior in
-  `plasmaxai-web/src/lib/inference/service.ts`
 
-Inference:
-- `plasmaxai-inference/app/app.py` for Vercel-supported FastAPI entry
-- `plasmaxai-inference/build.py` to stage model assets during build
-- `plasmaxai-inference/pyproject.toml` with Vercel build hook
-- `plasmaxai-inference/vercel.json` for function settings
-- `plasmaxai-inference/README.md`
+`apps/inference/build.py` copies the required model files from the research
+artifact directories into:
+
+- `apps/inference/model_assets/novel_outputs/...`
+- `apps/inference/model_assets/optimization_outputs/checkpoints/...`
+
+That staged directory is then included in the Vercel inference service
+package through the root `vercel.json`.
+
+This keeps the runtime lookup simple and avoids relying on a fragile
+production filesystem layout.
 
 
-Deployment sequence
+Verification checklist
 --------------------------------------------------------------------------
-1. Deploy the inference project first.
-2. Copy the inference deployment URL.
-3. Add that URL as `INFERENCE_API_URL` in the web project.
-4. Deploy the web project.
-5. Configure Supabase buckets and SQL migration from:
-   `plasmaxai-web/supabase/migrations/20260401_initial_schema.sql`
+
+What was updated to support this deployment shape:
+
+- moved website source to `apps/web`
+- moved inference source to `apps/inference`
+- added root `vercel.json`
+- removed nested service-level `vercel.json` files
+- updated website inference path resolution for the new folder layout
+- updated inference asset staging logic for the new folder layout
+- updated local fallback paths for `run_case_inference.py`
+- updated project docs and records to reflect the `apps/` structure
 
 
-Practical limitations
+Build validation
 --------------------------------------------------------------------------
-This repository is ready for Vercel deployment from a code and config
-perspective, but there are still practical constraints:
 
-- PyTorch inference on Vercel may have cold-start and runtime overhead.
-- The best long-term production inference target is still a dedicated
-  persistent Python/GPU host.
-- The local fallback mode is intended for local evaluation, not for
-  persistent hosted storage or production-grade multi-user review.
+The web application was validated with:
+
+```powershell
+cd "F:\BUET plasma\apps\web"
+bun run build
+```
+
+The inference service syntax was validated with:
+
+```powershell
+cd "F:\BUET plasma\apps\inference"
+python -m py_compile app\app.py app\main.py app\predictor.py build.py run_case_inference.py
+```
 
 
-Bottom line
+How to deploy on Vercel
 --------------------------------------------------------------------------
-The repository now supports a clean Vercel deployment pattern:
-- website on Vercel
-- inference API on Vercel or another host
-- Supabase for storage/auth/data
 
-For competition/demo hosting, this is the cleanest honest setup.
+1. Import `Arnob10150/PlasmaXAI` into Vercel.
+2. Keep the Root Directory at the repository root.
+3. Set Framework Preset to `Services`.
+4. Add the required environment variables.
+5. Deploy.
+
+After deployment:
+- the website should be available at the project root URL
+- the inference API should be reachable at `/api/inference/health`
+
+
+Supabase schema
+--------------------------------------------------------------------------
+
+Run the website SQL schema from:
+
+- `apps/web/supabase/migrations/20260401_initial_schema.sql`
+
+That creates:
+- profiles
+- organizations
+- patients
+- cases
+- case images
+- predictions
+- explanations
+- reports
+- review requests
+- audit logs
+- case-image storage bucket
+- report storage bucket
+
+
+Practical note
+--------------------------------------------------------------------------
+
+This repo is now truly organized for Vercel from a code/configuration
+perspective.
+
+The biggest remaining practical constraint is not repo structure anymore;
+it is PyTorch inference cost/runtime behavior on Vercel itself.
+
+For demos, judging, and clean cloud hosting, this Services-based structure is
+the right organization. For heavy sustained production inference, a dedicated
+GPU host can still be the better long-term option.

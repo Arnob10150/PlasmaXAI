@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 SERVICE_ROOT = Path(__file__).resolve().parent
-REPO_ROOT = SERVICE_ROOT.parent
+REPO_ROOT = SERVICE_ROOT.parents[1]
 ASSET_ROOT = SERVICE_ROOT / "model_assets"
 
 REQUIRED_FILES = [

@@ -1,4 +1,5 @@
 import { LogoLockup } from "@/components/shared/logo-lockup";
+import { Button } from "@/components/ui/button";
 
 const authHighlights = [
   { value: "97.76%", label: "Model AUC", iconClass: "bi bi-graph-up-arrow" },
@@ -51,9 +52,15 @@ export function AuthShell({
 
         <section className="flex items-center justify-center">
           <div className="w-full max-w-xl rounded-[36px] border border-white/80 bg-white/90 p-8 shadow-[0_30px_80px_rgba(15,23,42,0.10)] backdrop-blur">
-            <div className="inline-flex items-center gap-2 text-sm font-medium uppercase tracking-[0.24em] text-blue-700">
-              <i className="bi bi-person-lock text-base" aria-hidden="true" />
-              Secure access
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="inline-flex items-center gap-2 text-sm font-medium uppercase tracking-[0.24em] text-blue-700">
+                <i className="bi bi-person-lock text-base" aria-hidden="true" />
+                Secure access
+              </div>
+              <Button href="/" variant="secondary" size="sm">
+                <i className="bi bi-house-door-fill text-sm" aria-hidden="true" />
+                Return to home
+              </Button>
             </div>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{title}</h2>
             <p className="mt-3 text-base leading-7 text-slate-600">{subtitle}</p>

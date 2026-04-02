@@ -11,11 +11,37 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 
 const registerSchema = z.object({
-  fullName: z.string().min(3),
-  organization: z.string().min(2),
-  email: z.string().email(),
-  specialization: z.string().min(2),
-  password: z.string().min(8),
+  fullName: z
+    .string()
+    .trim()
+    .min(3, "Enter your full name.")
+    .regex(/^[A-Za-z][A-Za-z .'-]*$/, "Use alphabetic characters as they appear on your clinical ID."),
+  organization: z
+    .string()
+    .trim()
+    .min(2, "Enter your hospital, laboratory, or organization name."),
+  email: z
+    .string()
+    .trim()
+    .min(1, "Enter your work email address.")
+    .email("Enter a valid email address."),
+  specialization: z
+    .string()
+    .trim()
+    .min(2, "Enter your medical specialization."),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters long.")
+    .regex(/[A-Z]/, "Password must include at least one uppercase letter.")
+    .regex(/[a-z]/, "Password must include at least one lowercase letter.")
+    .regex(/[0-9]/, "Password must include at least one number."),
+  confirmPassword: z.string().min(1, "Confirm your password."),
+  acceptsClinicalUseNotice: z
+    .boolean()
+    .refine((value) => value, "You must acknowledge that PlasmaXAI is a decision-support system."),
+}).refine((values) => values.password === values.confirmPassword, {
+  message: "Passwords do not match.",
+  path: ["confirmPassword"],
 });
 
 type RegisterValues = z.infer<typeof registerSchema>;
@@ -89,7 +115,12 @@ export function RegisterForm() {
           <label className="text-sm font-medium text-slate-700">Full name</label>
           <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition focus-within:border-blue-400 focus-within:bg-white">
             <i className="bi bi-person-vcard-fill text-sm text-blue-700" aria-hidden="true" />
-            <input {...register("fullName")} className="h-full w-full bg-transparent outline-none" />
+            <input
+              {...register("fullName")}
+              aria-invalid={errors.fullName ? "true" : "false"}
+              className="h-full w-full bg-transparent outline-none"
+              placeholder="Dr. Arnob Aich Anurag"
+            />
           </div>
           {errors.fullName ? <p className="text-sm text-rose-600">{errors.fullName.message}</p> : null}
         </div>
@@ -97,7 +128,12 @@ export function RegisterForm() {
           <label className="text-sm font-medium text-slate-700">Specialization</label>
           <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition focus-within:border-blue-400 focus-within:bg-white">
             <i className="bi bi-heart-pulse-fill text-sm text-blue-700" aria-hidden="true" />
-            <input {...register("specialization")} className="h-full w-full bg-transparent outline-none" />
+            <input
+              {...register("specialization")}
+              aria-invalid={errors.specialization ? "true" : "false"}
+              className="h-full w-full bg-transparent outline-none"
+              placeholder="Hematopathology"
+            />
           </div>
           {errors.specialization ? <p className="text-sm text-rose-600">{errors.specialization.message}</p> : null}
         </div>
@@ -106,7 +142,12 @@ export function RegisterForm() {
         <label className="text-sm font-medium text-slate-700">Hospital / organization</label>
         <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition focus-within:border-blue-400 focus-within:bg-white">
           <i className="bi bi-building-fill text-sm text-blue-700" aria-hidden="true" />
-          <input {...register("organization")} className="h-full w-full bg-transparent outline-none" />
+          <input
+            {...register("organization")}
+            aria-invalid={errors.organization ? "true" : "false"}
+            className="h-full w-full bg-transparent outline-none"
+            placeholder="BUET Clinical Research Unit"
+          />
         </div>
         {errors.organization ? <p className="text-sm text-rose-600">{errors.organization.message}</p> : null}
       </div>
@@ -114,17 +155,44 @@ export function RegisterForm() {
         <label className="text-sm font-medium text-slate-700">Email</label>
         <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition focus-within:border-blue-400 focus-within:bg-white">
           <i className="bi bi-envelope-fill text-sm text-blue-700" aria-hidden="true" />
-          <input {...register("email")} className="h-full w-full bg-transparent outline-none" />
+          <input
+            {...register("email")}
+            aria-invalid={errors.email ? "true" : "false"}
+            className="h-full w-full bg-transparent outline-none"
+            placeholder="doctor@hospital.org"
+          />
         </div>
         {errors.email ? <p className="text-sm text-rose-600">{errors.email.message}</p> : null}
       </div>
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-700">Password</label>
-        <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition focus-within:border-blue-400 focus-within:bg-white">
-          <i className="bi bi-shield-lock-fill text-sm text-blue-700" aria-hidden="true" />
-          <input {...register("password")} type="password" className="h-full w-full bg-transparent outline-none" />
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-700">Password</label>
+          <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition focus-within:border-blue-400 focus-within:bg-white">
+            <i className="bi bi-shield-lock-fill text-sm text-blue-700" aria-hidden="true" />
+            <input
+              {...register("password")}
+              type="password"
+              aria-invalid={errors.password ? "true" : "false"}
+              className="h-full w-full bg-transparent outline-none"
+              placeholder="Create a strong password"
+            />
+          </div>
+          {errors.password ? <p className="text-sm text-rose-600">{errors.password.message}</p> : null}
         </div>
-        {errors.password ? <p className="text-sm text-rose-600">{errors.password.message}</p> : null}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-700">Confirm password</label>
+          <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition focus-within:border-blue-400 focus-within:bg-white">
+            <i className="bi bi-shield-check text-sm text-blue-700" aria-hidden="true" />
+            <input
+              {...register("confirmPassword")}
+              type="password"
+              aria-invalid={errors.confirmPassword ? "true" : "false"}
+              className="h-full w-full bg-transparent outline-none"
+              placeholder="Re-enter your password"
+            />
+          </div>
+          {errors.confirmPassword ? <p className="text-sm text-rose-600">{errors.confirmPassword.message}</p> : null}
+        </div>
       </div>
       {submitMessage ? (
         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
@@ -132,11 +200,23 @@ export function RegisterForm() {
         </div>
       ) : null}
       <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-        <input type="checkbox" className="mt-1 rounded border-slate-300" />
+        <input
+          {...register("acceptsClinicalUseNotice")}
+          type="checkbox"
+          aria-invalid={errors.acceptsClinicalUseNotice ? "true" : "false"}
+          className="mt-1 rounded border-slate-300"
+        />
         I understand this website is a decision-support system and final diagnosis remains with the clinician.
       </label>
+      {errors.acceptsClinicalUseNotice ? (
+        <p className="text-sm text-rose-600">{errors.acceptsClinicalUseNotice.message}</p>
+      ) : null}
       <Button className="w-full" type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Creating account..." : "Create doctor account"}
+      </Button>
+      <Button className="w-full" href="/" type="button" variant="ghost">
+        <i className="bi bi-arrow-left-circle text-sm" aria-hidden="true" />
+        Return to home page
       </Button>
       <p className="text-center text-sm text-slate-500">
         Already have an account? {" "}

@@ -12,8 +12,15 @@ import { Button } from "@/components/ui/button";
 import { demoDoctors, getDemoDoctorByEmail } from "@/lib/demo/mock-data";
 
 const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
+  email: z
+    .string()
+    .trim()
+    .min(1, "Enter your hospital or clinic email address.")
+    .email("Enter a valid email address."),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters long.")
+    .max(128, "Password is too long."),
 });
 
 type LoginValues = z.infer<typeof loginSchema>;
@@ -140,6 +147,7 @@ export function LoginForm() {
           <i className="bi bi-envelope-fill text-sm text-blue-700" aria-hidden="true" />
           <input
             {...register("email")}
+            aria-invalid={errors.email ? "true" : "false"}
             className="h-full w-full bg-transparent outline-none"
             placeholder="doctor@hospital.org"
           />
@@ -158,6 +166,7 @@ export function LoginForm() {
           <input
             {...register("password")}
             type="password"
+            aria-invalid={errors.password ? "true" : "false"}
             className="h-full w-full bg-transparent outline-none"
             placeholder="Enter your password"
           />
@@ -189,6 +198,10 @@ export function LoginForm() {
       <Button className="w-full" type="button" variant="secondary" onClick={sendMagicLink}>
         <i className="bi bi-send-fill text-sm" aria-hidden="true" />
         Continue with magic link
+      </Button>
+      <Button className="w-full" href="/" type="button" variant="ghost">
+        <i className="bi bi-arrow-left-circle text-sm" aria-hidden="true" />
+        Return to home page
       </Button>
     </form>
   );

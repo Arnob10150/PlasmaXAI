@@ -1,6 +1,10 @@
 import { storageConfig } from "@/lib/constants";
 import { demoCases, demoDoctors, type DemoCaseRecord } from "@/lib/demo/mock-data";
-import { getHostedDemoCases as getSessionDemoCases, getHostedDemoDoctorByEmail } from "@/lib/demo/session-store";
+import {
+  getHostedDemoCases as getSessionDemoCases,
+  getHostedDemoDoctorByEmail,
+  getHostedDemoPatients as getSessionDemoPatients,
+} from "@/lib/demo/session-store";
 import {
   ensureLocalCaseReport,
   listLocalCases,
@@ -515,7 +519,7 @@ export async function getPatientsData() {
       shouldUseFilesystemLocalStore()
         ? listLocalPatients()
         : shouldUseHostedDemoFallback()
-          ? Promise.resolve(getHostedDemoPatients())
+          ? getSessionDemoPatients()
           : Promise.resolve(getHostedDemoPatients()),
       fetchCases(),
     ]);
@@ -596,7 +600,7 @@ export async function getPatientDetail(patientId: string): Promise<PatientDetail
       shouldUseFilesystemLocalStore()
         ? listLocalPatients()
         : shouldUseHostedDemoFallback()
-          ? Promise.resolve(getHostedDemoPatients())
+          ? getSessionDemoPatients()
           : Promise.resolve(getHostedDemoPatients()),
       fetchCases({ patientId, includeReports: true }),
     ]);

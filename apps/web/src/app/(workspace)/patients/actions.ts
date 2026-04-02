@@ -1,7 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { hasSupabaseConfig, shouldUseFilesystemLocalStore } from "@/lib/supabase/config";
+import {
+  createHostedDemoPatient,
+  deleteHostedDemoPatient,
+  updateHostedDemoPatient,
+} from "@/lib/demo/session-store";
+import { hasSupabaseConfig, shouldUseFilesystemLocalStore, shouldUseHostedDemoFallback } from "@/lib/supabase/config";
 import {
   createLocalPatient,
   deleteLocalPatient,
@@ -113,20 +118,21 @@ export async function createPatientAction(
   }
 
   try {
-    if (!shouldUseFilesystemLocalStore()) {
-      return {
-        error: "Hosted demo mode is read-only until Supabase is configured.",
-        success: null,
-        redirectTo: null,
-      };
+    if (shouldUseHostedDemoFallback()) {
+      await createHostedDemoPatient({
+        patientCode,
+        patientName,
+        sex,
+        dateOfBirth,
+      });
+    } else {
+      await createLocalPatient({
+        patientCode,
+        patientName,
+        sex,
+        dateOfBirth,
+      });
     }
-
-    await createLocalPatient({
-      patientCode,
-      patientName,
-      sex,
-      dateOfBirth,
-    });
     await refreshPatientViews();
     return { error: null, success: "Patient record created.", redirectTo: null };
   } catch (error) {
@@ -189,20 +195,21 @@ export async function updatePatientAction(
   }
 
   try {
-    if (!shouldUseFilesystemLocalStore()) {
-      return {
-        error: "Hosted demo mode is read-only until Supabase is configured.",
-        success: null,
-        redirectTo: null,
-      };
+    if (shouldUseHostedDemoFallback()) {
+      await updateHostedDemoPatient(patientId, {
+        patientCode,
+        patientName,
+        sex,
+        dateOfBirth,
+      });
+    } else {
+      await updateLocalPatient(patientId, {
+        patientCode,
+        patientName,
+        sex,
+        dateOfBirth,
+      });
     }
-
-    await updateLocalPatient(patientId, {
-      patientCode,
-      patientName,
-      sex,
-      dateOfBirth,
-    });
     await refreshPatientViews(patientId);
     return { error: null, success: "Patient record updated.", redirectTo: null };
   } catch (error) {
@@ -269,15 +276,11 @@ export async function deletePatientAction(
   }
 
   try {
-    if (!shouldUseFilesystemLocalStore()) {
-      return {
-        error: "Hosted demo mode is read-only until Supabase is configured.",
-        success: null,
-        redirectTo: null,
-      };
+    if (shouldUseHostedDemoFallback()) {
+      await deleteHostedDemoPatient(patientId);
+    } else {
+      await deleteLocalPatient(patientId);
     }
-
-    await deleteLocalPatient(patientId);
     await refreshPatientViews(patientId);
     return { error: null, success: "Patient record removed.", redirectTo: "/patients" };
   } catch (error) {

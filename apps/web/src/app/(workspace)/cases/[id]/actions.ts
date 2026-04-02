@@ -2,9 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import {
+  deleteHostedDemoCase,
+  updateHostedDemoCaseReview,
+  updateHostedDemoCaseWorkbench,
+} from "@/lib/demo/session-store";
 import { deleteLocalCase, updateLocalCaseReview, updateLocalCaseWorkbench } from "@/lib/local-cases/store";
 import { buildDefaultReportDraft, buildDefaultReviewChecklist, normalizeReportDraft, normalizeReviewChecklist } from "@/lib/review-workspace";
-import { hasSupabaseConfig, shouldUseFilesystemLocalStore } from "@/lib/supabase/config";
+import { hasSupabaseConfig, shouldUseFilesystemLocalStore, shouldUseHostedDemoFallback } from "@/lib/supabase/config";
 import { requireUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -15,17 +20,22 @@ export async function updateCaseReviewAction(formData: FormData) {
   const notes = typeof formData.get("notes") === "string" ? String(formData.get("notes")).trim() : "";
 
   if (!hasSupabaseConfig()) {
-    if (!shouldUseFilesystemLocalStore()) {
-      return;
-    }
-
     if (caseId) {
-      await updateLocalCaseReview({
-        caseId,
-        title: title || null,
-        status,
-        notes: notes || null,
-      });
+      if (shouldUseHostedDemoFallback()) {
+        await updateHostedDemoCaseReview({
+          caseId,
+          title: title || null,
+          status,
+          notes: notes || null,
+        });
+      } else {
+        await updateLocalCaseReview({
+          caseId,
+          title: title || null,
+          status,
+          notes: notes || null,
+        });
+      }
       revalidatePath(`/cases/${caseId}`);
     }
     revalidatePath("/dashboard");
@@ -78,14 +88,11 @@ export async function deleteCaseAction(formData: FormData) {
   }
 
   if (!hasSupabaseConfig()) {
-    if (!shouldUseFilesystemLocalStore()) {
-      if (redirectTo) {
-        redirect(redirectTo);
-      }
-      return;
+    if (shouldUseHostedDemoFallback()) {
+      await deleteHostedDemoCase(caseId);
+    } else {
+      await deleteLocalCase(caseId);
     }
-
-    await deleteLocalCase(caseId);
   } else {
     const user = await requireUser();
     const supabase = await createClient();
@@ -154,18 +161,19 @@ export async function saveCaseWorkbenchAction(
     };
 
     if (!hasSupabaseConfig()) {
-      if (!shouldUseFilesystemLocalStore()) {
-        return {
-          error: "Hosted demo mode is read-only until Supabase is configured.",
-          success: null,
-        };
+      if (shouldUseHostedDemoFallback()) {
+        await updateHostedDemoCaseWorkbench({
+          caseId,
+          reviewChecklist: parsedChecklist.length ? parsedChecklist : buildDefaultReviewChecklist(),
+          reportDraft: nextDraft,
+        });
+      } else {
+        await updateLocalCaseWorkbench({
+          caseId,
+          reviewChecklist: parsedChecklist.length ? parsedChecklist : buildDefaultReviewChecklist(),
+          reportDraft: nextDraft,
+        });
       }
-
-      await updateLocalCaseWorkbench({
-        caseId,
-        reviewChecklist: parsedChecklist.length ? parsedChecklist : buildDefaultReviewChecklist(),
-        reportDraft: nextDraft,
-      });
     }
 
     revalidatePath(`/cases/${caseId}`);

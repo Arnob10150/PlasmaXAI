@@ -1,6 +1,7 @@
 export interface DemoDoctor {
   id: string;
   email: string;
+  password: string;
   fullName: string;
   specialization: string;
 }
@@ -64,19 +65,22 @@ export interface DemoCaseRecord {
 export const demoDoctors: DemoDoctor[] = [
   {
     id: "local-doctor-001",
-    email: "arnob.aich.anurag@plasmaxai.app",
+    email: "arnob12@gmail.com",
+    password: "arnob123",
     fullName: "Arnob Aich Anurag",
     specialization: "Hematopathology",
   },
   {
     id: "local-doctor-002",
-    email: "shamiul.islam@plasmaxai.app",
+    email: "shamiul12@gmail.com",
+    password: "shamiul123",
     fullName: "Shamiul Islam",
     specialization: "Clinical Pathology",
   },
   {
     id: "local-doctor-003",
-    email: "sadia.sultana@plasmaxai.app",
+    email: "sadia12@gmail.com",
+    password: "sadia123",
     fullName: "Sadia Sultana",
     specialization: "Hematology",
   },
@@ -92,6 +96,22 @@ export function getDemoDoctorByEmail(email: string | null | undefined) {
   return (
     demoDoctors.find((doctor) => doctor.email.toLowerCase() === email.toLowerCase()) ??
     demoDoctor
+  );
+}
+
+export function getDemoDoctorByCredentials(
+  email: string | null | undefined,
+  password: string | null | undefined,
+) {
+  if (!email || !password) {
+    return null;
+  }
+
+  return (
+    demoDoctors.find(
+      (doctor) =>
+        doctor.email.toLowerCase() === email.toLowerCase() && doctor.password === password,
+    ) ?? null
   );
 }
 

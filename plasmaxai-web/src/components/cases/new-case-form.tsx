@@ -30,14 +30,14 @@ export function NewCaseForm({
 
   return (
     <form action={formAction} className="space-y-6">
-      <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-[30px] border border-dashed border-blue-300 bg-[linear-gradient(180deg,#eff6ff,#f8fbff)] p-8 text-center">
+      <div className="grid gap-5 xl:grid-cols-[1.02fr_0.98fr]">
+        <div className="rounded-[30px] border border-dashed border-blue-300 bg-[linear-gradient(180deg,#eff6ff,#f8fbff)] p-6 text-center sm:p-8">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-blue-700 shadow-sm">
             <i className="bi bi-cloud-arrow-up-fill text-3xl" aria-hidden="true" />
           </div>
           <h2 className="mt-5 text-2xl font-semibold text-slate-950">Upload microscopy image</h2>
           <p className="mt-3 text-slate-600">
-            Upload a real microscopy file to Supabase Storage, or add a manual image reference if you are still migrating legacy assets.
+            Upload a microscopy file for analysis, or add a manual image reference when the image is already available on disk.
           </p>
           <div className="mt-6 rounded-[24px] border border-slate-200 bg-white p-5 text-left shadow-sm">
             <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
@@ -51,7 +51,7 @@ export function NewCaseForm({
               type="file"
             />
             <p className="mt-3 text-xs leading-5 text-slate-500">
-              Requires the `plasmaxai-case-images` bucket from the setup guide. If you have not created it yet, you can still save a manual path below.
+              PNG, JPG, or JPEG images are supported. Manual references are useful for previously archived case images.
             </p>
             <label className="mt-5 mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
               <i className="bi bi-link-45deg text-base text-blue-700" aria-hidden="true" />
@@ -63,13 +63,13 @@ export function NewCaseForm({
               placeholder="Optional legacy path or storage reference"
             />
             <div className="mt-4 flex flex-wrap gap-2">
-              <Badge variant="info">Supabase Storage ready</Badge>
-              <Badge variant="neutral">Inference hookup next</Badge>
+              <Badge variant="info">Microscopy upload</Badge>
+              <Badge variant="neutral">Case-ready intake</Badge>
             </div>
           </div>
         </div>
 
-        <div className="rounded-[30px] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="grid gap-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div>
@@ -127,8 +127,8 @@ export function NewCaseForm({
               />
             </div>
             <div className="flex flex-wrap gap-2">
-              <Badge variant="info">Case metadata saves now</Badge>
-              <Badge variant="neutral">Prediction fills in after API hookup</Badge>
+              <Badge variant="info">Patient-linked case</Badge>
+              <Badge variant="neutral">Clinical note captured</Badge>
             </div>
             {state.error ? (
               <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">

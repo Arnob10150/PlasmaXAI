@@ -5,8 +5,19 @@ import { buildCaseReportPdf } from "@/lib/reports/pdf-report";
 import type { InferenceResult } from "@/lib/inference/service";
 import { demoCases, type DemoCaseRecord } from "@/lib/demo/mock-data";
 
+export interface LocalPatientRecord {
+  id: string;
+  code: string;
+  name: string | null;
+  sex: string | null;
+  dateOfBirth: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const LOCAL_DATA_DIR = path.join(/*turbopackIgnore: true*/ process.cwd(), ".local-data");
 const LOCAL_CASES_FILE = path.join(LOCAL_DATA_DIR, "cases.json");
+const LOCAL_PATIENTS_FILE = path.join(LOCAL_DATA_DIR, "patients.json");
 const LOCAL_UPLOADS_DIR = path.join(LOCAL_DATA_DIR, "uploads");
 const LOCAL_REPORTS_DIR = path.join(LOCAL_DATA_DIR, "reports");
 
@@ -15,6 +26,10 @@ function normalizeCaseList(cases: DemoCaseRecord[]) {
     (left, right) =>
       new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
   );
+}
+
+function normalizePatientList(patients: LocalPatientRecord[]) {
+  return [...patients].sort((left, right) => left.code.localeCompare(right.code));
 }
 
 function patientIdFromCode(patientCode: string) {
@@ -29,6 +44,31 @@ function sanitizeFileName(fileName: string) {
     .replace(/^-|-$/g, "");
 }
 
+function seedPatientsFromCases() {
+  const now = new Date().toISOString();
+  const unique = new Map<string, LocalPatientRecord>();
+
+  for (const item of demoCases) {
+    if (!item.patient) {
+      continue;
+    }
+
+    if (!unique.has(item.patient.id)) {
+      unique.set(item.patient.id, {
+        id: item.patient.id,
+        code: item.patient.code,
+        name: item.patient.name ?? null,
+        sex: null,
+        dateOfBirth: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+  }
+
+  return normalizePatientList(Array.from(unique.values()));
+}
+
 async function ensureStore() {
   await mkdir(LOCAL_UPLOADS_DIR, { recursive: true });
   await mkdir(LOCAL_REPORTS_DIR, { recursive: true });
@@ -39,6 +79,16 @@ async function ensureStore() {
     await writeFile(
       LOCAL_CASES_FILE,
       JSON.stringify(normalizeCaseList(demoCases), null, 2),
+      "utf-8",
+    );
+  }
+
+  try {
+    await access(LOCAL_PATIENTS_FILE);
+  } catch {
+    await writeFile(
+      LOCAL_PATIENTS_FILE,
+      JSON.stringify(seedPatientsFromCases(), null, 2),
       "utf-8",
     );
   }
@@ -59,6 +109,61 @@ async function writeLocalCases(cases: DemoCaseRecord[]) {
   );
 }
 
+async function readLocalPatients() {
+  await ensureStore();
+  const raw = await readFile(LOCAL_PATIENTS_FILE, "utf-8");
+  return normalizePatientList(JSON.parse(raw) as LocalPatientRecord[]);
+}
+
+async function writeLocalPatients(patients: LocalPatientRecord[]) {
+  await ensureStore();
+  await writeFile(
+    LOCAL_PATIENTS_FILE,
+    JSON.stringify(normalizePatientList(patients), null, 2),
+    "utf-8",
+  );
+}
+
+async function upsertLocalPatient(options: {
+  patientCode: string;
+  patientName: string | null;
+  sex?: string | null;
+  dateOfBirth?: string | null;
+}) {
+  const patients = await readLocalPatients();
+  const now = new Date().toISOString();
+  const normalizedCode = options.patientCode.trim();
+  const existing = patients.find((item) => item.code.toLowerCase() === normalizedCode.toLowerCase());
+
+  if (existing) {
+    const updatedPatient: LocalPatientRecord = {
+      ...existing,
+      name: options.patientName ?? existing.name ?? null,
+      sex: options.sex ?? existing.sex ?? null,
+      dateOfBirth: options.dateOfBirth ?? existing.dateOfBirth ?? null,
+      updatedAt: now,
+    };
+
+    await writeLocalPatients(
+      patients.map((item) => (item.id === existing.id ? updatedPatient : item)),
+    );
+    return updatedPatient;
+  }
+
+  const nextPatient: LocalPatientRecord = {
+    id: patientIdFromCode(normalizedCode),
+    code: normalizedCode,
+    name: options.patientName ?? null,
+    sex: options.sex ?? null,
+    dateOfBirth: options.dateOfBirth ?? null,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await writeLocalPatients([...patients, nextPatient]);
+  return nextPatient;
+}
+
 export async function listLocalCases() {
   return readLocalCases();
 }
@@ -68,9 +173,121 @@ export async function getLocalCase(caseId: string) {
   return cases.find((item) => item.id === caseId) ?? null;
 }
 
+export async function listLocalPatients() {
+  return readLocalPatients();
+}
+
+export async function getLocalPatient(patientId: string) {
+  const patients = await readLocalPatients();
+  return patients.find((item) => item.id === patientId) ?? null;
+}
+
+export async function createLocalPatient(options: {
+  patientCode: string;
+  patientName: string | null;
+  sex?: string | null;
+  dateOfBirth?: string | null;
+}) {
+  const patientCode = options.patientCode.trim();
+  if (!patientCode) {
+    throw new Error("Patient code is required.");
+  }
+
+  const patients = await readLocalPatients();
+  const existing = patients.find((item) => item.code.toLowerCase() === patientCode.toLowerCase());
+  if (existing) {
+    throw new Error("A patient with this code already exists.");
+  }
+
+  return upsertLocalPatient(options);
+}
+
+export async function updateLocalPatient(
+  patientId: string,
+  updates: {
+    patientCode: string;
+    patientName: string | null;
+    sex?: string | null;
+    dateOfBirth?: string | null;
+  },
+) {
+  const patients = await readLocalPatients();
+  const cases = await readLocalCases();
+  const current = patients.find((item) => item.id === patientId);
+
+  if (!current) {
+    throw new Error("Patient record was not found.");
+  }
+
+  const normalizedCode = updates.patientCode.trim();
+  if (!normalizedCode) {
+    throw new Error("Patient code is required.");
+  }
+
+  const duplicate = patients.find(
+    (item) => item.id !== patientId && item.code.toLowerCase() === normalizedCode.toLowerCase(),
+  );
+  if (duplicate) {
+    throw new Error("Another patient already uses this code.");
+  }
+
+  const updatedPatient: LocalPatientRecord = {
+    ...current,
+    code: normalizedCode,
+    name: updates.patientName ?? null,
+    sex: updates.sex ?? null,
+    dateOfBirth: updates.dateOfBirth ?? null,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const updatedCases = cases.map((item) =>
+    item.patient?.id === patientId
+      ? {
+          ...item,
+          patient: {
+            id: patientId,
+            code: updatedPatient.code,
+            name: updatedPatient.name,
+          },
+        }
+      : item,
+  );
+
+  await writeLocalPatients(
+    patients.map((item) => (item.id === patientId ? updatedPatient : item)),
+  );
+  await writeLocalCases(updatedCases);
+
+  return updatedPatient;
+}
+
+export async function deleteLocalPatient(patientId: string) {
+  const patients = await readLocalPatients();
+  const cases = await readLocalCases();
+  const existing = patients.find((item) => item.id === patientId);
+
+  if (!existing) {
+    throw new Error("Patient record was not found.");
+  }
+
+  await writeLocalPatients(patients.filter((item) => item.id !== patientId));
+  await writeLocalCases(
+    cases.map((item) =>
+      item.patient?.id === patientId
+        ? {
+            ...item,
+            patient: null,
+          }
+        : item,
+    ),
+  );
+}
+
 export async function createLocalCase(options: {
   patientCode: string;
   patientName: string | null;
+  sex?: string | null;
+  dateOfBirth?: string | null;
   caseTitle: string;
   clinicalNote: string | null;
   imageFile?: File | null;
@@ -80,6 +297,12 @@ export async function createLocalCase(options: {
   const now = new Date().toISOString();
   const caseId = `case-${randomUUID().slice(0, 8)}`;
   const caseCode = `PX-LOCAL-${Date.now().toString().slice(-6)}`;
+  const patient = await upsertLocalPatient({
+    patientCode: options.patientCode,
+    patientName: options.patientName,
+    sex: options.sex ?? null,
+    dateOfBirth: options.dateOfBirth ?? null,
+  });
 
   let imageRecord: DemoCaseRecord["images"][number] | null = null;
 
@@ -122,9 +345,9 @@ export async function createLocalCase(options: {
     createdAt: now,
     reviewedAt: null,
     patient: {
-      id: patientIdFromCode(options.patientCode),
-      code: options.patientCode,
-      name: options.patientName,
+      id: patient.id,
+      code: patient.code,
+      name: patient.name,
     },
     prediction: null,
     reports: [],

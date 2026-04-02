@@ -2,15 +2,13 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
-import { demoDoctor, getDemoDoctorByEmail } from "@/lib/demo/mock-data";
+import { getDemoDoctorByEmail } from "@/lib/demo/mock-data";
 import { hasSupabaseConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
-const DEMO_USER_COOKIE = "plasmaxai-demo-user";
-
 async function getDemoUser(): Promise<User> {
   const cookieStore = await cookies();
-  const selectedEmail = cookieStore.get(DEMO_USER_COOKIE)?.value ?? demoDoctor.email;
+  const selectedEmail = cookieStore.get("plasmaxai-demo-user")?.value;
   const selectedDoctor = getDemoDoctorByEmail(selectedEmail);
 
   return {

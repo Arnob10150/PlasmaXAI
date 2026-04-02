@@ -9,7 +9,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { demoDoctors, getDemoDoctorByEmail } from "@/lib/demo/mock-data";
+import { demoDoctors, getDemoDoctorByCredentials } from "@/lib/demo/mock-data";
 
 const loginSchema = z.object({
   email: z
@@ -39,22 +39,28 @@ export function LoginForm() {
     register,
     handleSubmit,
     getValues,
-    setValue,
-    watch,
     formState: { errors },
   } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: demoDoctors[0].email,
-      password: "password123",
+      password: demoDoctors[0].password,
     },
   });
-  const selectedDoctor = getDemoDoctorByEmail(watch("email"));
 
   const onSubmit = async (values: LoginValues) => {
     if (demoMode) {
-      document.cookie = `plasmaxai-demo-user=${encodeURIComponent(values.email)}; path=/; max-age=2592000; samesite=lax`;
-      toast.success(`Opening the workspace for ${getDemoDoctorByEmail(values.email).fullName}.`);
+      const selectedDoctor = getDemoDoctorByCredentials(values.email, values.password);
+
+      if (!selectedDoctor) {
+        const message = "Use one of the configured doctor accounts to access the workspace.";
+        setSubmitError(message);
+        toast.error(message);
+        return;
+      }
+
+      document.cookie = `plasmaxai-demo-user=${encodeURIComponent(selectedDoctor.email)}; path=/; max-age=2592000; samesite=lax`;
+      toast.success(`Opening the workspace for ${selectedDoctor.fullName}.`);
       router.replace(nextPath);
       router.refresh();
       return;
@@ -84,11 +90,7 @@ export function LoginForm() {
 
   const sendMagicLink = async () => {
     if (demoMode) {
-      const email = getValues("email");
-      document.cookie = `plasmaxai-demo-user=${encodeURIComponent(email)}; path=/; max-age=2592000; samesite=lax`;
-      toast.success(`Opening the workspace for ${getDemoDoctorByEmail(email).fullName}.`);
-      router.replace(nextPath);
-      router.refresh();
+      toast.error("Use the doctor email and password to sign in.");
       return;
     }
 
@@ -117,30 +119,6 @@ export function LoginForm() {
 
   return (
     <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
-      {demoMode ? (
-        <div className="rounded-2xl border border-blue-100 bg-blue-50/80 px-4 py-4 text-sm text-slate-700">
-          <p className="font-medium text-slate-950">Local doctor accounts</p>
-          <p className="mt-1 text-slate-600">Use any of these seeded accounts to open the workspace.</p>
-          <div className="mt-3 grid gap-2">
-            {demoDoctors.map((doctor) => (
-              <button
-                key={doctor.email}
-                className="flex items-start justify-between rounded-2xl border border-slate-200 bg-white px-3 py-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
-                onClick={() => {
-                  setValue("email", doctor.email, { shouldDirty: true, shouldTouch: true });
-                }}
-                type="button"
-              >
-                <span>
-                  <span className="block font-medium text-slate-900">{doctor.fullName}</span>
-                  <span className="block text-xs text-slate-500">{doctor.specialization}</span>
-                </span>
-                <span className="text-xs text-blue-700">{doctor.email}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
       <div className="space-y-2">
         <label className="text-sm font-medium text-slate-700">Email</label>
         <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition focus-within:border-blue-400 focus-within:bg-white">
@@ -176,11 +154,6 @@ export function LoginForm() {
       {submitError ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {submitError}
-        </div>
-      ) : null}
-      {demoMode ? (
-        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          Signing in as <span className="font-semibold">{selectedDoctor.fullName}</span> ({selectedDoctor.specialization})
         </div>
       ) : null}
       <div className="flex items-center justify-between text-sm text-slate-500">

@@ -77,9 +77,9 @@ export function WorkspaceShell({
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <Badge variant={demoMode ? "info" : "success"}>
-                <i className={cn("bi text-sm", demoMode ? "bi bi-laptop-fill" : "bi bi-broadcast-pin")} aria-hidden="true" />
-                {demoMode ? "Local review" : "Live review"}
+              <Badge variant="success">
+                <i className={cn("bi text-sm", "bi bi-check2-circle")} aria-hidden="true" />
+                Workspace ready
               </Badge>
               <div className="hidden items-center gap-2 text-sm text-slate-600 lg:flex">
                 <i className="bi bi-person-badge-fill text-base text-blue-700" aria-hidden="true" />
@@ -118,49 +118,29 @@ export function WorkspaceShell({
       </header>
 
       <div className="flex w-full gap-4 py-3">
-        <aside className="scrollbar-soft sticky top-[88px] hidden h-[calc(100vh-100px)] w-[292px] shrink-0 self-start flex-col overflow-y-auto overflow-x-hidden rounded-r-[28px] border-y border-r border-white/70 bg-white/84 p-4 shadow-[0_30px_80px_rgba(15,23,42,0.08)] backdrop-blur lg:flex">
-            <div className="rounded-[24px] border border-slate-200 bg-slate-950 p-4 text-white">
+        <aside className="sticky top-[88px] hidden h-[calc(100vh-96px)] w-[292px] shrink-0 self-start overflow-hidden rounded-r-[28px] border-y border-r border-white/70 bg-white/84 p-4 shadow-[0_30px_80px_rgba(15,23,42,0.08)] backdrop-blur lg:flex">
+          <div className="flex h-full flex-col">
+            <div className="rounded-[24px] border border-slate-200 bg-slate-950 p-3.5 text-white">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.24em] text-blue-200">Review queue</p>
-                  <h2 className="mt-2 text-lg font-semibold">Today&apos;s clinical focus</h2>
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-blue-200">Review queue</p>
+                  <h2 className="mt-1.5 text-base font-semibold">Today&apos;s clinical focus</h2>
                 </div>
-                <div className="rounded-2xl bg-white/10 p-3 text-blue-100">
-                  <i className="bi bi-clipboard2-pulse-fill text-lg" aria-hidden="true" />
+                <div className="rounded-2xl bg-white/10 p-2.5 text-blue-100">
+                  <i className="bi bi-clipboard2-pulse-fill text-base" aria-hidden="true" />
                 </div>
               </div>
-              <p className="mt-3 text-sm leading-5 text-slate-300">
-                Keep urgent reviews, case history, and pending sign-out actions within immediate reach.
+              <p className="mt-2.5 text-xs leading-5 text-slate-300">
+                Keep urgent reviews, case history, and sign-out tasks within immediate reach.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <Badge variant="warning">3 pending review</Badge>
-                <Badge variant="success">12 reviewed</Badge>
-                <Badge variant="info">Explainability ready</Badge>
+                <Badge variant="warning">Pending</Badge>
+                <Badge variant="success">Reviewed</Badge>
+                <Badge variant="info">Reports ready</Badge>
               </div>
             </div>
 
-            <div className="mt-4 grid gap-3 text-sm">
-              <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-3 text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:shadow-sm">
-                <div className="flex items-center gap-3">
-                  <i className="bi bi-clipboard2-pulse-fill text-lg text-blue-700" aria-hidden="true" />
-                  <div>
-                    <p className="font-semibold text-slate-900">Case interpretation</p>
-                    <p className="text-xs text-slate-500">Morphology review and explanation</p>
-                  </div>
-                </div>
-              </div>
-              <div className="rounded-[22px] border border-slate-200 bg-slate-50 p-3 text-slate-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:shadow-sm">
-                <div className="flex items-center gap-3">
-                  <i className="bi bi-graph-up-arrow text-lg text-emerald-600" aria-hidden="true" />
-                  <div>
-                    <p className="font-semibold text-slate-900">Trend review</p>
-                    <p className="text-xs text-slate-500">Confidence, risk, and patient history</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <nav className="mt-4 flex flex-col gap-2">
+            <nav className="mt-4 flex flex-col gap-1.5">
               {navigation.map((item) => {
                 const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
                 return (
@@ -168,7 +148,7 @@ export function WorkspaceShell({
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm",
+                      "flex items-center gap-3 rounded-2xl px-4 py-2.5 text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm",
                       active
                         ? "bg-[linear-gradient(135deg,#eff6ff,#eefaf7)] text-slate-950 shadow-sm"
                         : "text-slate-600 hover:bg-slate-50 hover:text-slate-950",
@@ -188,7 +168,7 @@ export function WorkspaceShell({
               })}
             </nav>
 
-            <div className="mt-4 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+            <div className="mt-auto rounded-[24px] border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-start gap-3">
                 <div className="rounded-2xl bg-white p-3 text-slate-800 shadow-sm">
                   <i className="bi bi-person-circle text-lg" aria-hidden="true" />
@@ -210,7 +190,8 @@ export function WorkspaceShell({
                 {isSigningOut ? "Signing out..." : "Sign out"}
               </button>
             </div>
-          </aside>
+          </div>
+        </aside>
 
         <div className="min-w-0 flex-1 px-3 sm:px-4 lg:pr-6">
           <motion.main

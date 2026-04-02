@@ -63,10 +63,10 @@ export function RegisterForm() {
 
   const onSubmit = async (values: RegisterValues) => {
     if (demoMode) {
-      document.cookie = `plasmaxai-demo-user=${encodeURIComponent(values.email)}; path=/; max-age=2592000; samesite=lax`;
-      toast.success(`Welcome, ${values.fullName}.`);
-      router.replace("/dashboard");
-      router.refresh();
+      const message = "Doctor accounts are already configured. Please sign in with an existing account.";
+      setSubmitMessage(message);
+      toast.error(message);
+      router.replace("/login");
       return;
     }
 

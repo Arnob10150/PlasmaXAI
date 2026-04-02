@@ -51,8 +51,8 @@ export default async function HistoryPage() {
           </Badge>
         </div>
         {rows.length ? (
-          <div className="overflow-hidden rounded-[24px] border border-slate-200">
-            <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto rounded-[24px] border border-slate-200">
+            <table className="min-w-[760px] w-full text-left text-sm">
               <thead className="bg-slate-50 text-slate-500">
                 <tr>
                   <th className="px-4 py-3 font-medium">Case ID</th>

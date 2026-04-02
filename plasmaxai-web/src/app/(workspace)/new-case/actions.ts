@@ -175,6 +175,8 @@ export async function createCaseAction(
       const localCase = await createLocalCase({
         patientCode,
         patientName,
+        sex,
+        dateOfBirth,
         caseTitle,
         clinicalNote,
         imageFile: uploadedFile,

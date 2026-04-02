@@ -1,0 +1,516 @@
+PlasmaXAI Competition Master Brief
+======================================================================
+
+Title
+----------------------------------------------------------------------
+PlasmaXAI: A Counterfactual-Guided Explainable AI Framework and Doctor-
+Facing Clinical Workspace for Malignant Plasma Cell Recognition in
+Multiple Myeloma
+
+
+Executive Summary
+----------------------------------------------------------------------
+PlasmaXAI is a research and deployment-ready framework designed to
+support the recognition of malignant plasma cells in multiple myeloma
+microscopy images. The project addresses a clinically meaningful
+problem: manual plasma-cell review is time-consuming, expertise
+dependent, and difficult to scale in settings where pathologists and
+hematologists must screen large numbers of marrow smear images while
+still preserving interpretability and documentation quality.
+
+The work evolved through three stages. The first stage established a
+baseline notebook workflow on the PCMMD dataset. The second stage
+optimized the core classification performance using hybrid deep-learning
+and morphology-based benchmarking. The third and final stage introduced
+the current PlasmaXAI framework, which is the main competition
+submission. In this final stage, counterfactual morphology information is
+not treated as a cosmetic post-hoc explanation; instead, it is embedded
+inside a learned fusion module that influences the final classification
+decision. This is one of the strongest originality points of the
+project.
+
+At the final preferred operating point, PlasmaXAI achieved 93.42%
+accuracy, 93.43% weighted F1, 91.24% plasma precision, 94.63% plasma
+recall, and 97.76% AUC on the held-out test set. It outperformed the
+main deep and morphology-based baselines on the most practically
+important metrics for a clinical screening scenario. In addition to the
+model, a doctor-facing website was built to show how the research can be
+translated into an interactive clinical review workflow with accounts,
+patient history, image review, explainability, case notes, and
+downloadable reports.
+
+
+1. Clarity of Problem and Research Objective
+----------------------------------------------------------------------
+Multiple myeloma is a hematologic malignancy defined by abnormal plasma-
+cell proliferation in the bone marrow. Morphologic review remains a key
+part of diagnosis, disease monitoring, and treatment planning. In many
+settings, the pathologist or hematologist must manually inspect marrow
+smears or plasma-cell images to identify suspicious or malignant
+patterns. This manual process has several practical weaknesses.
+
+First, it is labor intensive. Even experienced reviewers must spend time
+inspecting image after image, especially when the workflow involves
+screening support, disease follow-up, or second-review documentation.
+Second, the process is reader dependent. Interpretation can be affected
+by experience level, fatigue, stain variability, and subtle morphologic
+ambiguity. Third, the workflow is difficult to scale in lower-resource
+or high-volume environments, where specialist availability may be
+limited. Finally, most AI tools in digital pathology still emphasize raw
+performance more than usable interpretation, which makes them less
+suitable for clinician-in-the-loop deployment.
+
+PlasmaXAI was developed to address exactly that gap. The central problem
+statement of this project is:
+
+"Can we build an explainable, high-performing plasma-cell recognition
+system that not only improves diagnostic support on microscopy images,
+but also presents its evidence in a way that is useful to doctors rather
+than only to ML developers?"
+
+The research objectives were therefore defined as follows:
+
+1. Build a strong malignant plasma-cell recognition framework on PCMMD.
+2. Improve over benchmark CNN and morphology-only baselines.
+3. Move explainability into the decision pathway instead of attaching it
+   only after classification.
+4. Add patient-level consistency analysis to explore whether malignant
+   signals are coherent across grouped cases.
+5. Package the research in a clinically meaningful and deployment-aware
+   way through a website and report system.
+
+The scope of the work is therefore broader than a single classifier. It
+includes dataset usage, benchmarking, learned fusion, counterfactual
+reasoning, reliability analysis, patient aggregation, report generation,
+and interface design for doctor workflows.
+
+
+2. Methodology and Technical Approach
+----------------------------------------------------------------------
+2.1 Dataset and Split Strategy
+The project used the PCMMD dataset, a dataset of plasma-cell images
+designed to support multiple myeloma diagnosis. PCMMD Set 1 was used for
+cell-level model development and benchmarking, while PCMMD Set 2 was
+used for exploratory patient-level consistency analysis. The main split
+strategy for Set 1 was stratified 70/15/15 for training, validation, and
+testing respectively. In the notebook execution, this corresponded to
+2482 training images, 532 validation images, and 532 test images.
+
+2.2 Feature Design
+PlasmaXAI uses both deep image information and explicit morphology
+signals.
+
+Image pathway:
+- ResNet50 embeddings
+- DenseNet121 embeddings
+
+Morphology pathway:
+- nucleus-to-cytoplasm ratio
+- nucleus area
+- cytoplasm area
+- staining intensity
+- granularity
+- roundness
+- mean RGB features
+- related transformed ratios
+
+The image encoders capture rich visual texture and shape patterns, while
+the morphology branch preserves clinically interpretable descriptors.
+This dual representation is important because plasma-cell malignancy is
+not only a generic image-recognition problem; it is also a morphology-
+driven problem.
+
+2.3 Counterfactual-Guided Fusion
+The most original methodological contribution is the way counterfactual
+information is used. Instead of generating explanations only after the
+prediction, PlasmaXAI trains a morphology-based counterfactual boundary
+model that estimates how far a sample lies from a benign decision region
+and which feature shifts would move it toward that region. These
+counterfactual signals are then fed into the learned fusion network
+itself.
+
+The final fusion framework includes:
+- ResNet50 branch
+- DenseNet121 branch
+- morphology branch
+- counterfactual branch
+- score/decision branch
+
+These are combined using:
+- learned encoders per modality
+- sigmoid gates that modulate image streams using counterfactual signals
+- a softmax modality gate for final weighted fusion
+
+This design makes the explainability pathway structurally relevant to the
+prediction, which is stronger than common post-hoc visualization
+approaches.
+
+2.4 Optimization, Thresholding, and Evaluation
+Training used CUDA, AdamW-style optimization logic, validation-based
+selection, and threshold tuning. Multiple systems were compared,
+including:
+- ResNet50
+- DenseNet121
+- previous optimized hybrid
+- morphology logistic regression
+- morphology RBF-SVM
+- morphology random forest
+- morphology XGBoost
+
+The final preferred operating mode for competition reporting is the
+precision-recall balanced validation plateau, with threshold 0.72. This
+operating point was selected because it produced the best practical
+balance across the doctor-relevant metrics rather than only maximizing a
+single score.
+
+2.5 Reliability and Statistical Support
+The methodology did not stop at a single held-out test result. Additional
+analysis included:
+- ablation study
+- bootstrap confidence intervals
+- calibration/bootstrap diagram
+- exact permutation testing for patient-level exploratory separation
+- leave-one-patient-out patient-level evaluation
+
+This is important for competition judging because it shows that the
+implementation logic is not superficial. The work includes performance,
+reliability, and interpretability evidence.
+
+2.6 Doctor-Facing Translation
+A major technical strength of this project is that the research was
+translated into a website rather than left as a notebook-only prototype.
+The website includes:
+- doctor login and account flow
+- dashboard
+- new case upload
+- case review workspace
+- patient directory and patient profile pages
+- report viewing
+- image review
+- doctor notes
+- patient CRUD in the local workspace
+
+This demonstrates feasibility beyond experimentation and supports the
+real-world application score.
+
+
+3. Originality and Innovation
+----------------------------------------------------------------------
+The strongest originality claim is not that PlasmaXAI uses one totally
+unknown neural block. The novelty is system-level and methodological:
+
+1. Counterfactual guidance is embedded inside the decision path.
+   Many systems show explanations after prediction. PlasmaXAI uses
+   counterfactual morphology information as an active input to the fusion
+   process itself.
+
+2. The model is not a fixed weighted ensemble.
+   The earlier optimization stage used weighted blending. The final
+   framework replaced that with a learned counterfactual-guided fusion
+   module.
+
+3. The framework combines image, morphology, and counterfactual evidence.
+   This is more clinically meaningful than relying on CNN outputs alone.
+
+4. The project extends from cell-level recognition to patient-level
+   consistency analysis.
+   That adds an additional interpretive layer beyond single-image
+   classification.
+
+5. The work is paired with a doctor-facing clinical workspace.
+   Instead of stopping at a model checkpoint, the project shows how
+   explainable digital pathology can be turned into a usable review
+   system.
+
+So the originality claim should be stated honestly but strongly:
+PlasmaXAI is novel as an explainable clinical decision-support framework
+that fuses deep image features, morphology, and counterfactual signals
+in one learned architecture, rather than as a trivial UI wrapped around a
+standard CNN.
+
+
+4. Results and Expected Outcomes
+----------------------------------------------------------------------
+The final preferred test metrics for PlasmaXAI are:
+- Accuracy: 93.42%
+- Weighted F1: 93.43%
+- Plasma precision: 91.24%
+- Plasma recall: 94.63%
+- AUC: 97.76%
+
+These numbers are strong not only in isolation but also relative to the
+baselines:
+- ResNet50: 91.92% accuracy, 89.02% precision, 93.80% recall, 97.05% AUC
+- Prev Hybrid: 91.73% accuracy, 90.91% precision, 90.91% recall, 97.12% AUC
+- DenseNet121: 89.85% accuracy, 90.17% precision, 87.19% recall, 96.36% AUC
+
+PlasmaXAI therefore leads the main benchmark on accuracy, plasma
+precision, and plasma recall simultaneously. This is especially
+important for screening support, where recall matters for suspicious-cell
+capture but precision also matters to reduce unnecessary downstream
+review burden.
+
+Bootstrap support at the selected operating point:
+- Accuracy 95% CI: 91.16 to 95.30
+- Weighted F1 95% CI: 91.17 to 95.31
+- Plasma recall 95% CI: 91.30 to 97.20
+- AUC 95% CI: 96.56 to 98.63
+
+Ablation highlights:
+- Removing morphology reduced performance
+- Removing the counterfactual path caused the strongest recall drop
+- This supports the design rationale of the full fusion framework
+
+Patient-level exploratory findings:
+- 10 total patients
+- observed patient-level AUC: 1.000
+- permutation p-values: 0.0040 one-sided, 0.0079 two-sided
+- leave-one-patient-out AUC mean: 1.000
+- dominant separating features: mean_r, mean_g, mean_b
+
+These patient-level outcomes are promising but are reported as
+exploratory because the cohort is small and internally sourced. That
+honesty is important in a competition setting because it shows maturity
+of interpretation rather than overclaiming.
+
+Expected outcomes beyond the current numbers:
+- stronger doctor trust through built-in explainability
+- structured report generation
+- scalable screening support workflow
+- easier transition to prospective validation
+
+
+5. Impact and Real-World Application
+----------------------------------------------------------------------
+PlasmaXAI is highly relevant to real-world hematopathology and digital
+healthcare workflows.
+
+5.1 Clinical relevance
+Doctors reviewing plasma-cell morphology need:
+- fast triage support
+- consistent documentation
+- confidence-aware interpretation
+- access to prior case history
+- transparent supporting evidence
+
+PlasmaXAI addresses each of these through a combined research and
+software package.
+
+5.2 Societal and healthcare impact
+In many healthcare environments, expert pathology time is limited.
+Systems that improve throughput without hiding their reasoning can help:
+- reduce repetitive review burden
+- support earlier triage of suspicious cases
+- improve consistency of documentation
+- make computational pathology more accessible in lower-resource settings
+
+5.3 Industry and translational impact
+This work is also relevant to:
+- digital pathology tooling
+- hospital AI decision-support platforms
+- explainable medical AI research
+- diagnostic workflow software
+- deployable clinician-in-the-loop review products
+
+5.4 Scalability
+The project already includes a web workspace and a separate inference
+service concept. That means the work is not trapped in notebook form. It
+can scale from:
+- local review and competition demonstration
+to
+- hosted clinical review prototypes
+to
+- future production-grade systems with stronger backend integration
+
+5.5 Sustainability and efficiency
+The framework can support sustainability indirectly by:
+- reducing repeated manual review effort
+- improving triage efficiency
+- lowering the cost of iterative review workflows
+- supporting structured digital records and reusable case history
+
+
+6. Relevance to Competition Research Domains
+----------------------------------------------------------------------
+PlasmaXAI aligns strongly with multiple common competition themes:
+
+AI for healthcare:
+The core use case is medical-image-based decision support for multiple
+myeloma screening and review.
+
+Explainable AI:
+Explainability is not decorative in this project; it is a central design
+component.
+
+Computational pathology and medical imaging:
+The framework directly operates on pathology-style plasma-cell images and
+their morphology.
+
+Human-centered AI:
+The doctor-facing workspace, notes, history, and reports make the
+project clinician oriented rather than purely algorithmic.
+
+Translational and deployable innovation:
+The website and inference-service structure show a pathway toward real
+use instead of only a benchmark leaderboard result.
+
+Timeliness:
+The project fits the current importance of interpretable clinical AI,
+safe decision support, and digital pathology augmentation.
+
+
+7. Why PlasmaXAI should score strongly against the evaluation criteria
+----------------------------------------------------------------------
+Clarity of Problem and Research Objective (10):
+The project addresses a clear, clinically important problem and defines
+specific objectives around accuracy, explainability, patient-level
+analysis, and deployment.
+
+Impact and Real-World Application (8):
+The work has direct relevance to hematopathology, clinician workflows,
+digital triage, and report generation, with clear pathways to practical
+deployment.
+
+Methodology and Technical Approach (10):
+The pipeline is technically sound, multi-stage, benchmarked, statistically
+supported, and implemented with both research rigor and software
+translation in mind.
+
+Originality and Innovation (10):
+The key innovation is the counterfactual-guided learned fusion design,
+especially the integration of counterfactual information into the
+prediction path itself.
+
+Expected Outcomes (6):
+The results are strong, measurable, and realistic. The project reports
+not just optimism but actual held-out metrics, ablations, and
+uncertainty-aware analysis.
+
+Relevance to Competition Research Domains (6):
+The work clearly fits AI in healthcare, explainable AI, computational
+pathology, and translational clinical technology.
+
+
+8. Competition Submission Asset Map
+----------------------------------------------------------------------
+Core notebook:
+F:\BUET plasma\PlasmaXAI.ipynb
+
+Novel framework pipeline:
+F:\BUET plasma\novel_plasmaxai_pipeline.py
+
+Current website:
+F:\BUET plasma\plasmaxai-web
+
+Master research record:
+F:\BUET plasma\research_master_package\PlasmaXAI_research_master_record.txt
+
+Archived diagrams and images:
+F:\BUET plasma\research_master_package\diagrams_and_images
+
+Current final operating-point file:
+F:\BUET plasma\novel_outputs\plasmaxai_operating_point.json
+
+Main benchmark table:
+F:\BUET plasma\novel_outputs\plasmaxai_extended_model_comparison.csv
+
+Main robustness file:
+F:\BUET plasma\novel_outputs\plasmaxai_patient_robustness.json
+
+Main clinical insight file:
+F:\BUET plasma\novel_outputs\clinical_insight_report.txt
+
+
+9. References
+----------------------------------------------------------------------
+[1] Andrade, C. L. B., Ferreira, M. V., Alencar, B. M., Filho, J. L. S.
+    B., Guimaraes, M. A., Moraes, I. P. C., Lopes, T. J. S., Dos Santos,
+    A. S., Dos Santos, M. M., Silva, M. I. C. S. E., Rosa, I. M. D. R.
+    P., de Carvalho, G. C., Santos, H. H. M., Santos, M. M. L., Meyer,
+    R., Knop, L. M. P. B., Freire, S. M., Rios, R. A., Rios, T. N.
+    PCMMD: A Novel Dataset of Plasma Cells to Support the Diagnosis of
+    Multiple Myeloma. Scientific Data, 12(1), 161, 2025.
+
+[2] Rajkumar, S. V. Multiple myeloma: 2022 update on diagnosis, risk-
+    stratification, and management. American Journal of Hematology, 97,
+    1086-1107, 2022.
+
+[3] Litjens, G., Kooi, T., Bejnordi, B. E., et al. A survey on deep
+    learning in medical image analysis. Medical Image Analysis, 42,
+    60-88, 2017.
+
+[4] Bera, K., Schalper, K. A., Rimm, D. L., Velcheti, V., Madabhushi, A.
+    Artificial intelligence in digital pathology: new tools for diagnosis
+    and precision oncology. Nature Reviews Clinical Oncology, 16,
+    703-715, 2019.
+
+[5] He, K., Zhang, X., Ren, S., Sun, J. Deep residual learning for image
+    recognition. Proceedings of the IEEE Conference on Computer Vision
+    and Pattern Recognition, 770-778, 2016.
+
+[6] Huang, G., Liu, Z., van der Maaten, L., Weinberger, K. Q. Densely
+    connected convolutional networks. Proceedings of the IEEE Conference
+    on Computer Vision and Pattern Recognition, 4700-4708, 2017.
+
+[7] Janowczyk, A., Madabhushi, A. Deep learning for digital pathology
+    image analysis: A comprehensive tutorial with selected use cases.
+    Journal of Pathology Informatics, 7, 29, 2016.
+
+[8] Campanella, G., Hanna, M. G., Geneslaw, L., et al. Clinical-grade
+    computational pathology using weakly supervised deep learning on
+    whole slide images. Nature Medicine, 25, 1301-1309, 2019.
+
+[9] Wachter, S., Mittelstadt, B., Russell, C. Counterfactual
+    explanations without opening the black box: Automated decisions and
+    the GDPR. Harvard Journal of Law and Technology, 31(2), 841-887,
+    2018.
+
+[10] Mothilal, R. K., Sharma, A., Tan, C. Explaining machine learning
+     classifiers through diverse counterfactual explanations. FAT* 2020,
+     607-617, 2020.
+
+[11] Guo, C., Pleiss, G., Sun, Y., Weinberger, K. Q. On calibration of
+     modern neural networks. Proceedings of the 34th International
+     Conference on Machine Learning, 1321-1330, 2017.
+
+[12] Ribeiro, M. T., Singh, S., Guestrin, C. "Why should I trust you?":
+     Explaining the predictions of any classifier. Proceedings of the
+     22nd ACM SIGKDD International Conference on Knowledge Discovery and
+     Data Mining, 1135-1144, 2016.
+
+[13] Selvaraju, R. R., Cogswell, M., Das, A., et al. Grad-CAM: Visual
+     explanations from deep networks via gradient-based localization.
+     Proceedings of the IEEE International Conference on Computer Vision,
+     618-626, 2017.
+
+[14] Lundberg, S. M., Lee, S.-I. A unified approach to interpreting
+     model predictions. Advances in Neural Information Processing
+     Systems, 4765-4774, 2017.
+
+[15] Ronneberger, O., Fischer, P., Brox, T. U-Net: Convolutional
+     networks for biomedical image segmentation. MICCAI 2015, LNCS 9351,
+     234-241, 2015.
+
+[16] Oktay, O., Schlemper, J., Folgoc, L. L., et al. Attention U-Net:
+     Learning where to look for the pancreas. arXiv:1804.03999, 2018.
+
+
+10. Final Judge-Facing Conclusion
+----------------------------------------------------------------------
+PlasmaXAI is not just another high-accuracy classifier. It is a full
+explainable clinical AI framework that starts with a real pathology
+problem, develops a technically justified fusion architecture, validates
+it against meaningful baselines, and translates the result into a doctor-
+facing review system.
+
+Its strongest competition advantages are:
+- clear clinical motivation
+- strong benchmark performance
+- counterfactual-guided fusion novelty
+- ablation and robustness support
+- patient-level interpretive extension
+- practical doctor-facing deployment pathway
+
+For a competition that values clarity, impact, methodology, originality,
+realistic outcomes, and domain relevance, PlasmaXAI is a strong and
+credible submission.

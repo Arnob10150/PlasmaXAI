@@ -1,21 +1,25 @@
-# PlasmaXAI Web Release
+PlasmaXAI Web v1.1.0
+======================================================================
 
-- Version: `v1.0.0`
-- Date: `2026-04-02`
-- Scope: `website-only release for GitHub + Vercel`
+Release name:
+Competition-ready clinical workspace release
 
-## Included
+Release date:
+2026-04-02
 
-- `src/`
-- `public/`
-- `supabase/`
-- app configuration
-- local-mode doctor accounts
-- Vercel-ready README
+What this version includes:
+- Responsive doctor-facing workspace layout
+- Sticky left sidebar with reduced clutter
+- Cleaner landing, login, and registration screens
+- Short seeded doctor credentials for local evaluation
+- Persisted doctor selection in local mode
+- Case history, report, patient directory, and patient profile screens
+- Local patient CRUD support
+- Improved case review presentation for clinicians
+- Research master package with archived diagrams and master records
 
-## Excluded by Git
+Primary app folder:
+F:\BUET plasma\plasmaxai-web
 
-- `.next/`
-- `node_modules/`
-- `.env.local`
-- local generated runtime files
+GitHub repository:
+https://github.com/Arnob10150/PlasmaXAI.git

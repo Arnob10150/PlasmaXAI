@@ -77,13 +77,5 @@ export const config = {
   matcher: [
     "/login",
     "/register",
-    "/dashboard/:path*",
-    "/new-case/:path*",
-    "/history/:path*",
-    "/patients/:path*",
-    "/reports/:path*",
-    "/profile/:path*",
-    "/settings/:path*",
-    "/cases/:path*",
   ],
 };

@@ -18,10 +18,10 @@ export function AuthShell({
 }) {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.18),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(15,118,110,0.18),_transparent_32%),linear-gradient(180deg,_#f8fbff_0%,_#eef5fb_100%)]">
-      <div className="mx-auto grid min-h-screen max-w-7xl gap-6 px-6 py-8 lg:grid-cols-[1.05fr_0.95fr] lg:px-10">
-        <section className="hidden overflow-hidden rounded-[36px] border border-white/70 bg-[linear-gradient(180deg,#071125,#0f172a)] p-8 text-white shadow-[0_30px_80px_rgba(15,23,42,0.18)] lg:flex lg:flex-col">
+      <div className="mx-auto grid min-h-screen max-w-7xl gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[1.02fr_0.98fr] lg:px-8">
+        <section className="hidden overflow-hidden rounded-[36px] border border-white/70 bg-[linear-gradient(180deg,#071125,#0f172a)] p-7 text-white shadow-[0_30px_80px_rgba(15,23,42,0.18)] lg:flex lg:flex-col">
           <LogoLockup />
-          <div className="mt-16 max-w-xl space-y-5">
+          <div className="mt-12 max-w-xl space-y-5">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm font-medium text-blue-200">
               <i className="bi bi-shield-lock-fill text-base" aria-hidden="true" />
               PlasmaXAI doctor workspace
@@ -51,7 +51,7 @@ export function AuthShell({
         </section>
 
         <section className="flex items-center justify-center">
-          <div className="w-full max-w-xl rounded-[36px] border border-white/80 bg-white/90 p-8 shadow-[0_30px_80px_rgba(15,23,42,0.10)] backdrop-blur">
+          <div className="w-full max-w-xl rounded-[32px] border border-white/80 bg-white/92 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.10)] backdrop-blur sm:p-8">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="inline-flex items-center gap-2 text-sm font-medium uppercase tracking-[0.24em] text-blue-700">
                 <i className="bi bi-person-lock text-base" aria-hidden="true" />

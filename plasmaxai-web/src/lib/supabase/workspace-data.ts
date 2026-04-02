@@ -1,7 +1,9 @@
-import { demoCases } from "@/lib/demo/mock-data";
 import { storageConfig } from "@/lib/constants";
-import { queueCaseInference } from "@/lib/inference/service";
-import { ensureLocalCaseReport, listLocalCases, updateLocalCaseInference } from "@/lib/local-cases/store";
+import {
+  ensureLocalCaseReport,
+  listLocalCases,
+  listLocalPatients,
+} from "@/lib/local-cases/store";
 import { hasSupabaseConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -68,11 +70,15 @@ export interface PatientDetail {
     id: string;
     code: string;
     name: string | null;
+    sex?: string | null;
+    dateOfBirth?: string | null;
+    createdAt?: string;
+    updatedAt?: string;
   };
   cases: CaseSummary[];
   averageConfidence: number | null;
   highRiskCount: number;
-  latestCase: CaseSummary;
+  latestCase: CaseSummary | null;
   previousCase: CaseSummary | null;
 }
 
@@ -403,11 +409,38 @@ export async function getCaseHistoryData() {
 }
 
 export async function getPatientsData() {
+  if (!hasSupabaseConfig()) {
+    const [patients, cases] = await Promise.all([listLocalPatients(), fetchCases()]);
+
+    return patients
+      .map((patient) => {
+        const patientCases = cases.filter((item) => item.patient?.id === patient.id);
+        const latestCase = patientCases[0] ?? null;
+
+        return {
+          id: patient.id,
+          code: patient.code,
+          name: patient.name,
+          sex: patient.sex,
+          dateOfBirth: patient.dateOfBirth,
+          caseCount: patientCases.length,
+          latestCaseAt: latestCase?.createdAt ?? patient.updatedAt,
+          latestCaseCode: latestCase?.caseCode ?? "No cases yet",
+        };
+      })
+      .sort(
+        (left, right) =>
+          new Date(right.latestCaseAt).getTime() - new Date(left.latestCaseAt).getTime(),
+      );
+  }
+
   const cases = await fetchCases();
   const grouped = new Map<string, {
     id: string;
     code: string;
     name: string | null;
+    sex?: string | null;
+    dateOfBirth?: string | null;
     caseCount: number;
     latestCaseAt: string;
     latestCaseCode: string;
@@ -446,26 +479,44 @@ export async function getPatientsData() {
 }
 
 export async function getPatientDetail(patientId: string): Promise<PatientDetail | null> {
-  const patientCases = await fetchCases({ patientId, includeReports: true });
-  if (!patientCases.length || !patientCases[0].patient) {
-    return null;
-  }
-
   if (!hasSupabaseConfig()) {
+    const [patients, patientCases] = await Promise.all([
+      listLocalPatients(),
+      fetchCases({ patientId, includeReports: true }),
+    ]);
+    const patient = patients.find((item) => item.id === patientId) ?? null;
+
+    if (!patient) {
+      return null;
+    }
+
     const confidenceValues = patientCases
       .map((item) => item.prediction?.confidence ?? null)
       .filter((value): value is number => typeof value === "number");
 
     return {
-      patient: patientCases[0].patient!,
+      patient: {
+        id: patient.id,
+        code: patient.code,
+        name: patient.name,
+        sex: patient.sex,
+        dateOfBirth: patient.dateOfBirth,
+        createdAt: patient.createdAt,
+        updatedAt: patient.updatedAt,
+      },
       cases: patientCases,
       averageConfidence: confidenceValues.length
         ? confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length
         : null,
       highRiskCount: patientCases.filter((item) => item.prediction?.riskLevel?.toLowerCase() === "high").length,
-      latestCase: patientCases[0],
+      latestCase: patientCases[0] ?? null,
       previousCase: patientCases[1] ?? null,
     };
+  }
+
+  const patientCases = await fetchCases({ patientId, includeReports: true });
+  if (!patientCases.length || !patientCases[0].patient) {
+    return null;
   }
 
   const signedCases = await Promise.all(
@@ -504,7 +555,7 @@ export async function getPatientDetail(patientId: string): Promise<PatientDetail
       ? confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length
       : null,
     highRiskCount: signedCases.filter((item) => item.prediction?.riskLevel?.toLowerCase() === "high").length,
-    latestCase: signedCases[0],
+    latestCase: signedCases[0] ?? null,
     previousCase: signedCases[1] ?? null,
   };
 }
@@ -577,51 +628,26 @@ export async function getReportsData() {
 
 export async function getCaseDetail(caseId: string) {
   if (!hasSupabaseConfig()) {
-    let localCases = await listLocalCases();
-    let localCase = localCases.find((item) => item.id === caseId) ?? null;
+    const localCases = await listLocalCases();
+    const localCase = localCases.find((item) => item.id === caseId) ?? null;
 
-    if (
-      localCase &&
-      (!localCase.prediction || !localCase.analysis) &&
-      localCase.images[0]?.storagePath
-    ) {
-      try {
-        const result = await queueCaseInference({
-          caseId: localCase.id,
-          caseCode: localCase.caseCode,
-          patientCode: localCase.patient?.code ?? "PT-LOCAL",
-          title: localCase.title,
-          imagePath: localCase.images[0].storagePath,
-        });
-
-        if (result.queued && result.result) {
-          await updateLocalCaseInference(localCase.id, {
-            predictedClass: result.result.prediction.predictedClassText,
-            confidence: result.result.prediction.confidence,
-            riskLevel: result.result.prediction.riskLevel,
-            modelVersion: result.result.modelVersion,
-            counterfactualText: result.result.explanation.counterfactualText,
-            clinicalInsightText: result.result.explanation.clinicalInsightText,
-            topFeatures: result.result.explanation.topFeatures,
-            analysis: {
-              probabilities: result.result.probabilities,
-              modalityGates: result.result.modalityGates,
-              morphology: result.result.morphology,
-            },
-          });
-
-          localCases = await listLocalCases();
-          localCase = localCases.find((item) => item.id === caseId) ?? localCase;
-        }
-      } catch {
-        return localCase;
-      }
+    if (!localCase) {
+      return null;
     }
 
-    if (localCase?.prediction && !localCase.reports.length) {
-      await ensureLocalCaseReport(localCase.id);
-      localCases = await listLocalCases();
-      localCase = localCases.find((item) => item.id === caseId) ?? localCase;
+    if (localCase.prediction && !localCase.reports.length) {
+      return {
+        ...localCase,
+        reports: [
+          {
+            id: `report-${localCase.id}`,
+            storagePath: `/api/local-report-file/${localCase.id}`,
+            reportType: "pdf",
+            generatedAt: localCase.reviewedAt ?? localCase.createdAt,
+            signedUrl: `/api/local-report-file/${localCase.id}`,
+          },
+        ],
+      };
     }
 
     return localCase;

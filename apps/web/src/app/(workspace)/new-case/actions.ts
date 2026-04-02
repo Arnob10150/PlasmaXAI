@@ -2,12 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { hasSupabaseConfig, shouldUseFilesystemLocalStore } from "@/lib/supabase/config";
+import { createHostedDemoCase } from "@/lib/demo/session-store";
+import { hasSupabaseConfig, shouldUseFilesystemLocalStore, shouldUseHostedDemoFallback } from "@/lib/supabase/config";
 import { buildCaseReportPdf } from "@/lib/reports/pdf-report";
 import { storageConfig } from "@/lib/constants";
 import { queueCaseInference, type InferenceResult } from "@/lib/inference/service";
 import { createLocalCase, updateLocalCaseInference } from "@/lib/local-cases/store";
 import { getLocalWorkspaceSettings } from "@/lib/local-settings/store";
+import { getHostedDemoWorkspaceSettings } from "@/lib/demo/session-settings";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/auth";
 
@@ -170,31 +172,36 @@ export async function createCaseAction(
   }
 
   if (!hasSupabaseConfig()) {
-    if (!shouldUseFilesystemLocalStore()) {
-      return {
-        error: "Hosted demo mode is read-only until Supabase storage and database settings are configured.",
-      };
-    }
-
     let localCaseId: string | null = null;
 
     try {
-      const settings = await getLocalWorkspaceSettings();
-      const localCase = await createLocalCase({
-        patientCode,
-        patientName,
-        sex,
-        dateOfBirth,
-        caseTitle,
-        clinicalNote,
-        initialStatus: settings.defaultCaseStatus,
-        imageFile: uploadedFile,
-        imageReference,
-      });
+      const settings = shouldUseHostedDemoFallback()
+        ? await getHostedDemoWorkspaceSettings()
+        : await getLocalWorkspaceSettings();
+
+      const localCase = shouldUseHostedDemoFallback()
+        ? await createHostedDemoCase({
+            patientCode,
+            patientName,
+            caseTitle,
+            clinicalNote,
+            initialStatus: settings.defaultCaseStatus,
+          })
+        : await createLocalCase({
+            patientCode,
+            patientName,
+            sex,
+            dateOfBirth,
+            caseTitle,
+            clinicalNote,
+            initialStatus: settings.defaultCaseStatus,
+            imageFile: uploadedFile,
+            imageReference,
+          });
 
       const localImagePath = localCase.images[0]?.storagePath ?? null;
 
-      if (localImagePath) {
+      if (localImagePath && shouldUseFilesystemLocalStore()) {
         try {
           const result = await queueCaseInference({
             caseId: localCase.id,

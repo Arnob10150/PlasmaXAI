@@ -1,8 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { updateHostedDemoDoctorProfile } from "@/lib/demo/session-store";
 import { updateLocalDoctorProfile } from "@/lib/local-doctors/store";
-import { hasSupabaseConfig, shouldUseFilesystemLocalStore } from "@/lib/supabase/config";
+import { hasSupabaseConfig, shouldUseFilesystemLocalStore, shouldUseHostedDemoFallback } from "@/lib/supabase/config";
 import { requireUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -30,18 +31,19 @@ export async function updateProfileAction(
     const user = await requireUser();
 
     if (!hasSupabaseConfig()) {
-      if (!shouldUseFilesystemLocalStore()) {
-        return {
-          error: "Hosted demo mode is read-only until Supabase is configured.",
-          success: null,
-        };
+      if (shouldUseHostedDemoFallback()) {
+        await updateHostedDemoDoctorProfile(user.email ?? "", {
+          fullName,
+          specialization,
+          organizationName,
+        });
+      } else if (shouldUseFilesystemLocalStore()) {
+        await updateLocalDoctorProfile(user.email ?? "", {
+          fullName,
+          specialization,
+          organizationName,
+        });
       }
-
-      await updateLocalDoctorProfile(user.email ?? "", {
-        fullName,
-        specialization,
-        organizationName,
-      });
       revalidatePath("/profile");
       revalidatePath("/dashboard");
       revalidatePath("/patients");

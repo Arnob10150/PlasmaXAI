@@ -3,8 +3,9 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { getDemoDoctorByEmail } from "@/lib/demo/mock-data";
+import { getHostedDemoDoctorByEmail } from "@/lib/demo/session-store";
 import { getLocalDoctorByEmail } from "@/lib/local-doctors/store";
-import { hasSupabaseConfig, shouldUseFilesystemLocalStore } from "@/lib/supabase/config";
+import { hasSupabaseConfig, shouldUseFilesystemLocalStore, shouldUseHostedDemoFallback } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 async function getDemoUser(): Promise<User> {
@@ -12,7 +13,9 @@ async function getDemoUser(): Promise<User> {
   const selectedEmail = cookieStore.get("plasmaxai-demo-user")?.value;
   const selectedDoctor = shouldUseFilesystemLocalStore()
     ? await getLocalDoctorByEmail(selectedEmail)
-    : getDemoDoctorByEmail(selectedEmail);
+    : shouldUseHostedDemoFallback()
+      ? await getHostedDemoDoctorByEmail(selectedEmail)
+      : getDemoDoctorByEmail(selectedEmail);
 
   return {
     id: selectedDoctor.id,

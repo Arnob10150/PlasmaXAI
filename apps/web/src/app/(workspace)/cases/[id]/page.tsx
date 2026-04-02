@@ -143,7 +143,7 @@ export default async function CaseReviewPage({
     });
 
   return (
-    <div className="space-y-5">
+    <div className="min-w-0 space-y-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="inline-flex items-center gap-2 text-sm font-medium uppercase tracking-[0.2em] text-blue-700">
@@ -166,8 +166,8 @@ export default async function CaseReviewPage({
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_360px]">
-        <div className="space-y-4">
+      <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.2fr)_360px]">
+        <div className="min-w-0 space-y-4">
           <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             {image?.signedUrl ? (
               <ImageReviewPanel
@@ -241,7 +241,7 @@ export default async function CaseReviewPage({
           </section>
         </div>
 
-        <section className="space-y-4 rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <section className="min-w-0 space-y-4 rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <form action={updateCaseReviewAction} className="space-y-4 rounded-[22px] border border-slate-200 bg-slate-50 p-4">
             <input type="hidden" name="caseId" value={caseItem.id} />
             <input type="hidden" name="redirectTo" value="/history" />

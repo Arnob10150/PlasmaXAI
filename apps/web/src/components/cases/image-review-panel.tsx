@@ -22,7 +22,9 @@ export function ImageReviewPanel({
   riskLevel,
   topFeatures = [],
 }: ImageReviewPanelProps) {
-  const [resolvedImageUrl, setResolvedImageUrl] = useState(imageUrl);
+  const [resolvedImageUrl, setResolvedImageUrl] = useState(
+    imageUrl.startsWith("browser-storage://") ? "" : imageUrl,
+  );
   const [adaptiveOverlayUrl, setAdaptiveOverlayUrl] = useState<string | null>(null);
   const overlaySource = heatmapUrl ?? adaptiveOverlayUrl;
   const overlayAvailable = Boolean(overlaySource);
@@ -61,6 +63,14 @@ export function ImageReviewPanel({
     if (heatmapUrl) {
       setAdaptiveOverlayUrl(null);
       setShowOverlay(true);
+      return () => {
+        active = false;
+      };
+    }
+
+    if (!resolvedImageUrl) {
+      setAdaptiveOverlayUrl(null);
+      setShowOverlay(false);
       return () => {
         active = false;
       };
@@ -235,13 +245,19 @@ export function ImageReviewPanel({
                 <div className="overflow-hidden rounded-[24px] border border-white/10 bg-black/40">
                   <TransformComponent wrapperClass="!h-full !w-full !cursor-grab active:!cursor-grabbing" contentClass="!h-full !w-full">
                     <div className="relative aspect-[4/3] min-h-[260px] w-full overflow-hidden bg-slate-950 touch-none sm:min-h-[340px] lg:min-h-[420px]">
-                      <img
-                        alt={imageName}
-                        className="h-full w-full object-contain select-none"
-                        draggable={false}
-                        src={resolvedImageUrl}
-                        style={filterStyle}
-                      />
+                      {resolvedImageUrl ? (
+                        <img
+                          alt={imageName}
+                          className="h-full w-full object-contain select-none"
+                          draggable={false}
+                          src={resolvedImageUrl}
+                          style={filterStyle}
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center px-6 text-center text-sm text-slate-300">
+                          The uploaded image is still being prepared in this browser session. Return to the case in a moment and it will appear here.
+                        </div>
+                      )}
                       {showOverlay && overlaySource ? (
                         <motion.img
                           alt={`${imageName} attention heatmap`}

@@ -29,6 +29,7 @@ export function NewCaseForm({
   const [state, formAction] = useActionState(action, initialState);
   const [clientCaseId, setClientCaseId] = useState("");
   const [browserImageKey, setBrowserImageKey] = useState("");
+  const [isImagePrepared, setIsImagePrepared] = useState(true);
 
   useEffect(() => {
     const nextId = `case-${Math.random().toString(36).slice(2, 10)}`;
@@ -45,9 +46,11 @@ export function NewCaseForm({
     const file = event.target.files?.[0];
 
     if (!file || !hiddenStorageKey) {
+      setIsImagePrepared(true);
       return;
     }
 
+    setIsImagePrepared(false);
     const reader = new FileReader();
     reader.onload = () => {
       try {
@@ -65,9 +68,13 @@ export function NewCaseForm({
             savedAt: Date.now(),
           }),
         );
+        setIsImagePrepared(true);
       } catch {
-        // If local storage is unavailable, the server path can still use manual references.
+        setIsImagePrepared(false);
       }
+    };
+    reader.onerror = () => {
+      setIsImagePrepared(false);
     };
     reader.readAsDataURL(file);
   }
@@ -112,6 +119,7 @@ export function NewCaseForm({
             <div className="mt-4 flex flex-wrap gap-2">
               <Badge variant="info">Microscopy upload</Badge>
               <Badge variant="neutral">Case-ready intake</Badge>
+              {!isImagePrepared ? <Badge variant="warning">Preparing uploaded image</Badge> : null}
             </div>
           </div>
         </div>
@@ -183,7 +191,15 @@ export function NewCaseForm({
                 {state.error}
               </div>
             ) : null}
-            <SubmitButton />
+            {!isImagePrepared ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                <i className="bi bi-hourglass-split mr-2" aria-hidden="true" />
+                Please wait a moment while the uploaded image is prepared for the analysis workspace.
+              </div>
+            ) : null}
+            <div className={!isImagePrepared ? "pointer-events-none opacity-60" : ""}>
+              <SubmitButton />
+            </div>
           </div>
         </div>
       </div>

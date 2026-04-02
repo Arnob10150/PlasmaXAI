@@ -1,0 +1,931 @@
+PlasmaXAI Everything Master Dossier
+==========================================================================
+
+Purpose of this file
+--------------------------------------------------------------------------
+This is the full detailed master record for the PlasmaXAI project. It is
+meant to go beyond a short abstract, short summary, or competition brief.
+It documents the scientific background, problem definition, research
+motivation, objectives, scope, methodology, architecture evolution,
+results, robustness studies, explainability findings, website/deployment
+translation, artifact inventory, GitHub push status, and practical
+limitations.
+
+This file is intended to answer the question:
+"What exactly is PlasmaXAI, how was it built, what did it achieve, what
+is original about it, what is deployable, what has been pushed to GitHub,
+and what remains limited or excluded?"
+
+
+1. Project identity and naming history
+--------------------------------------------------------------------------
+Final preferred project name:
+PlasmaXAI
+
+Earlier names used during development:
+- PlasmaXNet
+- PLASMAXNET
+
+High-level description:
+PlasmaXAI is a counterfactual-guided explainable AI framework for the
+recognition of malignant plasma cells in multiple myeloma microscopy
+images. The project started as a notebook-driven classification study,
+then progressed through benchmark optimization, and finally matured into
+a learned fusion framework with explainability inside the decision path,
+patient-level analysis, paper materials, and a doctor-facing website.
+
+Core project idea:
+The project is not only about classifying images. Its central idea is to
+combine:
+- deep image embeddings
+- explicit morphology features
+- counterfactual boundary information
+- clinician-oriented explainability
+- doctor-facing review workflow
+
+So the final project is best described as:
+"an explainable digital hematopathology framework plus a clinical review
+workspace"
+
+
+2. Background and problem context
+--------------------------------------------------------------------------
+Clinical context:
+Multiple myeloma is a hematologic malignancy characterized by abnormal
+clonal proliferation of plasma cells. Morphologic examination of bone
+marrow and plasma-cell images remains clinically relevant in diagnosis,
+follow-up, burden estimation, and disease interpretation.
+
+Why the problem matters:
+- Plasma-cell review is time-consuming.
+- Morphology interpretation can vary with expertise.
+- Large image volumes are difficult to screen manually.
+- Lower-resource settings may not have enough specialist capacity.
+- Many AI systems optimize only for accuracy and do not give doctors
+  useful reasons for their decisions.
+
+Practical gap addressed by PlasmaXAI:
+There is a need for an AI system that is:
+- accurate enough to be clinically interesting
+- explainable in a doctor-usable way
+- not just a black-box classifier
+- translatable into a real review workflow
+
+Project problem statement:
+Can we build a high-performing malignant plasma-cell recognition system
+that not only improves diagnostic support on microscopy images, but also
+explains its reasoning in a way that is useful to doctors rather than
+only to machine-learning developers?
+
+
+3. Research objectives
+--------------------------------------------------------------------------
+Primary objectives:
+1. Build a strong malignant plasma-cell recognition model on PCMMD.
+2. Compare it against established deep and morphology-only baselines.
+3. Improve over the original notebook-stage framework.
+4. Move explainability into the decision path instead of attaching it
+   only after prediction.
+5. Explore patient-level signal consistency using grouped case analysis.
+6. Package the work for paper, figures, reports, and a doctor-facing
+   website.
+
+Secondary objectives:
+1. Improve both plasma precision and plasma recall at the final selected
+   operating point.
+2. Support claims with ablation and bootstrap evidence.
+3. Produce clinician-readable report material.
+4. Provide architecture diagrams and competition-ready documentation.
+
+Scope:
+This project covers:
+- dataset usage
+- model development
+- benchmark comparison
+- explainability
+- counterfactual analysis
+- statistical robustness
+- patient-level interpretation
+- report generation
+- website-based clinical workflow translation
+
+
+4. Dataset, split strategy, and experimental setup
+--------------------------------------------------------------------------
+Primary dataset folder:
+F:\BUET plasma\data\raw\PCMMD Plasma Cells for Multiple Myeloma Diagnosis
+
+Related local processed folder:
+F:\BUET plasma\data\raw\PCMMD_LOCAL
+
+Dataset usage strategy:
+- PCMMD Set 1: model development, benchmarking, thresholding
+- PCMMD Set 2: exploratory patient-level analysis
+
+Main split strategy:
+- stratified 70 / 15 / 15
+- Train: 2482 images
+- Validation: 532 images
+- Test: 532 images
+
+Why the split matters:
+The project explicitly used validation data for threshold selection and
+model comparison before reporting held-out test results. This supports a
+cleaner final evaluation than thresholding directly on the test set.
+
+Device and training environment:
+- CUDA-enabled training was used for the major optimized and novel runs.
+- The final novel fusion summary explicitly records device = CUDA.
+
+
+5. Development timeline and project evolution
+--------------------------------------------------------------------------
+Phase 1: original notebook stage
+- Main artifact: F:\BUET plasma\research\notebooks\PlasmaXAI.ipynb
+- Baseline checkpoint: F:\BUET plasma\artifacts\models\best_plasmaxai.pth
+- Initial explainability and benchmark exploration
+
+Phase 2: optimization stage
+- Main artifact: F:\BUET plasma\research\scripts\optimize_plasmaxai.py
+- Best optimized outputs stored in:
+  F:\BUET plasma\research\outputs\optimization
+- Introduced broader benchmark comparisons and improved hybrid
+  performance
+
+Phase 3: novel framework stage
+- Main artifact: F:\BUET plasma\research\scripts\novel_plasmaxai_pipeline.py
+- Final novel outputs stored in:
+  F:\BUET plasma\research\outputs\novel
+- Introduced learned fusion, counterfactual-guided decision path,
+  patient-level analysis, and stronger figure/report package
+
+Phase 4: doctor-facing website and inference integration
+- Website folder:
+  F:\BUET plasma\apps\web
+- Inference service folder:
+  F:\BUET plasma\apps\inference
+- Added case review workflow, reports, patient pages, login/doctor
+  workspace, and research-to-interface translation
+
+
+6. Phase 1 results: notebook stage
+--------------------------------------------------------------------------
+Notebook artifact:
+F:\BUET plasma\research\notebooks\PlasmaXAI.ipynb
+
+Main notebook-stage result:
+- EfficientNet test accuracy: 85.34%
+- Plasma recall: 0.79
+
+Interpretation:
+This showed the project could run end-to-end, but it was not yet strong
+enough for the intended malignant sensitivity target.
+
+Notebook benchmark section:
+- ResNet-50 benchmark accuracy: 91.92%
+- ResNet-50 AUC: 0.971
+- EfficientNet benchmark accuracy: 82.89%
+
+Counterfactual result at notebook stage:
+- DICE generated 60 counterfactual explanations
+- Main reported feature drivers:
+  - NC Ratio
+  - Nucleus Area
+  - Mean R
+
+Original root figures:
+- fig1_eda_overview.png
+- fig2_feature_distributions.png
+- fig3_training_history.png
+- fig4_model_comparison.png
+- fig5_confusion_roc.png
+- fig6_counterfactual_analysis.png
+- fig7_deployment_profile.png
+
+Meaning of phase 1:
+Phase 1 established feasibility, baseline metrics, and early
+counterfactual explainability, but it did not yet represent the final
+scientific or deployment-level contribution.
+
+
+7. Phase 2 results: optimization stage
+--------------------------------------------------------------------------
+Main optimization artifacts:
+- F:\BUET plasma\research\scripts\optimize_plasmaxai.py
+- F:\BUET plasma\research\outputs\optimization\best_framework_summary.json
+- F:\BUET plasma\research\outputs\optimization\best_framework_report.txt
+- F:\BUET plasma\artifacts\models\best_plasmaxai_hybrid_config.json
+
+Best optimized hybrid before the novel extension:
+- Type: hybrid ensemble
+- Blend:
+  - ResNet50 weight: 0.55
+  - DenseNet121 weight: 0.45
+  - Morphology contribution: 0.02
+  - Threshold: 0.55
+
+Best optimized hybrid validation metrics:
+- Accuracy: 94.36%
+- Weighted F1: 94.37%
+- Plasma recall: 96.30%
+- AUC: 98.03%
+
+Best optimized hybrid test metrics:
+- Accuracy: 92.48%
+- Weighted F1: 92.48%
+- Plasma recall: 92.15%
+- AUC: 97.38%
+
+Best optimized single model:
+- ResNet50
+- Accuracy: 92.29%
+- Weighted F1: 92.31%
+- Plasma recall: 94.21%
+- AUC: 97.30%
+
+Why phase 2 mattered:
+It proved that the project could outperform the early notebook baseline
+substantially and that a hybrid strategy could be stronger than a single
+model. However, the system was still mostly an optimized ensemble of
+known parts.
+
+
+8. Why the project still needed a stronger novelty claim
+--------------------------------------------------------------------------
+At the end of phase 2, the system was strong but not deeply novel from a
+methodological perspective. The main limitations were:
+- ensemble weighting was mostly static
+- explainability was still too external to the final decision
+- there was no deeper patient-level interpretation story
+- the system did not yet strongly differentiate itself as a research
+  framework rather than an optimized benchmark
+
+This led to the decision to build a truly learned fusion framework and
+to tie counterfactual information into the model’s decision pathway.
+
+
+9. Final methodology: PlasmaXAI novel framework
+--------------------------------------------------------------------------
+Main pipeline:
+F:\BUET plasma\research\scripts\novel_plasmaxai_pipeline.py
+
+Main summary:
+F:\BUET plasma\research\outputs\novel\novel_summary.json
+
+Saved novel model:
+F:\BUET plasma\research\outputs\novel\novel_fusion_model.pth
+
+Supporting artifacts:
+- counterfactual_bundle.joblib
+- fusion_scalers.joblib
+- fusion_search_histories.json
+
+9.1 Core design idea
+PlasmaXAI combines:
+- frozen ResNet50 image embeddings
+- frozen DenseNet121 image embeddings
+- handcrafted morphology features
+- a morphology-derived counterfactual boundary model
+- learned gating and fusion
+
+This means the final system is neither a plain CNN nor a simple
+weighted-average ensemble.
+
+9.2 Deep image pathways
+Image branches:
+- ResNet50 branch
+- DenseNet121 branch
+
+Role:
+These capture texture, chromatic structure, cell architecture, and other
+high-dimensional visual patterns from microscopy images.
+
+9.3 Morphology pathway
+The morphology branch encodes explicit interpretable features such as:
+- nucleus-to-cytoplasm ratio
+- nucleus area
+- cytoplasm area
+- roundness/shape information
+- staining characteristics
+- mean RGB descriptors
+- related transformed ratios and summary descriptors
+
+Role:
+This preserves interpretable morphologic structure and helps connect the
+framework to clinically meaningful cues rather than only latent image
+features.
+
+9.4 Counterfactual pathway
+This is one of the most important components of the project.
+
+Instead of producing counterfactuals only after classification, the
+framework computes a morphology-based boundary representation that
+describes:
+- how far a case lies from a benign decision region
+- which feature shifts would move the case toward a lower-suspicion
+  region
+
+These counterfactual signals are then fed into the learned fusion model
+itself.
+
+9.5 Learned fusion
+The final fusion architecture includes:
+- modality-specific encoders
+- sigmoid gates modulated by counterfactual information
+- a softmax modality-gating stage for weighted fusion
+- a final classification head
+
+This makes the explainability path structurally relevant to the final
+decision.
+
+9.6 Best fusion configuration
+Best fusion configuration from the novel summary:
+- Config name: fusion_cfg_a
+- Hidden dimension: 256
+- Tabular dimension: 128
+- Dropout: 0.25
+- Learning rate: 0.001
+- Weight decay: 0.0001
+- Epochs: 60
+- Batch size: 128
+- Patience: 10
+- Device: CUDA
+
+
+10. Final selected operating point
+--------------------------------------------------------------------------
+Operating point file:
+F:\BUET plasma\research\outputs\novel\plasmaxai_operating_point.json
+
+Selected reporting mode:
+precision_recall_balanced_validation_plateau
+
+Final selected threshold:
+0.72
+
+Why this threshold was selected:
+The project evaluated different tradeoffs and intentionally chose a
+threshold that balanced doctor-relevant accuracy, plasma precision, and
+plasma recall rather than optimizing only one metric in isolation.
+
+
+11. Final preferred PlasmaXAI test results
+--------------------------------------------------------------------------
+Final preferred PlasmaXAI test metrics:
+- Accuracy: 93.42%
+- Weighted F1: 93.43%
+- Plasma precision: 91.24%
+- Plasma recall: 94.63%
+- AUC: 97.76%
+
+These values come from:
+F:\BUET plasma\research\outputs\novel\plasmaxai_operating_point.json
+
+Why these numbers matter:
+- Accuracy is strong overall.
+- Weighted F1 confirms a balanced class-level result.
+- Plasma precision is high enough to reduce unnecessary review burden.
+- Plasma recall is high enough to preserve screening usefulness.
+- AUC shows strong underlying separability independent of one threshold.
+
+
+12. Benchmark comparison against other models
+--------------------------------------------------------------------------
+Main benchmark file:
+F:\BUET plasma\research\outputs\novel\plasmaxai_extended_model_comparison.csv
+
+Expanded benchmark summary:
+- PlasmaXAI:
+  - Accuracy: 93.42%
+  - Weighted F1: 93.43%
+  - Plasma precision: 91.24%
+  - Plasma recall: 94.63%
+  - AUC: 97.76%
+- ResNet50:
+  - Accuracy: 91.92%
+  - Weighted F1: 91.93%
+  - Plasma precision: 89.02%
+  - Plasma recall: 93.80%
+  - AUC: 97.05%
+- Prev Hybrid:
+  - Accuracy: 91.73%
+  - Weighted F1: 91.73%
+  - Plasma precision: 90.91%
+  - Plasma recall: 90.91%
+  - AUC: 97.12%
+- DenseNet121:
+  - Accuracy: 89.85%
+  - Weighted F1: 89.83%
+  - Plasma precision: 90.17%
+  - Plasma recall: 87.19%
+  - AUC: 96.36%
+- Morph XGBoost:
+  - Accuracy: 84.96%
+  - Weighted F1: 84.99%
+  - Plasma precision: 80.22%
+  - Plasma recall: 88.84%
+  - AUC: 92.94%
+- Morph Random Forest:
+  - Accuracy: 83.27%
+  - Weighted F1: 83.30%
+  - Plasma precision: 77.62%
+  - Plasma recall: 88.84%
+  - AUC: 92.08%
+- Morph RBF-SVM:
+  - Accuracy: 80.26%
+  - Weighted F1: 80.28%
+  - Plasma precision: 74.04%
+  - Plasma recall: 87.19%
+  - AUC: 90.89%
+- Morph Logistic Regression:
+  - Accuracy: 78.38%
+  - Weighted F1: 78.27%
+  - Plasma precision: 70.42%
+  - Plasma recall: 90.50%
+  - AUC: 87.76%
+
+Interpretation:
+PlasmaXAI is the strongest overall model among the main compared systems
+when considering accuracy, plasma precision, and plasma recall together.
+
+
+13. Explainability and clinician-oriented interpretation
+--------------------------------------------------------------------------
+Explainability goal:
+The project explicitly tried to avoid explainability that only ML
+developers would understand.
+
+Core explainability assets:
+- F:\BUET plasma\fig6_counterfactual_analysis.png
+- F:\BUET plasma\research\outputs\novel\figures\novel_fig4_gates_counterfactuals.png
+- F:\BUET plasma\research\outputs\novel\figures\plasmaxai_fig4_counterfactual_explanation.png
+- F:\BUET plasma\research\outputs\novel\figures\novel_fig6_clinical_insight.png
+- F:\BUET plasma\research\outputs\novel\figures\plasmaxai_fig6_clinical_insight.png
+- F:\BUET plasma\research\outputs\novel\clinical_insight_report.txt
+
+What explainability means here:
+1. Counterfactual feature shifts show which changes would move a case
+   toward lower suspicion.
+2. Clinical insight analysis summarizes dominant morphology/stain
+   signatures associated with disease separation.
+3. The website and reports translate those signals into doctor-facing
+   interpretation blocks rather than raw model telemetry.
+
+Important interpretive finding:
+- Diseased patients showed a reproducible internal counterfactual
+  signature centered on mean_r, mean_g, and mean_b.
+
+How this should be stated honestly:
+This is a clinically interesting internal finding, not final external
+biological proof.
+
+
+14. Ablation study
+--------------------------------------------------------------------------
+Main ablation files:
+- F:\BUET plasma\research\outputs\novel\ablation_results.csv
+- F:\BUET plasma\research\outputs\novel\plasmaxai_ablation_results.csv
+- F:\BUET plasma\research\outputs\novel\figures\novel_fig9_ablation_study.png
+- F:\BUET plasma\research\outputs\novel\figures\plasmaxai_fig9_ablation_study.png
+
+Key ablation findings:
+- Image Only:
+  - Test accuracy: 93.42%
+  - Plasma precision: 93.31%
+  - Plasma recall: 92.15%
+  - AUC: 97.57%
+- Without Morphology:
+  - Test accuracy: 93.05%
+  - Plasma precision: 91.16%
+  - Plasma recall: 93.80%
+  - AUC: 96.98%
+- Without Counterfactual Path:
+  - Test accuracy: 90.23%
+  - Plasma precision: 92.04%
+  - Plasma recall: 85.95%
+  - AUC: 97.62%
+- Full novel fusion in the ablation run:
+  - Test accuracy: 91.73%
+  - Plasma precision: 92.67%
+  - Plasma recall: 88.84%
+  - AUC: 97.79%
+
+Most important conclusion:
+Removing the counterfactual path caused the largest recall drop, which
+supports the claim that counterfactual-guided fusion is not cosmetic but
+important to the full concept.
+
+
+15. Statistical robustness and reliability
+--------------------------------------------------------------------------
+Bootstrap summary file:
+F:\BUET plasma\research\outputs\novel\bootstrap_summary.json
+
+Preferred operating-point bootstrap results:
+- Accuracy mean: 93.46%
+- Accuracy 95% CI: 91.16 to 95.30
+- Weighted F1 mean: 93.46%
+- Weighted F1 95% CI: 91.17 to 95.31
+- Plasma recall mean: 94.62%
+- Plasma recall 95% CI: 91.30 to 97.20
+- AUC mean: 97.77%
+- AUC 95% CI: 96.56 to 98.63
+
+Why this matters:
+This shows that the reported result is supported by interval analysis and
+not only a single point estimate.
+
+
+16. Patient-level analysis
+--------------------------------------------------------------------------
+Key files:
+- F:\BUET plasma\research\outputs\novel\patient_cell_predictions.csv
+- F:\BUET plasma\research\outputs\novel\patient_counterfactual_summary.csv
+- F:\BUET plasma\research\outputs\novel\plasmaxai_patient_robustness.json
+- F:\BUET plasma\research\outputs\novel\plasmaxai_patient_lopo_auc.csv
+- F:\BUET plasma\research\outputs\novel\plasmaxai_patient_permutation_auc.csv
+- F:\BUET plasma\research\outputs\novel\figures\novel_fig11_patient_signature_heatmap.png
+- F:\BUET plasma\research\outputs\novel\figures\plasmaxai_fig16_patient_robustness.png
+
+Current internal patient-level findings:
+- Patient count: 10
+- Diseased patients: 5
+- Normal patients: 5
+- Patient-level AUC: 1.000
+- Exact permutation p-value, one-sided: 0.0040
+- Exact permutation p-value, two-sided: 0.0079
+- Leave-one-patient-out AUC mean: 1.000
+- Top separating features: mean_r, mean_g, mean_b
+
+Required caution:
+These results are internally strong but still exploratory because the
+cohort is very small and same-source. They should not be described as
+final external clinical proof.
+
+
+17. Originality and innovation claim
+--------------------------------------------------------------------------
+Strongest originality points:
+1. Counterfactual information is embedded into the decision path instead
+   of only being shown after prediction.
+2. The final system is a learned fusion module, not just a fixed
+   weighted ensemble.
+3. The framework combines deep image features, morphology, and
+   counterfactual signals in one architecture.
+4. The project extends into patient-level consistency analysis.
+5. The work is translated into a doctor-facing interface rather than
+   stopping at a model checkpoint.
+
+Honest wording:
+PlasmaXAI is novel as a framework/system and as a counterfactual-guided
+learned fusion approach. It is not claimed here to be a radically new
+fundamental family of neural architecture in the same sense as inventing
+an entirely new backbone class from scratch.
+
+
+18. Impact and real-world application
+--------------------------------------------------------------------------
+Potential benefits:
+- Faster support for plasma-cell screening
+- More consistent triage support
+- Better documentation through explainable reporting
+- Doctor-in-the-loop review rather than opaque automation
+- Better translation pathway from research to interface
+
+Likely user groups:
+- hematopathologists
+- hematologists
+- medical laboratories
+- academic pathology researchers
+- AI-in-medicine competition judges evaluating translational value
+
+Why the website matters here:
+The doctor-facing website demonstrates that the work is not confined to
+an offline notebook. It shows how the system can become part of a case
+review flow involving:
+- accounts
+- image review
+- patient history
+- case notes
+- report download
+- interpretation panels
+
+
+19. Competition scoring alignment
+--------------------------------------------------------------------------
+Evaluation criteria provided by the user:
+- Clarity of Problem & Research Objective: 10
+- Impact & Real-World Application: 8
+- Methodology & Technical Approach: 10
+- Originality & Innovation: 10
+- Expected Outcomes: 6
+- Relevance to Competition Research Domains: 6
+- Total: 50
+
+How PlasmaXAI addresses them:
+
+Clarity of problem and research objective:
+- clear disease context
+- clear problem statement
+- explicit research objectives
+- defined scope
+
+Impact and real-world application:
+- clinically meaningful diagnostic support setting
+- useful in workload reduction and structured review
+- website translation strengthens real-world feasibility
+
+Methodology and technical approach:
+- benchmarked against multiple models
+- uses both deep and handcrafted morphology features
+- learned fusion and counterfactual integration
+- includes ablation and robustness
+
+Originality and innovation:
+- counterfactual-guided decision path
+- learned fusion replacing static blend
+- patient-level exploratory layer
+- clinician-facing packaging
+
+Expected outcomes:
+- strong reported metrics
+- bootstrap support
+- benchmark gains over baselines
+
+Relevance to competition research domains:
+- AI in medicine
+- digital pathology / hematology
+- explainable AI
+- clinically aware deployment
+
+
+20. Doctor-facing website and deployment translation
+--------------------------------------------------------------------------
+Website folder:
+F:\BUET plasma\apps\web
+
+Inference service folder:
+F:\BUET plasma\apps\inference
+
+Current website purpose:
+To package the research into a doctor-facing workspace with:
+- login/registration
+- dashboard
+- new case upload
+- case review
+- image viewer
+- patient directory
+- reports
+- doctor notes
+- explainability panels
+
+Important truth about deployment:
+The website code, local review workflow, and inference-service source
+code are in the GitHub repository. However, a production hosted website
+still needs proper environment configuration and backend support.
+
+What is already present in the repo:
+- website source code
+- local demo/local review mode
+- inference service source code
+- main model files
+- research assets
+
+What a fully hosted persistent deployment still needs:
+- configured Supabase or equivalent persistent backend
+- storage configuration
+- deployed inference service endpoint if using hosted inference
+- environment variables
+
+Very important note:
+The repository includes the website and the inference-service code, but
+hosting the Next.js frontend alone on Vercel is not the same thing as
+having a fully production-ready persistent medical platform. The code is
+there; deployment configuration still matters.
+
+
+21. GitHub push status: what was actually pushed
+--------------------------------------------------------------------------
+GitHub repository:
+https://github.com/Arnob10150/PlasmaXAI.git
+
+Current pushed website version tag:
+v1.2.0
+
+Current website version file:
+F:\BUET plasma\apps\web\VERSION.md
+
+Core website code pushed:
+Yes
+
+Inference service pushed:
+Yes
+
+Main model weights pushed:
+Yes, critical ones
+
+Examples confirmed in Git:
+- artifacts/models/best_plasmaxai.pth
+- research/outputs/novel/novel_fusion_model.pth
+- full apps/web source tree
+- full apps/inference source tree
+- research/package
+
+Important honesty note:
+Not literally every single file from the local disk was pushed, because a
+small number of oversized or redundant files were intentionally excluded
+to avoid GitHub rejection or repo bloat.
+
+Excluded by .gitignore:
+- data/archives/PCMMD Plasma Cells for Multiple Myeloma Diagnosis.zip
+- research/outputs/optimization/checkpoints/convnext_tiny_search.pth
+- research/outputs/optimization/checkpoints/convnext_tiny_final.pth
+
+Why these exclusions happened:
+- GitHub size constraints / practical repository hygiene
+- these specific files are not required for the website source tree to
+  exist in GitHub
+- the main final project checkpoints were still preserved in the repo
+
+
+22. Key file and artifact inventory
+--------------------------------------------------------------------------
+Root workspace:
+F:\BUET plasma
+
+Main notebook:
+F:\BUET plasma\research\notebooks\PlasmaXAI.ipynb
+
+Main optimized script:
+F:\BUET plasma\research\scripts\optimize_plasmaxai.py
+
+Main novel script:
+F:\BUET plasma\research\scripts\novel_plasmaxai_pipeline.py
+
+Inference entrypoints:
+- F:\BUET plasma\research\scripts\run_best_plasmaxai.py
+- F:\BUET plasma\research\scripts\run_novel_plasmaxai.py
+- F:\BUET plasma\research\scripts\run_plasmaxai.py
+- F:\BUET plasma\research\scripts\run_plasmaxnet.py
+
+Main final model:
+F:\BUET plasma\research\outputs\novel\novel_fusion_model.pth
+
+Main baseline model:
+F:\BUET plasma\artifacts\models\best_plasmaxai.pth
+
+Website:
+F:\BUET plasma\apps\web
+
+Inference service:
+F:\BUET plasma\apps\inference
+
+Competition brief:
+F:\BUET plasma\research\package\PlasmaXAI_competition_master_brief.txt
+
+Previous master record:
+F:\BUET plasma\research\package\PlasmaXAI_research_master_record.txt
+
+This complete dossier:
+F:\BUET plasma\research\package\PlasmaXAI_everything_master_dossier.txt
+
+
+23. Diagram and image archive
+--------------------------------------------------------------------------
+Archived folder:
+F:\BUET plasma\research\package\diagrams_and_images
+
+Subfolders:
+- baseline_root
+- optimization
+- novel_framework
+- paper_figures
+- architecture_editable
+
+What these contain:
+- original notebook figures
+- optimization-stage figures
+- novel framework figures
+- paper-ready figures
+- editable Draw.io architecture diagrams
+
+This archive was created specifically so all important visuals are
+available in one place without searching across the workspace.
+
+
+24. Paper and abstract materials
+--------------------------------------------------------------------------
+Main 800-word abstract:
+- F:\BUET plasma\research\outputs\novel\PlasmaXAI_abstract_800w.md
+- F:\BUET plasma\research\outputs\novel\PlasmaXAI_abstract_800w.docx
+- F:\BUET plasma\research\outputs\novel\PlasmaXAI_abstract_800w_v2.docx
+
+Other abstract/report variants:
+- PlasmaXAI_abstract.md
+- PlasmaXAI_abstract.docx
+- PlasmaXAI_abstract_precision_balanced.md
+- PlasmaXAI_abstract_precision_balanced.docx
+- PlasmaXAI_abstract_robustness.md
+- PlasmaXAI_abstract_robustness.docx
+
+Architecture files:
+- PlasmaXAI_Architecture.drawio
+- PlasmaXAI_Novel_Architecture.drawio
+- PLASMAXNET_Architecture.drawio
+- PlasmaXNet_Architecture.drawio
+
+LaTeX paper:
+F:\BUET plasma\legacy paper directory removed from active repo structure
+
+
+25. References
+--------------------------------------------------------------------------
+[1] Silva, A.B., Matos, J., Costa, A., et al. PCMMD: A dataset of plasma
+cells for multiple myeloma diagnosis. Scientific Data 12, 543 (2025).
+
+[2] Rajkumar, S.V. Multiple myeloma: 2022 update on diagnosis,
+risk-stratification, and management. American Journal of Hematology 97,
+1086--1107 (2022).
+
+[3] Litjens, G., Kooi, T., Bejnordi, B.E., et al. A survey on deep
+learning in medical image analysis. Medical Image Analysis 42, 60--88
+(2017).
+
+[4] Bera, K., Schalper, K.A., Rimm, D.L., Velcheti, V., Madabhushi, A.
+Artificial intelligence in digital pathology---new tools for diagnosis
+and precision oncology. Nature Reviews Clinical Oncology 16, 703--715
+(2019).
+
+[5] He, K., Zhang, X., Ren, S., Sun, J. Deep residual learning for image
+recognition. Proceedings of the IEEE Conference on Computer Vision and
+Pattern Recognition, 770--778 (2016).
+
+[6] Huang, G., Liu, Z., van der Maaten, L., Weinberger, K.Q. Densely
+connected convolutional networks. Proceedings of the IEEE Conference on
+Computer Vision and Pattern Recognition, 4700--4708 (2017).
+
+[7] Wachter, S., Mittelstadt, B., Russell, C. Counterfactual
+explanations without opening the black box: Automated decisions and the
+GDPR. Harvard Journal of Law and Technology 31(2), 841--887 (2018).
+
+[8] Mothilal, R.K., Sharma, A., Tan, C. Explaining machine learning
+classifiers through diverse counterfactual explanations. FAT* 2020,
+607--617 (2020).
+
+[9] Guo, C., Pleiss, G., Sun, Y., Weinberger, K.Q. On calibration of
+modern neural networks. International Conference on Machine Learning,
+1321--1330 (2017).
+
+[10] Ronneberger, O., Fischer, P., Brox, T. U-Net: Convolutional networks
+for biomedical image segmentation. MICCAI 2015, LNCS 9351, 234--241
+(2015).
+
+[11] Oktay, O., Schlemper, J., Folgoc, L.L., et al. Attention U-Net:
+Learning where to look for the pancreas. arXiv:1804.03999 (2018).
+
+[12] Janowczyk, A., Madabhushi, A. Deep learning for digital pathology
+image analysis: A comprehensive tutorial with selected use cases.
+Journal of Pathology Informatics 7, 29 (2016).
+
+[13] Campanella, G., Hanna, M.G., Geneslaw, L., et al. Clinical-grade
+computational pathology using weakly supervised deep learning on whole
+slide images. Nature Medicine 25, 1301--1309 (2019).
+
+[14] Ribeiro, M.T., Singh, S., Guestrin, C. "Why should I trust you?":
+Explaining the predictions of any classifier. Proceedings of the 22nd
+ACM SIGKDD International Conference on Knowledge Discovery and Data
+Mining, 1135--1144 (2016).
+
+[15] Selvaraju, R.R., Cogswell, M., Das, A., et al. Grad-CAM: Visual
+explanations from deep networks via gradient-based localization.
+Proceedings of the IEEE International Conference on Computer Vision,
+618--626 (2017).
+
+[16] Lundberg, S.M., Lee, S.-I. A unified approach to interpreting model
+predictions. Advances in Neural Information Processing Systems,
+4765--4774 (2017).
+
+
+26. Bottom-line conclusion
+--------------------------------------------------------------------------
+PlasmaXAI is best understood as a complete research-and-translation
+package rather than a single classifier number. It includes:
+- a clinically relevant problem
+- a strong benchmarked model
+- a more original counterfactual-guided learned fusion architecture
+- ablation evidence
+- bootstrap support
+- exploratory patient-level analysis
+- paper and figure assets
+- a doctor-facing website
+- a GitHub-shared codebase with the main model artifacts
+
+The strongest honest claim is:
+PlasmaXAI is a high-performing, explainable, counterfactual-guided
+screening framework for malignant plasma-cell recognition that also
+demonstrates a practical path toward doctor-facing clinical review.
+
+
+
+
+

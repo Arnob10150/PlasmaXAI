@@ -36,8 +36,8 @@ PORT=8000
 ```
 
 `PLASMAXAI_PROJECT_ROOT` should point to the repository root containing:
-- `novel_outputs/`
-- `optimization_outputs/checkpoints/`
+- `research/outputs/novel/`
+- `research/outputs/optimization/checkpoints/`
 
 ## Local install
 
@@ -74,3 +74,4 @@ When mounted under Vercel Services, those routes become:
 ## Website integration
 
 `apps/web` calls this service through `src/lib/inference/service.ts`.
+

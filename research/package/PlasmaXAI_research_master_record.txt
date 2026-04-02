@@ -1,0 +1,512 @@
+PlasmaXAI Research Master Record
+======================================================================
+
+1. Project identity
+----------------------------------------------------------------------
+Final preferred project name:
+PlasmaXAI
+
+Earlier intermediate naming variants that still appear in files:
+- PlasmaXNet
+- PLASMAXNET
+
+Project purpose:
+PlasmaXAI is an explainable AI framework for malignant plasma cell
+recognition in multiple myeloma microscopy images. The project evolved
+from a notebook-based benchmark into an optimized hybrid system and
+finally into a counterfactual-guided learned fusion framework with
+patient-level morphologic consistency analysis, multiple report
+packages, architecture diagrams, and a doctor-facing website.
+
+
+2. Main project locations
+----------------------------------------------------------------------
+Root workspace:
+F:\BUET plasma
+
+Core notebook:
+F:\BUET plasma\research\notebooks\PlasmaXAI.ipynb
+
+Original prompt / planning text:
+F:\BUET plasma\research\notes\PlasmaXAI_AgenticPrompt.txt
+
+Optimized training script:
+F:\BUET plasma\research\scripts\optimize_plasmaxai.py
+
+Novel framework pipeline:
+F:\BUET plasma\research\scripts\novel_plasmaxai_pipeline.py
+
+Inference entrypoints:
+- F:\BUET plasma\research\scripts\run_best_plasmaxai.py
+- F:\BUET plasma\research\scripts\run_novel_plasmaxai.py
+- F:\BUET plasma\research\scripts\run_plasmaxai.py
+- F:\BUET plasma\research\scripts\run_plasmaxnet.py
+
+Optimization outputs:
+F:\BUET plasma\research\outputs\optimization
+
+Novel framework outputs:
+F:\BUET plasma\research\outputs\novel
+
+LaTeX paper materials:
+Legacy paper directory removed from active repo structure
+
+Doctor-facing website:
+F:\BUET plasma\apps\web
+
+Inference service for website:
+F:\BUET plasma\apps\inference
+
+
+3. Data and split information
+----------------------------------------------------------------------
+Primary dataset folder:
+F:\BUET plasma\data\raw\PCMMD Plasma Cells for Multiple Myeloma Diagnosis
+
+Local processed copy / related local data:
+F:\BUET plasma\data\raw\PCMMD_LOCAL
+
+Data usage:
+- PCMMD Set 1 was used for model development and benchmarking.
+- PCMMD Set 2 was used for exploratory patient-level analysis.
+
+Training split strategy:
+- Stratified 70 / 15 / 15 split
+- Train: 2482 images
+- Validation: 532 images
+- Test: 532 images
+
+Project goal across stages:
+- Build a strong plasma-cell classifier
+- Improve accuracy, precision, and recall
+- Add explainability that is part of the decision path
+- Add patient-level consistency analysis
+- Package results for paper, thesis, presentation, and website use
+
+
+4. Phase 1: Original notebook stage
+----------------------------------------------------------------------
+Key notebook artifact:
+F:\BUET plasma\research\notebooks\PlasmaXAI.ipynb
+
+Important saved baseline checkpoint:
+F:\BUET plasma\artifacts\models\best_plasmaxai.pth
+
+Main notebook result noted during execution:
+- EfficientNet test accuracy: 85.34%
+- Plasma recall: 0.79
+- This did not meet the desired malignant sensitivity target.
+
+Notebook benchmark section:
+- ResNet-50 benchmark accuracy: 91.92%
+- ResNet-50 AUC: 0.971
+- EfficientNet benchmark accuracy: 82.89%
+
+Counterfactual result from notebook stage:
+- DICE generated 60 counterfactual explanations
+- Main reported drivers: NC Ratio, Nucleus Area, Mean R
+
+Original root-level figures:
+- F:\BUET plasma\fig1_eda_overview.png
+- F:\BUET plasma\fig2_feature_distributions.png
+- F:\BUET plasma\fig3_training_history.png
+- F:\BUET plasma\fig4_model_comparison.png
+- F:\BUET plasma\fig5_confusion_roc.png
+- F:\BUET plasma\fig6_counterfactual_analysis.png
+- F:\BUET plasma\fig7_deployment_profile.png
+
+
+5. Phase 2: Optimization stage
+----------------------------------------------------------------------
+Optimization summary file:
+F:\BUET plasma\research\outputs\optimization\best_framework_summary.json
+
+Optimization report:
+F:\BUET plasma\research\outputs\optimization\best_framework_report.txt
+
+Saved optimized hybrid config:
+F:\BUET plasma\artifacts\models\best_plasmaxai_hybrid_config.json
+
+Best optimized framework before novel extension:
+- Name: plasmaxai_best_hybrid
+- Type: hybrid ensemble
+- Blend:
+  - ResNet50 weight: 0.55
+  - DenseNet121 weight: 0.45
+  - Morphology weight: 0.02
+  - Threshold: 0.55
+
+Best optimized hybrid validation metrics:
+- Accuracy: 94.36%
+- Weighted F1: 94.37%
+- Plasma recall: 96.30%
+- AUC: 98.03%
+
+Best optimized hybrid test metrics:
+- Accuracy: 92.48%
+- Weighted F1: 92.48%
+- Plasma recall: 92.15%
+- AUC: 97.38%
+
+Best optimized single model:
+- Model: ResNet50
+- Accuracy: 92.29%
+- Weighted F1: 92.31%
+- Plasma recall: 94.21%
+- AUC: 97.30%
+
+Optimization figures:
+- F:\BUET plasma\research\outputs\optimization\optimized_fig1_framework_overview.png
+- F:\BUET plasma\research\outputs\optimization\optimized_fig2_model_comparison.png
+- F:\BUET plasma\research\outputs\optimization\optimized_fig3_confusion_matrices.png
+- F:\BUET plasma\research\outputs\optimization\optimized_fig4_roc_curves.png
+- F:\BUET plasma\research\outputs\optimization\optimized_fig5_probability_analysis.png
+- F:\BUET plasma\research\outputs\optimization\optimized_fig6_morphology_fusion.png
+- F:\BUET plasma\research\outputs\optimization\optimized_fig7_deployment_profile.png
+
+Optimization checkpoints:
+- F:\BUET plasma\research\outputs\optimization\checkpoints\resnet50_final.pth
+- F:\BUET plasma\research\outputs\optimization\checkpoints\resnet50_search.pth
+- F:\BUET plasma\research\outputs\optimization\checkpoints\densenet121_final.pth
+- F:\BUET plasma\research\outputs\optimization\checkpoints\densenet121_search.pth
+- F:\BUET plasma\research\outputs\optimization\checkpoints\efficientnet_b2_search.pth
+- F:\BUET plasma\research\outputs\optimization\checkpoints\convnext_tiny_search.pth
+- F:\BUET plasma\research\outputs\optimization\checkpoints\convnext_tiny_final.pth
+
+
+6. Phase 3: Novel counterfactual-guided fusion stage
+----------------------------------------------------------------------
+Main novel summary file:
+F:\BUET plasma\research\outputs\novel\novel_summary.json
+
+Main saved novel checkpoint:
+F:\BUET plasma\research\outputs\novel\novel_fusion_model.pth
+
+Supporting model artifacts:
+- F:\BUET plasma\research\outputs\novel\counterfactual_bundle.joblib
+- F:\BUET plasma\research\outputs\novel\fusion_scalers.joblib
+- F:\BUET plasma\research\outputs\novel\fusion_search_histories.json
+
+Best fusion configuration from novel_summary.json:
+- Config name: fusion_cfg_a
+- Hidden dimension: 256
+- Tabular dimension: 128
+- Dropout: 0.25
+- Learning rate: 0.001
+- Weight decay: 0.0001
+- Epochs: 60
+- Batch size: 128
+- Patience: 10
+- Device: CUDA
+
+Novel fusion test metrics at the original novel threshold:
+- Threshold: 0.76
+- Accuracy: 93.23%
+- Weighted F1: 93.24%
+- Plasma precision: 91.87%
+- Plasma recall: 93.39%
+- AUC: 97.76%
+
+Comparison against earlier systems from the same summary:
+- Previous hybrid accuracy: 91.73%
+- Previous hybrid plasma recall: 90.91%
+- ResNet50 accuracy: 91.92%
+- ResNet50 plasma recall: 93.80%
+- DenseNet121 accuracy: 89.85%
+- DenseNet121 plasma recall: 87.19%
+
+
+7. Final preferred operating point for PlasmaXAI
+----------------------------------------------------------------------
+Current operating-point file:
+F:\BUET plasma\research\outputs\novel\plasmaxai_operating_point.json
+
+Preferred final reporting mode:
+precision_recall_balanced_validation_plateau
+
+Final selected threshold:
+0.72
+
+Final preferred test metrics for PlasmaXAI:
+- Accuracy: 93.42%
+- Weighted F1: 93.43%
+- Plasma precision: 91.24%
+- Plasma recall: 94.63%
+- AUC: 97.76%
+
+Why this operating point matters:
+- It preserved the high AUC of the novel framework.
+- It balanced precision and recall better for practical screening.
+- It outperformed the strongest non-PlasmaXAI baselines on accuracy,
+  plasma precision, and plasma recall simultaneously.
+
+Expanded benchmark file:
+F:\BUET plasma\research\outputs\novel\plasmaxai_extended_model_comparison.csv
+
+Expanded benchmark summary:
+- PlasmaXAI: 93.42% accuracy, 91.24% plasma precision, 94.63% plasma recall, 97.76% AUC
+- ResNet50: 91.92% accuracy, 89.02% plasma precision, 93.80% plasma recall, 97.05% AUC
+- Prev Hybrid: 91.73% accuracy, 90.91% plasma precision, 90.91% plasma recall, 97.12% AUC
+- DenseNet121: 89.85% accuracy, 90.17% plasma precision, 87.19% plasma recall, 96.36% AUC
+- Morph XGBoost: 84.96% accuracy, 80.22% plasma precision, 88.84% plasma recall, 92.94% AUC
+- Morph Random Forest: 83.27% accuracy, 77.62% plasma precision, 88.84% plasma recall, 92.08% AUC
+- Morph RBF-SVM: 80.26% accuracy, 74.04% plasma precision, 87.19% plasma recall, 90.89% AUC
+- Morph Logistic Regression: 78.38% accuracy, 70.42% plasma precision, 90.50% plasma recall, 87.76% AUC
+
+
+8. Explainability and clinician-facing interpretation
+----------------------------------------------------------------------
+Explainability intent of the project:
+- Not just post-hoc plots
+- Counterfactual features were tied directly into the decision path
+- Clinician-facing reports and website views were built around those outputs
+
+Core explainability assets:
+- F:\BUET plasma\fig6_counterfactual_analysis.png
+- F:\BUET plasma\research\outputs\novel\figures\novel_fig4_gates_counterfactuals.png
+- F:\BUET plasma\research\outputs\novel\figures\plasmaxai_fig4_counterfactual_explanation.png
+- F:\BUET plasma\research\outputs\novel\figures\novel_fig6_clinical_insight.png
+- F:\BUET plasma\research\outputs\novel\figures\plasmaxai_fig6_clinical_insight.png
+- F:\BUET plasma\research\outputs\novel\clinical_insight_report.txt
+
+Clinical insight summary from the project:
+- Diseased patients showed a reproducible counterfactual signature centered on mean_r, mean_g, and mean_b.
+- The project interpretation was that myeloma burden in this cohort may reflect a more coherent morphologic program, not only a larger plasma-cell fraction.
+- This was treated as a clinically interesting internal finding, not final clinical proof.
+
+
+9. Ablation study
+----------------------------------------------------------------------
+Main ablation files:
+- F:\BUET plasma\research\outputs\novel\ablation_results.csv
+- F:\BUET plasma\research\outputs\novel\plasmaxai_ablation_results.csv
+- F:\BUET plasma\research\outputs\novel\figures\novel_fig9_ablation_study.png
+- F:\BUET plasma\research\outputs\novel\figures\plasmaxai_fig9_ablation_study.png
+
+Key ablation findings from novel_summary.json:
+- Image Only:
+  - Test accuracy: 93.42%
+  - Plasma precision: 93.31%
+  - Plasma recall: 92.15%
+  - AUC: 97.57%
+- Without Morphology:
+  - Test accuracy: 93.05%
+  - Plasma precision: 91.16%
+  - Plasma recall: 93.80%
+  - AUC: 96.98%
+- Without Counterfactual Path:
+  - Test accuracy: 90.23%
+  - Plasma precision: 92.04%
+  - Plasma recall: 85.95%
+  - AUC: 97.62%
+- Full Novel Fusion in the ablation run:
+  - Test accuracy: 91.73%
+  - Plasma precision: 92.67%
+  - Plasma recall: 88.84%
+  - AUC: 97.79%
+
+Most important ablation conclusion:
+Removing the counterfactual path caused the biggest recall drop, which
+supports the importance of counterfactual-guided fusion in the full idea.
+
+
+10. Statistical robustness
+----------------------------------------------------------------------
+Bootstrap summary file:
+F:\BUET plasma\research\outputs\novel\bootstrap_summary.json
+
+Preferred final operating-point bootstrap intervals:
+- Accuracy mean: 93.46%
+- Accuracy 95% CI: 91.16 to 95.30
+- Weighted F1 mean: 93.46%
+- Weighted F1 95% CI: 91.17 to 95.31
+- Plasma recall mean: 94.62%
+- Plasma recall 95% CI: 91.30 to 97.20
+- AUC mean: 97.77%
+- AUC 95% CI: 96.56 to 98.63
+
+
+11. Patient-level analysis
+----------------------------------------------------------------------
+Key patient-level files:
+- F:\BUET plasma\research\outputs\novel\patient_cell_predictions.csv
+- F:\BUET plasma\research\outputs\novel\patient_counterfactual_summary.csv
+- F:\BUET plasma\research\outputs\novel\plasmaxai_patient_robustness.json
+- F:\BUET plasma\research\outputs\novel\plasmaxai_patient_lopo_auc.csv
+- F:\BUET plasma\research\outputs\novel\plasmaxai_patient_permutation_auc.csv
+- F:\BUET plasma\research\outputs\novel\figures\novel_fig11_patient_signature_heatmap.png
+- F:\BUET plasma\research\outputs\novel\figures\plasmaxai_fig16_patient_robustness.png
+
+Current internal patient-level findings:
+- Patient count: 10
+- Diseased patients: 5
+- Normal patients: 5
+- Observed patient-level AUC: 1.000
+- Exact permutation p-value, one-sided: 0.0040
+- Exact permutation p-value, two-sided: 0.0079
+- Leave-one-patient-out AUC mean: 1.000
+- Top separating features: mean_r, mean_g, mean_b
+
+Important caution:
+These patient-level results are exploratory and internally strong, but
+they are based on a very small same-source cohort. They should not be
+presented as final external clinical validation.
+
+
+12. Paper, abstract, and architecture materials
+----------------------------------------------------------------------
+Main 800-word PlasmaXAI abstract:
+- F:\BUET plasma\research\outputs\novel\PlasmaXAI_abstract_800w.md
+- F:\BUET plasma\research\outputs\novel\PlasmaXAI_abstract_800w.docx
+- F:\BUET plasma\research\outputs\novel\PlasmaXAI_abstract_800w_v2.docx
+
+Other PlasmaXAI abstract/report variants:
+- F:\BUET plasma\research\outputs\novel\PlasmaXAI_abstract.md
+- F:\BUET plasma\research\outputs\novel\PlasmaXAI_abstract.docx
+- F:\BUET plasma\research\outputs\novel\PlasmaXAI_abstract_precision_balanced.md
+- F:\BUET plasma\research\outputs\novel\PlasmaXAI_abstract_precision_balanced.docx
+- F:\BUET plasma\research\outputs\novel\PlasmaXAI_abstract_robustness.md
+- F:\BUET plasma\research\outputs\novel\PlasmaXAI_abstract_robustness.docx
+
+Architecture / editable diagram files:
+- F:\BUET plasma\research\outputs\novel\PlasmaXAI_Architecture.drawio
+- F:\BUET plasma\research\outputs\novel\PlasmaXAI_Novel_Architecture.drawio
+- F:\BUET plasma\research\outputs\novel\PLASMAXNET_Architecture.drawio
+- F:\BUET plasma\research\outputs\novel\PlasmaXNet_Architecture.drawio
+
+LaTeX paper project:
+Legacy paper directory removed from active repo structure
+
+Rendered / supporting paper figures:
+F:\BUET plasma\legacy paper figures removed from active repo structure
+
+
+13. Website and deployment work
+----------------------------------------------------------------------
+Website folder:
+F:\BUET plasma\apps\web
+
+Website purpose:
+- Doctor-facing workspace
+- Login and registration flow
+- Dashboard
+- New case creation
+- Case review
+- Reports
+- Patient history
+- Explainability and clinical interpretation panels
+
+Inference service folder:
+F:\BUET plasma\apps\inference
+
+Current website note:
+The website was built as a clinical review interface for the research,
+not as a substitute for the research itself. It packages prediction,
+history, image review, reports, and doctor-facing explanations around
+the PlasmaXAI pipeline.
+
+
+14. Visual archive created for convenience
+----------------------------------------------------------------------
+This package includes a collected visual archive here:
+F:\BUET plasma\research\package\diagrams_and_images
+
+Subfolders:
+- baseline_root
+- optimization
+- novel_framework
+- paper_figures
+- architecture_editable
+
+What was copied into the archive:
+- Original root notebook figures
+- Optimization-stage figures
+- Novel PlasmaXAI figures
+- Paper-ready figures from the LaTeX project
+- Editable Draw.io architecture files
+
+
+15. Key image and diagram inventory
+----------------------------------------------------------------------
+Original notebook figures:
+- fig1_eda_overview.png
+- fig2_feature_distributions.png
+- fig3_training_history.png
+- fig4_model_comparison.png
+- fig5_confusion_roc.png
+- fig6_counterfactual_analysis.png
+- fig7_deployment_profile.png
+
+Optimization figures:
+- optimized_fig1_framework_overview.png
+- optimized_fig2_model_comparison.png
+- optimized_fig3_confusion_matrices.png
+- optimized_fig4_roc_curves.png
+- optimized_fig5_probability_analysis.png
+- optimized_fig6_morphology_fusion.png
+- optimized_fig7_deployment_profile.png
+
+Novel / PlasmaXAI figures:
+- novel_fig1_fusion_search.png
+- novel_fig2_model_comparison.png
+- novel_fig3_confusion_roc.png
+- novel_fig4_gates_counterfactuals.png
+- novel_fig5_patient_consistency.png
+- novel_fig6_clinical_insight.png
+- novel_fig7_framework_diagram.png
+- novel_fig8_training_curves.png
+- novel_fig9_ablation_study.png
+- novel_fig10_calibration_bootstrap.png
+- novel_fig11_patient_signature_heatmap.png
+- plasmaxai_fig4_counterfactual_explanation.png
+- plasmaxai_fig6_clinical_insight.png
+- plasmaxai_fig9_ablation_study.png
+- plasmaxai_fig10_calibration_bootstrap.png
+- plasmaxai_fig12_extended_model_comparison.png
+- plasmaxai_fig13_framework_diagram.png
+- plasmaxai_fig14_confusion_roc.png
+- plasmaxai_fig15_precision_f1_comparison.png
+- plasmaxai_fig16_patient_robustness.png
+
+LaTeX paper figure set includes, among others:
+- Architecture_diagram.png
+- methodology_pipeline.png
+- plasmaxai_framework.png
+- plasmaxai_model_comparison.png
+- plasmaxai_counterfactual.png
+- plasmaxai_calibration_bootstrap.png
+- plasmaxai_clinical_insight.png
+- plasmaxai_patient_heatmap.png
+- plasmaxai_patient_robustness.png
+- training_curves.png
+- roc_pr_curves.png
+- single_inference.png
+
+
+16. Final concise conclusion
+----------------------------------------------------------------------
+The research progressed through three meaningful stages:
+1. Initial notebook experimentation and baseline benchmarking
+2. A stronger optimized hybrid ensemble
+3. The final PlasmaXAI counterfactual-guided learned fusion framework
+
+The final preferred system is PlasmaXAI at threshold 0.72, with:
+- 93.42% accuracy
+- 93.43% weighted F1
+- 91.24% plasma precision
+- 94.63% plasma recall
+- 97.76% AUC
+
+This is the main set of numbers to use for the final framework unless a
+different operating point is explicitly needed for another presentation.
+
+Final caution for reporting:
+The cell-level classification results are strong and well supported.
+The patient-level findings are promising and statistically supported
+internally, but they remain exploratory and should be described
+carefully until external validation is completed.
+
+
+
+
+

@@ -34,20 +34,15 @@ apps/inference/model_assets/
 .env.*.local
 
 # Release snapshots and old website snapshots
-plasmaxai-web-release-v1.0.0-20260402/
-plasmaxai-web-v1/
-plasmaxai-web-v1.1.0-competition-20260402/
-plasmaxai-web-v2/
+archive/releases/
 
 # Redundant backup folders
-backup_*/
-backup_before_*/
-backup_after_*/
+archive/backups/
 
 # GitHub hard blockers
-PCMMD Plasma Cells for Multiple Myeloma Diagnosis.zip
-optimization_outputs/checkpoints/convnext_tiny_search.pth
-optimization_outputs/checkpoints/convnext_tiny_final.pth
+data/archives/PCMMD Plasma Cells for Multiple Myeloma Diagnosis.zip
+research/outputs/optimization/checkpoints/convnext_tiny_search.pth
+research/outputs/optimization/checkpoints/convnext_tiny_final.pth
 
 # System
 .DS_Store

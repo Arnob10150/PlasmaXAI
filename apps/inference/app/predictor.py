@@ -322,8 +322,8 @@ def get_predictor() -> PlasmaXAIPredictor:
     project_root = Path(os.environ.get("PLASMAXAI_PROJECT_ROOT", default_project_root))
     config = PredictorConfig(
         project_root=project_root,
-        novel_outputs_dir=project_root / "novel_outputs",
-        checkpoints_dir=project_root / "optimization_outputs" / "checkpoints",
+        novel_outputs_dir=project_root / "research" / "outputs" / "novel",
+        checkpoints_dir=project_root / "research" / "outputs" / "optimization" / "checkpoints",
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         supabase_url=os.environ.get("SUPABASE_URL", ""),
         supabase_service_role_key=os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""),

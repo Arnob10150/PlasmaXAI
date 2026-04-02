@@ -72,3 +72,4 @@ bun run dev
 When the project is deployed on Vercel with the root `vercel.json` and
 Framework Preset `Services`, the site can talk to the inference service using
 the generated cross-service URL automatically.
+

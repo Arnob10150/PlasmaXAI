@@ -1,0 +1,1525 @@
+PlasmaXAI Ultra-Detailed Full Research and Deployment Record
+==============================================================================
+
+Document intent
+------------------------------------------------------------------------------
+This file is the longest and most technically detailed written record of the
+PlasmaXAI project. It is intentionally more exhaustive than the short
+competition brief and more explanatory than the standard master dossier. It
+documents the scientific background, problem definition, research objectives,
+dataset usage, architecture evolution, layer connectivity, training logic,
+threshold selection, results generation, robustness studies, patient-level
+analysis, website translation, deployment readiness, GitHub packaging, and
+limitations.
+
+The purpose of this record is to answer, in one place:
+- what PlasmaXAI is
+- why it was built
+- how it was built
+- what each stage achieved
+- what is genuinely novel
+- what hardware/software were used
+- how the final metrics were produced
+- what was pushed to GitHub
+- what is deployable today
+
+
+1. Project identity, final name, and scope
+------------------------------------------------------------------------------
+Final preferred name:
+PlasmaXAI
+
+Earlier names used during development:
+- PlasmaXNet
+- PLASMAXNET
+
+Final identity:
+PlasmaXAI is a counterfactual-guided explainable AI framework for malignant
+plasma-cell recognition in multiple myeloma microscopy images. It is not only
+a classifier. It is a research-and-translation package consisting of:
+- a notebook baseline
+- an optimization-stage benchmark system
+- a final learned fusion framework
+- explainability assets
+- patient-level exploratory analyses
+- paper and diagram materials
+- a doctor-facing website
+- a separate inference service
+
+
+2. Clinical and scientific background
+------------------------------------------------------------------------------
+Multiple myeloma is a hematologic malignancy driven by abnormal plasma-cell
+proliferation. Morphologic review still matters because plasma-cell appearance,
+burden, and organization remain relevant during diagnosis, disease monitoring,
+and treatment-oriented interpretation.
+
+Why this problem matters:
+- manual review is labor intensive
+- interpretation depends heavily on expertise
+- stain variability and morphology variation complicate consistency
+- large-scale screening is difficult to scale manually
+- many AI systems optimize accuracy but do not help doctors understand the
+  output
+
+PlasmaXAI was designed to address that gap. The project tries to answer:
+"Can an explainable, high-performing plasma-cell recognition system be built
+that improves diagnostic support while presenting evidence in a form useful to
+doctors rather than only to ML developers?"
+
+
+3. Research objectives
+------------------------------------------------------------------------------
+Primary objectives:
+1. Build a strong malignant plasma-cell recognition framework on PCMMD.
+2. Improve over the earlier notebook-stage baseline.
+3. Compare against deep and morphology-based baselines.
+4. Move explainability into the decision pathway itself.
+5. Add patient-level consistency analysis.
+6. Package the work into paper-ready figures, reports, and a doctor-facing
+   website.
+
+Secondary objectives:
+- improve plasma precision and recall simultaneously
+- support claims with ablation and bootstrap evidence
+- package the work for competition judging and deployment presentation
+
+
+4. Main project locations
+------------------------------------------------------------------------------
+Root workspace:
+F:\BUET plasma
+
+Main notebook:
+F:\BUET plasma\research\notebooks\PlasmaXAI.ipynb
+
+Optimization script:
+F:\BUET plasma\research\scripts\optimize_plasmaxai.py
+
+Final novel framework:
+F:\BUET plasma\research\scripts\novel_plasmaxai_pipeline.py
+
+Website:
+F:\BUET plasma\apps\web
+
+Inference service:
+F:\BUET plasma\apps\inference
+
+Research package:
+F:\BUET plasma\research\package
+
+
+5. Hardware and software environment
+------------------------------------------------------------------------------
+Verified GPU from `nvidia-smi`:
+- NVIDIA GeForce RTX 3060
+- 12288 MiB VRAM
+- Driver version 591.86
+- CUDA version 13.1
+
+This matters because the final novel summary explicitly reports device = CUDA.
+
+Python version verified in the local environment:
+- Python 3.13.2
+
+Relevant software used across the project:
+- PyTorch
+- torchvision
+- timm
+- OpenCV
+- scikit-learn
+- pandas
+- NumPy
+- FastAPI
+- Next.js 16.2.2
+- React 19.2.4
+- Bun package workflow for the website
+
+Important honesty note:
+CPU model and total RAM were not programmatically retrievable in the current
+Windows session because system info queries were access-restricted. This file
+therefore records the GPU and the validated software/runtime information
+without fabricating unavailable machine fields.
+
+
+6. Dataset and split strategy
+------------------------------------------------------------------------------
+Primary dataset folder:
+F:\BUET plasma\data\raw\PCMMD Plasma Cells for Multiple Myeloma Diagnosis
+
+Local related folder:
+F:\BUET plasma\data\raw\PCMMD_LOCAL
+
+Usage:
+- PCMMD Set 1 for model development and benchmarking
+- PCMMD Set 2 for exploratory patient-level analysis
+
+Main split:
+- 70% train
+- 15% validation
+- 15% test
+
+Observed counts:
+- Train: 2482
+- Validation: 532
+- Test: 532
+
+The split is stratified and implemented in `research/scripts/novel_plasmaxai_pipeline.py`
+through a two-stage `train_test_split` process:
+- first split 70/30
+- then split the remaining 30 into 15/15
+
+
+7. Phase 1: notebook-stage baseline
+------------------------------------------------------------------------------
+Main notebook:
+F:\BUET plasma\research\notebooks\PlasmaXAI.ipynb
+
+Saved baseline checkpoint:
+F:\BUET plasma\artifacts\models\best_plasmaxai.pth
+
+Main notebook-stage result:
+- EfficientNet test accuracy: 85.34%
+- Plasma recall: 0.79
+
+Notebook benchmark section:
+- ResNet-50 benchmark accuracy: 91.92%
+- ResNet-50 AUC: 0.971
+- EfficientNet benchmark accuracy: 82.89%
+
+Counterfactual stage at notebook level:
+- DICE generated 60 counterfactual explanations
+- prominent drivers included NC Ratio, Nucleus Area, and Mean R
+
+Why phase 1 mattered:
+It established feasibility, an initial figure package, and benchmark context.
+
+Why phase 1 was not enough:
+- the main baseline was not strong enough for the intended sensitivity target
+- explainability existed but was not yet inside the model’s decision pathway
+- the work was still notebook-centric
+
+
+8. Phase 2: optimization stage
+------------------------------------------------------------------------------
+Main optimization outputs:
+- F:\BUET plasma\research\outputs\optimization\best_framework_summary.json
+- F:\BUET plasma\research\outputs\optimization\best_framework_report.txt
+
+Best optimized hybrid before the final novel extension:
+- ResNet50 weight: 0.55
+- DenseNet121 weight: 0.45
+- Morphology contribution: 0.02
+- Threshold: 0.55
+
+Validation metrics:
+- Accuracy: 94.36%
+- Weighted F1: 94.37%
+- Plasma recall: 96.30%
+- AUC: 98.03%
+
+Test metrics:
+- Accuracy: 92.48%
+- Weighted F1: 92.48%
+- Plasma recall: 92.15%
+- AUC: 97.38%
+
+Best single model:
+- ResNet50
+- Accuracy: 92.29%
+- Weighted F1: 92.31%
+- Plasma recall: 94.21%
+- AUC: 97.30%
+
+Meaning of phase 2:
+The project clearly improved beyond the notebook baseline and showed that a
+hybrid design could compete strongly. However, it still looked too much like a
+carefully tuned ensemble of known components.
+
+
+9. Why a stronger novelty step was needed
+------------------------------------------------------------------------------
+By the end of the optimization stage, the system was strong as engineering but
+not yet distinctive enough as a research framework. The remaining gap was:
+- explainability still felt too external
+- fusion was still too close to weighted blending
+- there was no deeper patient-level interpretation layer
+
+That motivated the final novel framework stage.
+
+
+10. Final novel architecture overview
+------------------------------------------------------------------------------
+Main pipeline:
+F:\BUET plasma\research\scripts\novel_plasmaxai_pipeline.py
+
+Main final checkpoint:
+F:\BUET plasma\research\outputs\novel\novel_fusion_model.pth
+
+Supporting artifacts:
+- fusion_scalers.joblib
+- counterfactual_bundle.joblib
+- novel_summary.json
+- plasmaxai_operating_point.json
+
+High-level idea:
+The final model combines:
+1. ResNet50 image embeddings
+2. DenseNet121 image embeddings
+3. handcrafted morphology
+4. counterfactual boundary descriptors
+5. compact score features
+
+These are passed through separate encoders, modulated by counterfactual
+signals, dynamically reweighted by a learned gate, fused, and finally
+classified.
+
+
+11. Exact input dimensions
+------------------------------------------------------------------------------
+Using the saved feature-block definitions in `fusion_scalers.joblib`, the
+actual input dimensions are:
+- ResNet embedding: 2048
+- DenseNet embedding: 1024
+- Morphology block: 10
+- Counterfactual block: 24
+- Score block: 3
+
+This matters because the architecture description below is based on the real
+saved dimensions rather than generic assumptions.
+
+
+12. Layer-by-layer novel architecture
+------------------------------------------------------------------------------
+The final architecture class is `CounterfactualGuidedFusionNet`.
+
+Final best configuration:
+- hidden_dim = 256
+- tabular_dim = 128
+- dropout = 0.25
+
+12.1 ResNet encoder
+Input:
+- 2048-dimensional ResNet embedding
+
+Layers:
+1. LayerNorm(2048)
+2. Linear(2048 -> 256)
+3. GELU
+4. Dropout(0.25)
+
+Output:
+- 256-dimensional ResNet latent vector
+
+12.2 DenseNet encoder
+Input:
+- 1024-dimensional DenseNet embedding
+
+Layers:
+1. LayerNorm(1024)
+2. Linear(1024 -> 256)
+3. GELU
+4. Dropout(0.25)
+
+Output:
+- 256-dimensional DenseNet latent vector
+
+12.3 Morphology encoder
+Input:
+- 10-dimensional morphology vector
+
+Layers:
+1. LayerNorm(10)
+2. Linear(10 -> 128)
+3. GELU
+4. Dropout(0.25)
+
+Output:
+- 128-dimensional morphology latent vector
+
+12.4 Counterfactual encoder
+Input:
+- 24-dimensional counterfactual feature vector
+
+Layers:
+1. LayerNorm(24)
+2. Linear(24 -> 128)
+3. GELU
+4. Dropout(0.25)
+
+Output:
+- 128-dimensional counterfactual latent vector
+
+12.5 Score encoder
+Input:
+- 3-dimensional score vector:
+  - ResNet probability
+  - DenseNet probability
+  - counterfactual logistic probability
+
+Layers:
+1. LayerNorm(3)
+2. Linear(3 -> 128)
+3. GELU
+4. Dropout(0.25)
+
+Output:
+- 128-dimensional score latent vector
+
+12.6 Counterfactual-to-ResNet gate
+Module:
+- Linear(128 -> 256)
+- Sigmoid
+
+Operation:
+`res_feat = res_feat * cf_to_res(cf_feat)`
+
+Meaning:
+The counterfactual branch directly modulates the ResNet branch. This is one of
+the main reasons the architecture is more than a post-hoc explanation system.
+
+12.7 Counterfactual-to-DenseNet gate
+Module:
+- Linear(128 -> 256)
+- Sigmoid
+
+Operation:
+`den_feat = den_feat * cf_to_den(cf_feat)`
+
+Meaning:
+The DenseNet latent representation is also explicitly filtered through a
+counterfactual gate.
+
+12.8 Morphology-to-score refinement
+Module:
+- Linear(128 + 128 -> 128)
+- GELU
+- Dropout(0.25)
+
+Input:
+- concatenation of `morph_feat` and `cf_feat`
+
+Operation:
+`score_feat = score_feat + morph_to_scores(concat(morph_feat, cf_feat))`
+
+Meaning:
+The score branch does not remain a raw three-number channel. It becomes a
+learned, morphology-aware, counterfactual-aware signal.
+
+12.9 Modality gate context
+The gate context is the concatenation of:
+- res_feat (256)
+- den_feat (256)
+- morph_feat (128)
+- cf_feat (128)
+- score_feat (128)
+
+Total dimension:
+- 896
+
+Modality gate module:
+1. LayerNorm(896)
+2. Linear(896 -> 4)
+3. Softmax
+
+Output:
+- four gate weights
+
+These correspond to:
+- ResNet branch
+- DenseNet branch
+- morphology branch
+- counterfactual branch
+
+12.10 Unification layers
+To bring branch outputs into a common fusion space:
+- res_unify: Linear(256 -> 256)
+- den_unify: Linear(256 -> 256)
+- morph_unify: Linear(128 -> 256)
+- cf_unify: Linear(128 -> 256)
+- score_unify: Linear(128 -> 256)
+
+12.11 Fused modal stream
+The fused modal vector is built as:
+- gate_resnet * res_unify(res_feat)
+- plus gate_densenet * den_unify(den_feat)
+- plus gate_morph * morph_unify(morph_feat)
+- plus gate_cf * cf_unify(cf_feat)
+
+This yields one 256-dimensional fused modal representation.
+
+12.12 Final classifier path
+The unified score branch is:
+- score_unify(score_feat) -> 256 dimensions
+
+The final classifier input is:
+- concat(fused_modal, score_unify(score_feat))
+
+Total classifier input dimension:
+- 512
+
+Classifier layers:
+1. LayerNorm(512)
+2. Linear(512 -> 256)
+3. GELU
+4. Dropout(0.25)
+5. Linear(256 -> 2)
+
+Outputs:
+- binary logits
+- modality gates
+
+12.13 Forward-path summary
+The exact logic is:
+1. encode all five input blocks
+2. gate both deep image streams using counterfactual features
+3. refine the score stream using morphology + counterfactual context
+4. compute softmax modality weights from all streams
+5. project each branch to a common 256-dimensional space
+6. form a weighted modal sum across ResNet/DenseNet/Morphology/Counterfactual
+7. concatenate the weighted modal sum with the score stream
+8. classify into two classes
+
+This is the central architectural novelty of PlasmaXAI.
+
+
+13. Morphology feature extraction details
+------------------------------------------------------------------------------
+Each image is resized to 128 x 128 for handcrafted morphology extraction.
+
+Computed channels:
+- mean_r = average red intensity / 255
+- mean_g = average green intensity / 255
+- mean_b = average blue intensity / 255
+
+Staining intensity:
+- 1.0 - mean(image) / 255
+
+Grayscale conversion:
+- RGB -> grayscale
+
+Thresholding:
+- nucleus mask uses threshold 80 with binary inverse
+- cell mask uses threshold 200 with binary inverse
+
+Area quantities:
+- nucleus_area = positive nucleus pixels / total pixels
+- cell_area = positive cell pixels / total pixels
+- cytoplasm_area = max(cell_area - nucleus_area, 0)
+
+NC ratio:
+- nucleus_area / max(cytoplasm_area, 1e-3)
+- clipped at 25.0
+
+Granularity:
+- Laplacian variance / 1000
+
+Roundness:
+- computed from the largest nucleus contour using:
+  (4 * pi * area) / perimeter^2
+
+The final morphology block is:
+- nc_ratio
+- nc_ratio_log1p
+- nucleus_area
+- cytoplasm_area
+- staining_intensity
+- granularity
+- roundness
+- mean_r
+- mean_g
+- mean_b
+
+
+14. Backbone feature extraction details
+------------------------------------------------------------------------------
+Backbones used:
+- ResNet50
+- DenseNet121
+
+Checkpoint sources:
+- research/outputs/optimization/checkpoints/resnet50_final.pth
+- research/outputs/optimization/checkpoints/densenet121_final.pth
+
+Image preprocessing for the backbones:
+1. resize to 224 x 224
+2. convert to tensor
+3. normalize with ImageNet statistics:
+   - mean [0.485, 0.456, 0.406]
+   - std [0.229, 0.224, 0.225]
+
+Feature extraction logic:
+- `forward_features(images)`
+- `forward_head(feat_map, pre_logits=True)` -> embedding
+- `forward_head(feat_map)` -> logits
+- softmax(logits)[:, 1] -> plasma probability
+
+Cached embedding files:
+- research/outputs/novel/cache/train_embeddings.pkl
+- research/outputs/novel/cache/val_embeddings.pkl
+- research/outputs/novel/cache/test_embeddings.pkl
+
+Observed cache sizes:
+- train_embeddings.pkl ~ 61.3 MB
+- val_embeddings.pkl ~ 13.2 MB
+- test_embeddings.pkl ~ 13.2 MB
+
+Why caching mattered:
+Backbone features were expensive enough that reusing cached embeddings made the
+fusion search and repeated analysis stages much faster and more stable.
+
+
+15. Counterfactual model and counterfactual feature construction
+------------------------------------------------------------------------------
+Counterfactual model fitting uses:
+- StandardScaler
+- LogisticRegression(max_iter=2000, class_weight="balanced", random_state=42)
+
+Training morphology data:
+- the training split morphology table only
+
+Stored counterfactual bundle contents:
+- scaler
+- logistic regression model
+- benign prototype
+
+Counterfactual features are constructed by:
+1. scaling morphology features
+2. computing logistic margin
+3. computing logistic plasma probability
+4. reading the logistic coefficient vector
+5. forming the shift-to-boundary vector `delta`
+6. forming the shift-to-benign-prototype vector `proto_delta`
+
+The final 24-dimensional counterfactual block includes:
+- 10 `cf_shift_*` values
+- 10 `proto_shift_*` values
+- cf_margin
+- cf_distance_l2
+- cf_distance_l1
+- cf_proto_distance
+
+This block is one of the defining parts of the final model because it gives a
+mathematically structured explanation-aware representation of how far the
+sample lies from a lower-risk morphology region.
+
+
+16. Training logic for the fusion model
+------------------------------------------------------------------------------
+Training dataset object:
+- TensorDataset(res, den, morph, cf, scores, labels)
+
+Class balancing strategy:
+- inverse-frequency weights
+- WeightedRandomSampler
+- class-weighted CrossEntropyLoss
+
+Optimizer:
+- AdamW
+
+Scheduler:
+- CosineAnnealingLR with `T_max = epochs`
+
+Mixed precision:
+- torch.autocast used on CUDA
+- torch.amp.GradScaler used on CUDA
+
+Early stopping:
+- based on validation priority
+- patience from the config
+
+Config search space:
+- fusion_cfg_a
+- fusion_cfg_b
+- fusion_cfg_c
+
+Best config selected:
+- fusion_cfg_a
+- hidden_dim = 256
+- tabular_dim = 128
+- dropout = 0.25
+- lr = 0.001
+- weight_decay = 0.0001
+- epochs = 60
+- batch_size = 128
+- patience = 10
+
+
+17. Threshold search and model selection logic
+------------------------------------------------------------------------------
+Threshold search is performed on validation probabilities using:
+- `np.linspace(0.05, 0.95, 181)`
+
+That means the threshold is scanned in 0.005 increments.
+
+Metrics computed at each threshold:
+- accuracy
+- weighted F1
+- plasma precision
+- plasma recall
+- AUC
+
+The priority rule is not just "highest accuracy". The model selection logic
+first checks whether plasma recall reaches a clinical floor of 90%. The
+priority tuple is:
+1. recall floor met or not
+2. accuracy
+3. weighted F1
+4. AUC
+5. plasma recall
+
+This is extremely important for understanding how the final result was
+produced. The model was selected with a clinical screening mindset rather than
+with a purely academic top-1 accuracy mindset.
+
+
+18. Best-history behavior and internal gate trends
+------------------------------------------------------------------------------
+Best-history file:
+- research/outputs/novel/best_fusion_history.csv
+
+Observed early epochs:
+- epoch 1
+  - train loss: 0.2300
+  - train acc: 91.46
+  - val acc: 94.36
+  - val recall: 96.30
+  - val AUC: 97.86
+- epoch 4
+  - train loss: 0.1354
+  - train acc: 94.56
+  - val acc: 93.98
+  - threshold: 0.72
+- epoch 9
+  - train loss: 0.1184
+  - train acc: 95.73
+  - val recall: 97.12
+
+Average gate examples over epochs show dynamic rather than fixed behavior:
+- ResNet gate commonly high
+- DenseNet gate fluctuates meaningfully
+- morphology gate becomes non-trivial in several epochs
+- counterfactual direct gate may appear numerically smaller on average, but
+  this understates its importance because it also modulates the image streams
+  and refines the score branch
+
+
+19. Final novel-summary result versus final preferred operating point
+------------------------------------------------------------------------------
+Original novel summary (`novel_summary.json`) reports:
+- threshold: 0.76
+- accuracy: 93.23%
+- weighted F1: 93.24%
+- plasma precision: 91.87%
+- plasma recall: 93.39%
+- AUC: 97.76%
+
+Final preferred operating point (`plasmaxai_operating_point.json`) reports:
+- threshold: 0.72
+- accuracy: 93.42%
+- weighted F1: 93.43%
+- plasma precision: 91.24%
+- plasma recall: 94.63%
+- AUC: 97.76%
+
+Why 0.72 became the preferred public threshold:
+- it preserved the same AUC
+- it kept precision strong
+- it improved plasma recall
+- it produced the best overall doctor-relevant balance
+
+
+20. Extended model comparison
+------------------------------------------------------------------------------
+Main comparison file:
+- research/outputs/novel/plasmaxai_extended_model_comparison.csv
+
+Final comparison:
+- PlasmaXAI
+  - 93.42 accuracy
+  - 93.43 weighted F1
+  - 91.24 plasma precision
+  - 94.63 plasma recall
+  - 97.76 AUC
+- ResNet50
+  - 91.92 accuracy
+  - 89.02 plasma precision
+  - 93.80 plasma recall
+  - 97.05 AUC
+- Prev Hybrid
+  - 91.73 accuracy
+  - 90.91 plasma precision
+  - 90.91 plasma recall
+  - 97.12 AUC
+- DenseNet121
+  - 89.85 accuracy
+  - 90.17 plasma precision
+  - 87.19 plasma recall
+  - 96.36 AUC
+- Morph XGBoost
+  - 84.96 accuracy
+  - 80.22 plasma precision
+  - 88.84 plasma recall
+  - 92.94 AUC
+- Morph Random Forest
+  - 83.27 accuracy
+  - 77.62 plasma precision
+  - 88.84 plasma recall
+  - 92.08 AUC
+- Morph RBF-SVM
+  - 80.26 accuracy
+  - 74.04 plasma precision
+  - 87.19 plasma recall
+  - 90.89 AUC
+- Morph Logistic Regression
+  - 78.38 accuracy
+  - 70.42 plasma precision
+  - 90.50 plasma recall
+  - 87.76 AUC
+
+Main conclusion:
+PlasmaXAI is the strongest overall system when the practically relevant trio
+of accuracy, plasma precision, and plasma recall are considered together.
+
+
+21. Ablation study details
+------------------------------------------------------------------------------
+Main ablation files:
+- research/outputs/novel/ablation_results.csv
+- research/outputs/novel/plasmaxai_ablation_results.csv
+
+Ablation modes:
+- Image Only
+- Without Morphology
+- Without Counterfactual Path
+- Full Novel Fusion
+
+Main ablation test results:
+- Image Only
+  - accuracy: 93.42
+  - precision: 93.31
+  - recall: 92.15
+  - AUC: 97.57
+- Without Morphology
+  - accuracy: 93.05
+  - precision: 91.16
+  - recall: 93.80
+  - AUC: 96.98
+- Without Counterfactual Path
+  - accuracy: 90.23
+  - precision: 92.04
+  - recall: 85.95
+  - AUC: 97.62
+- Full Novel Fusion in the ablation run
+  - accuracy: 91.73
+  - precision: 92.67
+  - recall: 88.84
+  - AUC: 97.79
+
+Most important interpretation:
+Removing the counterfactual path caused the clearest recall damage. That is
+the strongest experimental support for the claim that the counterfactual branch
+is functionally important, not decorative.
+
+
+22. Bootstrap reliability analysis
+------------------------------------------------------------------------------
+Main file:
+- research/outputs/novel/bootstrap_summary.json
+
+The bootstrap function resamples the test set 1000 times with replacement and
+computes:
+- accuracy
+- weighted F1
+- plasma recall
+- AUC
+
+Preferred operating-point bootstrap summary:
+- Accuracy mean: 93.46%
+- Accuracy 95% CI: 91.16 to 95.30
+- Weighted F1 mean: 93.46%
+- Weighted F1 95% CI: 91.17 to 95.31
+- Plasma recall mean: 94.62%
+- Plasma recall 95% CI: 91.30 to 97.20
+- AUC mean: 97.77%
+- AUC 95% CI: 96.56 to 98.63
+
+Why this matters:
+These intervals demonstrate that the result is not based only on a single
+point estimate. The model remains strong across bootstrap resamples.
+
+
+23. Patient-level analysis details
+------------------------------------------------------------------------------
+Main patient-level files:
+- patient_cell_predictions.csv
+- patient_counterfactual_summary.csv
+- plasmaxai_patient_robustness.json
+- plasmaxai_patient_lopo_auc.csv
+- plasmaxai_patient_permutation_auc.csv
+
+Patient analysis pipeline:
+1. read Set 2 patient folders
+2. read diagnosis.csv
+3. parse YOLO-style label files
+4. crop individual cells from full images
+5. add 10% padding around each crop
+6. map plasma to the positive class
+7. extract ResNet and DenseNet embeddings for each crop
+8. extract morphology features for each crop
+9. compute counterfactual features for each crop
+10. run fusion inference on each crop
+11. aggregate crop outputs to patient summaries
+
+Patient summary fields include:
+- mean_novel_prob
+- mean_plasma_prob_cells
+- gt_plasma_fraction
+- mean_cf_distance_plasma
+- cf_consistency
+- gate_cf_mean
+- top_counterfactual_feature
+
+Internal patient-level findings:
+- 10 patients total
+- 5 diseased
+- 5 normal
+- patient AUC using mean novel probability = 1.000
+- one-sided exact permutation p = 0.0040
+- two-sided exact permutation p = 0.0079
+- leave-one-patient-out AUC mean = 1.000
+- top separating features = mean_r, mean_g, mean_b
+
+Required caution:
+These results are internally strong but exploratory. They are based on a very
+small same-source cohort and are not a substitute for external validation.
+
+
+24. Explainability and doctor-facing interpretation
+------------------------------------------------------------------------------
+Explainability assets include:
+- fig6_counterfactual_analysis.png
+- novel_fig4_gates_counterfactuals.png
+- plasmaxai_fig4_counterfactual_explanation.png
+- novel_fig6_clinical_insight.png
+- plasmaxai_fig6_clinical_insight.png
+- clinical_insight_report.txt
+
+Explainability design philosophy:
+- do not only show developer-oriented model traces
+- provide clinically interpretable counterfactual cues
+- indicate what changes would lower suspicion
+- support doctor review rather than replace it
+
+One internal clinical-insight finding:
+- diseased patients showed a reproducible counterfactual signature centered on
+  mean_r, mean_g, and mean_b
+
+This is stated honestly as an internal, clinically interesting signal, not as
+final externally validated biological proof.
+
+
+25. Website translation and doctor-facing workflow
+------------------------------------------------------------------------------
+Website folder:
+- F:\BUET plasma\apps\web
+
+The website includes:
+- login and registration screens
+- doctor dashboard
+- new-case upload flow
+- case review page
+- patient directory
+- patient profile page
+- report download
+- doctor notes
+- patient CRUD in local mode
+
+The intent of the website is to demonstrate that the research can be surfaced
+inside a clinical review interface rather than staying trapped inside notebook
+cells and static plots.
+
+The website stack includes:
+- Next.js 16.2.2
+- React 19.2.4
+- TypeScript
+- Bootstrap Icons
+- Framer Motion
+- Recharts
+- Supabase-ready auth/data/storage wiring
+
+
+26. Vercel deployment readiness
+------------------------------------------------------------------------------
+To make the repository Vercel-deployment-ready, the following were added:
+
+Website side:
+- updated `apps/web/README.md`
+- updated `apps/web/.env.example`
+- safer hosted inference behavior in `src/lib/inference/service.ts`
+
+Inference side:
+- `apps/inference/app/app.py`
+- `apps/inference/build.py`
+- `apps/inference/pyproject.toml`
+- updated `apps/inference/README.md`
+- switched to `opencv-python-headless`
+
+Repo-level deployment guide:
+- `docs/VERCEL_DEPLOYMENT_READY.md`
+- root `vercel.json`
+
+Recommended deployment shape:
+- one Vercel project from the repository root
+- Framework Preset = `Services`
+- `apps/web` mounted at `/`
+- `apps/inference` mounted at `/api/inference`
+- Supabase for auth, data, and storage
+
+Important honesty note:
+This makes the repo deployment-ready from a code/configuration perspective, but
+PyTorch inference on serverless infrastructure can still face cold-start and
+runtime-size constraints. A dedicated persistent inference host may still be
+the better long-term production target.
+
+
+27. GitHub packaging truth
+------------------------------------------------------------------------------
+Repository:
+https://github.com/Arnob10150/PlasmaXAI.git
+
+Pushed website tag:
+- v1.2.0
+
+Pushed core items include:
+- artifacts/models/best_plasmaxai.pth
+- research/outputs/novel/novel_fusion_model.pth
+- apps/web
+- apps/inference
+- research/package
+
+Not literally every local file was pushed. A few large or redundant files were
+intentionally excluded, including:
+- data/archives/PCMMD Plasma Cells for Multiple Myeloma Diagnosis.zip
+- research/outputs/optimization/checkpoints/convnext_tiny_search.pth
+- research/outputs/optimization/checkpoints/convnext_tiny_final.pth
+
+This means the repo contains the main research and deployment package, but not
+every oversized redundant local artifact.
+
+
+28. Limitations
+------------------------------------------------------------------------------
+Scientific limitations:
+- no external multi-center validation
+- patient-level cohort is very small
+- same-source exploratory patient analysis can be optimistic
+
+Deployment limitations:
+- hosted persistence requires proper Supabase configuration
+- local fallback mode is for local evaluation, not production persistence
+- PyTorch inference on Vercel can still be operationally constrained
+
+Claim boundary:
+The strongest honest claim is not "fully clinically proven".
+The strongest honest claim is:
+"PlasmaXAI is a high-performing, explainable, counterfactual-guided
+plasma-cell screening framework with a credible path toward clinician-in-the-
+loop deployment."
+
+
+29. Key artifact checklist
+------------------------------------------------------------------------------
+Notebook baseline:
+- research/notebooks/PlasmaXAI.ipynb
+
+Optimization script:
+- research/scripts/optimize_plasmaxai.py
+
+Novel final pipeline:
+- research/scripts/novel_plasmaxai_pipeline.py
+
+Main final model:
+- research/outputs/novel/novel_fusion_model.pth
+
+Final operating point:
+- research/outputs/novel/plasmaxai_operating_point.json
+
+Main benchmark comparison:
+- research/outputs/novel/plasmaxai_extended_model_comparison.csv
+
+Bootstrap summary:
+- research/outputs/novel/bootstrap_summary.json
+
+Ablation summary:
+- research/outputs/novel/ablation_results.csv
+
+Patient summaries:
+- research/outputs/novel/patient_counterfactual_summary.csv
+- research/outputs/novel/plasmaxai_patient_robustness.json
+
+Website:
+- apps/web
+
+Inference service:
+- apps/inference
+
+Short competition brief:
+- research/package/PlasmaXAI_competition_master_brief.txt
+
+Medium-length master dossier:
+- research/package/PlasmaXAI_everything_master_dossier.txt
+
+This ultra-detailed record:
+- research/package/PlasmaXAI_ultra_detailed_full_record.txt
+
+
+30. Final bottom line
+------------------------------------------------------------------------------
+PlasmaXAI should be understood as a full research-and-translation framework. It
+began as a notebook baseline, matured through benchmark optimization, and
+arrived at a final learned architecture that fuses ResNet50, DenseNet121,
+handcrafted morphology, counterfactual boundary information, and score-level
+signals inside one decision pipeline. The final preferred operating point
+achieved 93.42% accuracy, 93.43% weighted F1, 91.24% plasma precision, 94.63%
+plasma recall, and 97.76% AUC. The project also produced ablations, bootstrap
+intervals, exploratory patient-level analyses, clinician-facing explainability,
+paper materials, a doctor-facing website, and a deployment-ready inference
+service. Its strongest honest contribution is not just a metric, but an
+interpretable digital hematopathology framework with a credible path toward
+doctor-in-the-loop use.
+
+
+31. References
+------------------------------------------------------------------------------
+[1] Silva, A.B., Matos, J., Costa, A., et al. PCMMD: A dataset of plasma cells
+for multiple myeloma diagnosis. Scientific Data 12, 543 (2025).
+
+[2] Rajkumar, S.V. Multiple myeloma: 2022 update on diagnosis,
+risk-stratification, and management. American Journal of Hematology 97,
+1086--1107 (2022).
+
+[3] Litjens, G., Kooi, T., Bejnordi, B.E., et al. A survey on deep learning in
+medical image analysis. Medical Image Analysis 42, 60--88 (2017).
+
+[4] Bera, K., Schalper, K.A., Rimm, D.L., Velcheti, V., Madabhushi, A.
+Artificial intelligence in digital pathology---new tools for diagnosis and
+precision oncology. Nature Reviews Clinical Oncology 16, 703--715 (2019).
+
+[5] He, K., Zhang, X., Ren, S., Sun, J. Deep residual learning for image
+recognition. Proceedings of the IEEE Conference on Computer Vision and Pattern
+Recognition, 770--778 (2016).
+
+[6] Huang, G., Liu, Z., van der Maaten, L., Weinberger, K.Q. Densely connected
+convolutional networks. Proceedings of the IEEE Conference on Computer Vision
+and Pattern Recognition, 4700--4708 (2017).
+
+[7] Wachter, S., Mittelstadt, B., Russell, C. Counterfactual explanations
+without opening the black box: Automated decisions and the GDPR. Harvard
+Journal of Law and Technology 31(2), 841--887 (2018).
+
+[8] Mothilal, R.K., Sharma, A., Tan, C. Explaining machine learning classifiers
+through diverse counterfactual explanations. FAT* 2020, 607--617 (2020).
+
+[9] Guo, C., Pleiss, G., Sun, Y., Weinberger, K.Q. On calibration of modern
+neural networks. International Conference on Machine Learning, 1321--1330
+(2017).
+
+[10] Ribeiro, M.T., Singh, S., Guestrin, C. "Why should I trust you?":
+Explaining the predictions of any classifier. Proceedings of the 22nd ACM
+SIGKDD International Conference on Knowledge Discovery and Data Mining,
+1135--1144 (2016).
+
+[11] Selvaraju, R.R., Cogswell, M., Das, A., et al. Grad-CAM: Visual
+explanations from deep networks via gradient-based localization. Proceedings of
+the IEEE International Conference on Computer Vision, 618--626 (2017).
+
+[12] Lundberg, S.M., Lee, S.-I. A unified approach to interpreting model
+predictions. Advances in Neural Information Processing Systems, 4765--4774
+(2017).
+
+
+32. Step-by-step walkthrough of how one final result was produced
+------------------------------------------------------------------------------
+This section explains, step by step, how a single final reported PlasmaXAI
+test result was actually generated in practice.
+
+Step 1: Dataset load
+The pipeline starts by scanning the Set 1 folder under `data/raw/PCMMD_LOCAL/set1` and
+collecting file paths for the class folders defined in `CLASS_NAMES`. Every
+valid image path is stored together with:
+- the path
+- numeric label
+- class name
+- image_id
+
+Step 2: Train/validation/test split
+The full dataframe is split with stratification. This is important because it
+ensures the class distribution is preserved across train, validation, and test
+partitions. The split uses a fixed seed, so the result is repeatable for the
+same environment and input data.
+
+Step 3: Morphology extraction
+Every image in the full dataset has morphology features extracted and cached to
+`segmentation_morph_features.csv`. This cache avoids recomputing handcrafted
+features every time the fusion search runs.
+
+Step 4: Counterfactual model fitting
+Only the training portion of the morphology table is used to fit the
+logistic-regression-based counterfactual boundary model. This is important for
+keeping the decision-boundary logic properly inside the training data regime.
+
+Step 5: Counterfactual feature computation
+Counterfactual features are then computed separately for training, validation,
+and test. This produces per-sample boundary-distance and prototype-shift
+descriptors that eventually become part of the final neural input.
+
+Step 6: Backbone embedding extraction
+The training, validation, and test splits are passed through ResNet50 and
+DenseNet121. Their pre-logit embeddings and probabilities are extracted and
+cached to pickle files. These features are then merged with morphology and
+counterfactual data.
+
+Step 7: Fusion search
+The pipeline trains several candidate fusion configurations. For each epoch in
+each candidate configuration, it:
+- trains on the training set
+- evaluates on the validation set
+- searches validation thresholds
+- stores the epoch metrics and mean gate values
+- keeps the best state according to the validation priority rule
+
+Step 8: Best-model selection
+After all configurations finish, the best configuration is selected by the same
+clinical priority logic used during validation.
+
+Step 9: Held-out test evaluation
+The best fusion model is evaluated on the held-out test set. The model outputs
+probabilities and gate values. The selected threshold is applied to generate
+class predictions and compute final metrics.
+
+Step 10: Comparison and packaging
+The test metrics are then compared with baseline systems, written to JSON/CSV,
+used for plotting, and later refined into the final preferred threshold at
+0.72.
+
+
+33. Detailed explanation of the training loop and optimization dynamics
+------------------------------------------------------------------------------
+The training loop in `train_fusion_model` is worth documenting carefully
+because it shows how the final result was stabilized.
+
+33.1 Weighted sampling
+The class distribution of the training data is converted into inverse class
+weights. These weights are used twice:
+- first to build `sample_weights` for the `WeightedRandomSampler`
+- second to build class weights for the final `CrossEntropyLoss`
+
+This means minority-class underrepresentation is addressed both in which
+examples appear during training and in how loss penalizes mistakes.
+
+33.2 Mixed precision
+Whenever CUDA is available, the training loop uses:
+- `torch.autocast`
+- `torch.amp.GradScaler`
+
+This accelerates training and reduces memory pressure on the GPU. Because the
+project was run on an RTX 3060 with 12 GB of VRAM, mixed precision helps keep
+training efficient while still allowing sufficiently large batch sizes.
+
+33.3 Optimizer choice
+`AdamW` is used rather than plain SGD or vanilla Adam. This is a sensible
+choice for a mixed tabular-deep fusion network because:
+- it is effective for dense parameter optimization
+- decoupled weight decay often behaves more cleanly than naive L2 treatment
+- it is widely used for transformer-like and hybrid deep architectures
+
+33.4 Scheduler choice
+`CosineAnnealingLR` is used with `T_max = epochs`. This means the learning rate
+gradually anneals over the full training horizon rather than stepping down at a
+few abrupt milestones. For compact fusion heads trained on frozen deep
+embeddings, this often gives a smoother optimization trajectory than a harsh
+piecewise schedule.
+
+33.5 Best-state retention
+The training loop does not simply keep the final epoch. Instead, it stores the
+state dictionary of the best validation state seen so far. That state is later
+reloaded into the model before returning the training result. This is important
+because it ensures the test set is evaluated using the validation-best fusion
+parameters rather than the last epoch by default.
+
+33.6 Patience and stopping
+The loop increments `bad_epochs` whenever the validation priority fails to
+improve. Once `bad_epochs` reaches the configured patience, training stops. In
+practice, this prevents wasting compute on epochs that are no longer improving
+the model meaningfully.
+
+
+34. Exact meaning of the saved artifacts in research/outputs/novel
+------------------------------------------------------------------------------
+The `research/outputs/novel` directory contains many files, and each one has a distinct
+purpose. This section explains them in plain language.
+
+`novel_fusion_model.pth`
+- the final trained fusion network weights
+
+`fusion_scalers.joblib`
+- the scaling objects for morphology, counterfactual, and score features
+- also contains the feature-block definitions used to recover input dimensions
+
+`counterfactual_bundle.joblib`
+- the logistic regression counterfactual model
+- the scaler used before that model
+- the benign prototype vector
+
+`novel_summary.json`
+- the original novel-framework summary
+- contains best configuration, threshold, metrics, patient summary, and
+  ablation information
+
+`plasmaxai_operating_point.json`
+- the later selected preferred threshold and final preferred public metrics
+
+`best_fusion_history.csv`
+- epoch-level trace for the best fusion model
+- includes train loss, train accuracy, validation metrics, threshold, and mean
+  gate weights
+
+`ablation_results.csv`
+- CSV representation of ablation results
+
+`bootstrap_summary.json`
+- bootstrap confidence interval summary
+
+`patient_cell_predictions.csv`
+- per-cell patient-level exploratory inference results
+
+`patient_counterfactual_summary.csv`
+- patient-level aggregated summary values
+
+The figure files in `research/outputs/novel/figures` are not just presentation assets.
+They correspond to specific analytical stages of the project and can be used to
+defend claims made in the competition brief or the paper.
+
+
+35. Detailed explanation of patient-level crop processing
+------------------------------------------------------------------------------
+The patient-level analysis is easy to misread as if it were a simple table
+aggregation, but there is real image processing behind it.
+
+35.1 Patient directory structure
+The pipeline expects patient folders whose names start with `patient`.
+Inside each patient folder, it expects:
+- an `images` directory
+- a `labels` directory
+
+The labels are text files aligned with the images.
+
+35.2 Label parsing
+Each label line is interpreted as:
+- class id
+- x-center
+- y-center
+- bounding-box width
+- bounding-box height
+
+These are treated as normalized coordinates and are transformed into pixel
+coordinates using the image width and height.
+
+35.3 Padding strategy
+After the crop is computed from the bounding box, 10% padding is added in both
+the x and y directions. This is important because cell context around the
+bounding box may still carry useful morphology and stain information.
+
+35.4 Crop extraction and filtering
+If the crop is empty, the sample is skipped. Otherwise the crop is retained and
+stored as an RGB array. This means the patient-level inference stage runs on
+true extracted cell crops rather than on metadata only.
+
+35.5 Consistency analysis
+For plasma-positive cells within a patient, the code computes pairwise cosine
+similarity of the counterfactual-shift vectors. This creates a patient-level
+consistency value that summarizes whether malignant-like counterfactual
+movements are coherent across plasma cells in the same patient.
+
+That is one of the reasons the patient-level analysis is scientifically
+interesting despite being exploratory.
+
+
+36. Detailed explanation of the doctor-facing PDF/report generation path
+------------------------------------------------------------------------------
+The reporting logic is another important part of the translation story.
+
+36.1 Why reports matter
+A model result on its own is not enough in a clinical context. A doctor often
+needs:
+- the prediction
+- the confidence
+- the supporting interpretation
+- the case identity
+- an image or reference to the reviewed material
+- a document that can be retained or shared
+
+36.2 Report generation in the website
+The website’s report builder uses `pdf-lib` and the project’s own
+`buildCaseReportPdf` logic. That means a newly created case can produce a real
+downloadable PDF rather than only a web card.
+
+36.3 Report content style
+The reports are intentionally more clinician-facing than developer-facing. They
+include:
+- the case code and patient code
+- the title
+- the doctor identity context
+- the prediction summary
+- confidence-related information
+- the clinical note
+- explainability text
+- image/analysis visuals where available
+
+36.4 Why this matters for competition scoring
+This strengthens both:
+- impact and real-world application
+- methodology and implementation logic
+
+because it demonstrates that the project is not only a training script but a
+review-support system with documentation output.
+
+
+37. Doctor-facing website architecture in more depth
+------------------------------------------------------------------------------
+The website is not a simple static landing page. It is organized as a
+workspace application.
+
+37.1 Core route groups
+The application contains:
+- landing page
+- login page
+- register page
+- dashboard
+- new case page
+- case detail page
+- history
+- patient list
+- patient detail
+- reports
+- profile
+- settings
+
+37.2 Local versus cloud modes
+The site can operate in two broad modes:
+
+Local mode:
+- uses local doctor accounts
+- uses local JSON-backed case and patient storage
+- supports offline/local evaluation
+- can fall back to local Python inference
+
+Cloud-ready mode:
+- uses Supabase auth
+- uses Supabase database tables
+- uses Supabase storage buckets
+- expects a real inference API URL
+
+37.3 Why both modes exist
+The local mode made it possible to keep iterating on the interface while the
+full deployment stack was still being prepared. The cloud-ready mode makes the
+site translatable to real hosting instead of remaining a purely local demo.
+
+37.4 Patient CRUD
+Patient create, update, and delete were added to the local workspace so the
+doctor-facing flow would feel more like a real review system and less like a
+developer-only prototype.
+
+
+38. Vercel deployment implementation details
+------------------------------------------------------------------------------
+The Vercel readiness work was not only a documentation change; it required code
+changes to make hosting behavior honest and safer.
+
+38.1 Website-side hosted inference behavior
+Originally, the website could fall back to running the local Python inference
+script. That is useful for local development but not appropriate for a hosted
+Vercel deployment. The website inference service helper was therefore changed
+to:
+- use `INFERENCE_API_URL` when provided
+- allow local fallback only outside hosted deployment
+- return a clean "not configured" reason if hosted inference is unavailable
+
+38.2 Inference-service Vercel entrypoint
+Vercel’s FastAPI support expects a supported entrypoint. An explicit
+`app/app.py` wrapper was therefore added so the service exposes its FastAPI app
+in a Vercel-compatible location.
+
+38.3 Model-asset staging
+Because the model artifacts live outside the inference folder in the repo,
+`build.py` was added to stage the required files into `model_assets/` during a
+hosted build. This is a practical deployment step, not just a documentation
+note.
+
+38.4 Function limits
+The root `vercel.json` now defines the `inference` service with an increased
+memory and duration budget. This does not solve every production constraint,
+but it makes the hosted deployment more realistic than leaving the Python
+service completely unbounded or implicit.
+
+
+39. Competition-oriented interpretation of the whole project
+------------------------------------------------------------------------------
+PlasmaXAI scores well conceptually because it addresses multiple judging axes
+at once.
+
+Clarity of problem:
+- medically relevant problem
+- clear need for explainable support
+- clear difference between notebook baseline and final framework
+
+Impact and real-world application:
+- useful in review-heavy workflows
+- can support documentation and patient follow-up
+- website strengthens translational credibility
+
+Methodology:
+- combined deep image features and handcrafted morphology
+- used a learned fusion architecture
+- embedded counterfactual reasoning inside the model path
+- supported claims with ablation and bootstrap
+
+Originality:
+- not just a static ensemble
+- counterfactual path is functionally integrated
+- patient-level exploratory analysis extends beyond standard image
+  classification
+
+Expected outcomes:
+- strong test metrics
+- good precision/recall balance
+- clear benchmark improvement
+
+Domain relevance:
+- AI in medicine
+- explainable AI
+- digital pathology / hematology
+- clinically meaningful deployment framing
+
+
+40. Why PlasmaXAI should be described as a framework, not just a model
+------------------------------------------------------------------------------
+The word "framework" is appropriate here because the project includes:
+- multi-stage development
+- multiple data modalities
+- explicit threshold-selection logic
+- explainability integration
+- ablation and robustness logic
+- patient-level aggregation
+- diagram and report infrastructure
+- a doctor-facing web interface
+- a deployable inference service
+
+If the work had ended at a single trained `.pth` file and one ROC curve, it
+would be more accurate to call it a model. Because it includes the broader
+design, interpretability, and translation layer, "framework" is the right word.
+
+
+
+

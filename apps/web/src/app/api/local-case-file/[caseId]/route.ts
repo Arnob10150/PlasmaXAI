@@ -1,7 +1,12 @@
 import { readFile } from "fs/promises";
 import path from "path";
 import { NextResponse } from "next/server";
-import { getLocalCase } from "@/lib/local-cases/store";
+
+export const runtime = "nodejs";
+
+function isHostedDeployment() {
+  return Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+}
 
 function resolveDiskPath(storagePath: string) {
   if (path.isAbsolute(storagePath)) {
@@ -15,6 +20,11 @@ export async function GET(
   _request: Request,
   context: { params: Promise<{ caseId: string }> },
 ) {
+  if (isHostedDeployment()) {
+    return NextResponse.json({ error: "Local file route is unavailable in hosted deployments." }, { status: 404 });
+  }
+
+  const { getLocalCase } = await import("@/lib/local-cases/store");
   const { caseId } = await context.params;
   const caseItem = await getLocalCase(caseId);
   const image = caseItem?.images[0];

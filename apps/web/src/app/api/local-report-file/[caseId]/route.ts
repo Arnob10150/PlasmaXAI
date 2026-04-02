@@ -1,12 +1,22 @@
 import { readFile } from "fs/promises";
 import { NextResponse } from "next/server";
-import { ensureLocalCaseReport } from "@/lib/local-cases/store";
 import { getCurrentUser } from "@/lib/supabase/auth";
+
+export const runtime = "nodejs";
+
+function isHostedDeployment() {
+  return Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+}
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ caseId: string }> },
 ) {
+  if (isHostedDeployment()) {
+    return NextResponse.json({ error: "Local report route is unavailable in hosted deployments." }, { status: 404 });
+  }
+
+  const { ensureLocalCaseReport } = await import("@/lib/local-cases/store");
   const { caseId } = await params;
   const user = await getCurrentUser();
   const report = await ensureLocalCaseReport(caseId, {

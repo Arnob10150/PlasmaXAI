@@ -5,6 +5,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "PlasmaXAI",
   description: "Explainable plasma cell review workspace for doctors",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

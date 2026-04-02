@@ -658,6 +658,89 @@ function drawCueBars(
   return next;
 }
 
+function drawEvidenceMixPanel(
+  state: { page: PDFPage; y: number },
+  pdfDoc: PDFDocument,
+  titleFont: PDFFont,
+  bodyFont: PDFFont,
+  items: Array<{ label: string; value: number; color: ReturnType<typeof rgb> }>,
+) {
+  const panelHeight = 170;
+  let next = ensureSpace(state, pdfDoc, panelHeight + 10);
+
+  next.page.drawRectangle({
+    x: margin,
+    y: next.y - panelHeight,
+    width: contentWidth,
+    height: panelHeight,
+    color: white,
+    borderColor,
+    borderWidth: 1,
+  });
+
+  next.page.drawText("Review evidence mix", {
+    x: margin + 16,
+    y: next.y - 22,
+    size: 13,
+    font: titleFont,
+    color: titleColor,
+  });
+
+  next.page.drawText("Balanced view of how image pattern, texture, morphology, and stability support the current review.", {
+    x: margin + 16,
+    y: next.y - 40,
+    size: 10.5,
+    font: bodyFont,
+    color: bodyColor,
+  });
+
+  const total = Math.max(
+    items.reduce((sum, item) => sum + Math.max(0.01, item.value), 0),
+    0.01,
+  );
+  const barX = margin + 16;
+  const barY = next.y - 76;
+  const barWidth = contentWidth - 32;
+  const barHeight = 24;
+  let cursorX = barX;
+
+  items.forEach((item) => {
+    const width = (Math.max(0.01, item.value) / total) * barWidth;
+    next.page.drawRectangle({
+      x: cursorX,
+      y: barY,
+      width,
+      height: barHeight,
+      color: item.color,
+    });
+    cursorX += width;
+  });
+
+  const legendStartY = next.y - 118;
+  items.forEach((item, index) => {
+    const col = index % 2;
+    const row = Math.floor(index / 2);
+    const x = margin + 18 + col * 240;
+    const y = legendStartY - row * 22;
+    next.page.drawCircle({
+      x,
+      y: y + 5,
+      size: 4,
+      color: item.color,
+    });
+    next.page.drawText(`${item.label} (${Math.round(item.value * 100)}%)`, {
+      x: x + 12,
+      y,
+      size: 10,
+      font: bodyFont,
+      color: bodyColor,
+    });
+  });
+
+  next.y -= panelHeight + 10;
+  return next;
+}
+
 function drawExplainabilityDiagramPanel(
   state: { page: PDFPage; y: number },
   pdfDoc: PDFDocument,
@@ -678,7 +761,7 @@ function drawExplainabilityDiagramPanel(
     borderWidth: 1,
   });
 
-  next.page.drawText("Explainability diagram", {
+  next.page.drawText("Clinical reasoning pathway", {
     x: margin + 16,
     y: next.y - 22,
     size: 13,
@@ -686,7 +769,7 @@ function drawExplainabilityDiagramPanel(
     color: titleColor,
   });
 
-  next.page.drawText("PlasmaXAI review path from image reading to doctor-facing interpretation.", {
+  next.page.drawText("How PlasmaXAI moves from image review to cue localization and then to a doctor-facing summary.", {
     x: margin + 16,
     y: next.y - 40,
     size: 10.5,
@@ -698,13 +781,13 @@ function drawExplainabilityDiagramPanel(
     {
       x: margin + 18,
       label: "Microscopy image",
-      detail: "Original cell image\nused for review",
+      detail: "Original field of\ncell morphology",
       color: softBlue,
     },
     {
       x: margin + 195,
       label: "Focus map + cues",
-      detail: cueLabels.slice(0, 2).join("\n") || "Morphology cues",
+      detail: cueLabels.slice(0, 2).join("\n") || "Localized cues",
       color: softTeal,
     },
     {
@@ -807,6 +890,28 @@ export async function buildCaseReportPdf(input: ReportInput) {
           label: formatClinicalFeatureLabel(item),
           value: Math.max(0.35, 0.82 - index * 0.14),
         }));
+  const evidenceMix = [
+    {
+      label: "Image pattern review",
+      value: Math.max(0.08, input.result.modalityGates.resnet50 ?? 0.25),
+      color: accentBlue,
+    },
+    {
+      label: "Texture review",
+      value: Math.max(0.08, input.result.modalityGates.densenet121 ?? 0.22),
+      color: rgb(0.48, 0.23, 0.9),
+    },
+    {
+      label: "Measured morphology",
+      value: Math.max(0.08, input.result.modalityGates.morphology ?? 0.28),
+      color: accentTeal,
+    },
+    {
+      label: "Decision stability",
+      value: Math.max(0.08, input.result.modalityGates.counterfactual ?? 0.25),
+      color: rgb(0.96, 0.62, 0.14),
+    },
+  ];
 
   let state = createPage(pdfDoc);
   const createdAt = new Date().toLocaleString("en-US", {
@@ -905,6 +1010,7 @@ export async function buildCaseReportPdf(input: ReportInput) {
     bodyFont,
     cueBars.map((item) => item.label),
   );
+  state = drawEvidenceMixPanel(state, pdfDoc, titleFont, bodyFont, evidenceMix);
   state = drawConfidenceBand(
     state,
     pdfDoc,

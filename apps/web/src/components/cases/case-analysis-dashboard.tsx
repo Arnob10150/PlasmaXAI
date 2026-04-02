@@ -211,6 +211,45 @@ export function CaseAnalysisDashboard({
   const primaryFeatureText = topFeatures.length
     ? topFeatures.slice(0, 3).map((item) => formatFeatureLabel(item)).join(", ")
     : "case-specific morphology drivers";
+  const cueLadder = morphologyData.slice(0, 4).map((item, index) => ({
+    ...item,
+    descriptor:
+      item.value >= 80
+        ? "Strong alignment"
+        : item.value >= 55
+          ? "Moderate alignment"
+          : index === 0
+            ? "Supportive cue"
+            : "Secondary cue",
+  }));
+  const reasoningPath = [
+    {
+      label: "Microscopy field",
+      detail: "Cell shape, nuclear contour, and stain distribution are reviewed first.",
+      iconClass: "bi bi-bounding-box-circles",
+      tone: "bg-blue-50 text-blue-700",
+    },
+    {
+      label: "Focus map",
+      detail: topFeatures.length
+        ? `The overlay emphasizes ${topFeatures.slice(0, 2).map((item) => formatFeatureLabel(item)).join(" and ")}.`
+        : "The focus map highlights the visually dominant review region.",
+      iconClass: "bi bi-layers-half",
+      tone: "bg-emerald-50 text-emerald-700",
+    },
+    {
+      label: "Morphology review",
+      detail: `Key cues: ${primaryFeatureText}.`,
+      iconClass: "bi bi-bezier2",
+      tone: "bg-amber-50 text-amber-700",
+    },
+    {
+      label: "Clinical summary",
+      detail: getPriorityLabel(riskLevel, confidence),
+      iconClass: "bi bi-journal-medical",
+      tone: "bg-violet-50 text-violet-700",
+    },
+  ];
 
   return (
     <section className="space-y-4 rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
@@ -269,6 +308,15 @@ export function CaseAnalysisDashboard({
       </div>
 
       <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+        <div className="mb-4">
+          <p className="inline-flex items-center gap-2 text-base font-semibold text-slate-950">
+            <i className="bi bi-journal-richtext text-sm text-blue-700" aria-hidden="true" />
+            Doctor-facing review summary
+          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            Use this interpretation block to align the AI-supported review with smear correlation, interval context, and the final doctor decision.
+          </p>
+        </div>
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="rounded-[20px] bg-white p-4 shadow-sm">
             <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-800">
@@ -290,6 +338,71 @@ export function CaseAnalysisDashboard({
               Interval comparison
             </p>
             <p className="mt-3 text-sm leading-7 text-slate-600">{intervalComment}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="inline-flex items-center gap-2 text-base font-semibold text-slate-950">
+                <i className="bi bi-bar-chart-steps text-sm text-blue-700" aria-hidden="true" />
+                Cue alignment ladder
+              </p>
+              <p className="text-sm text-slate-500">How prominently each leading cue aligns with the current suspicious pattern.</p>
+            </div>
+            <Badge variant="info">Explainability view</Badge>
+          </div>
+          <div className="space-y-4">
+            {cueLadder.map((item) => (
+              <div key={item.name} className="rounded-[20px] border border-slate-200 bg-slate-50 p-4">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <p className="text-sm font-medium text-slate-900">{item.name}</p>
+                  <span className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">{item.descriptor}</span>
+                </div>
+                <div className="h-3 overflow-hidden rounded-full bg-white">
+                  <div
+                    className="h-full rounded-full bg-[linear-gradient(90deg,#2563eb,#0f766e)]"
+                    style={{ width: `${Math.max(8, item.value)}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  The current specimen shows {item.descriptor.toLowerCase()} for this cue within the overall review pattern.
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-[24px] border border-slate-200 bg-white p-4">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="inline-flex items-center gap-2 text-base font-semibold text-slate-950">
+                <i className="bi bi-diagram-3-fill text-sm text-emerald-700" aria-hidden="true" />
+                Clinical reasoning pathway
+              </p>
+              <p className="text-sm text-slate-500">A quick visual path from image review to the current clinical interpretation.</p>
+            </div>
+            <Badge variant="success">Workflow view</Badge>
+          </div>
+          <div className="space-y-3">
+            {reasoningPath.map((step, index) => (
+              <div key={step.label} className="relative rounded-[20px] border border-slate-200 bg-slate-50 p-4">
+                <div className="flex items-start gap-3">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${step.tone}`}>
+                    <i className={`${step.iconClass} text-base`} aria-hidden="true" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-950">{step.label}</p>
+                    <p className="mt-1 text-sm leading-6 text-slate-600">{step.detail}</p>
+                  </div>
+                </div>
+                {index < reasoningPath.length - 1 ? (
+                  <div className="absolute left-9 top-[calc(100%_-_2px)] h-4 w-px bg-slate-300" />
+                ) : null}
+              </div>
+            ))}
           </div>
         </div>
       </div>

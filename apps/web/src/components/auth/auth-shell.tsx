@@ -2,9 +2,9 @@ import { LogoLockup } from "@/components/shared/logo-lockup";
 import { Button } from "@/components/ui/button";
 
 const authHighlights = [
-  { value: "97.76%", label: "Model AUC", iconClass: "bi bi-graph-up-arrow" },
-  { value: "Doctor notes", label: "Built into every case review", iconClass: "bi bi-journal-medical" },
-  { value: "Saved history", label: "Return to patient timelines anytime", iconClass: "bi bi-clock-history" },
+  { value: "97.76%", label: "Validation AUC", iconClass: "bi bi-graph-up-arrow" },
+  { value: "94.63%", label: "Sensitivity to suspicious plasma cells", iconClass: "bi bi-bullseye" },
+  { value: "Case history", label: "Longitudinal patient review is always available", iconClass: "bi bi-clock-history" },
 ];
 
 export function AuthShell({
@@ -20,17 +20,17 @@ export function AuthShell({
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.18),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(15,118,110,0.18),_transparent_32%),linear-gradient(180deg,_#f8fbff_0%,_#eef5fb_100%)]">
       <div className="mx-auto grid min-h-screen max-w-7xl gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[1.02fr_0.98fr] lg:px-8">
         <section className="hidden overflow-hidden rounded-[36px] border border-white/70 bg-[linear-gradient(180deg,#071125,#0f172a)] p-7 text-white shadow-[0_30px_80px_rgba(15,23,42,0.18)] lg:flex lg:flex-col">
-          <LogoLockup />
+          <LogoLockup invert />
           <div className="mt-12 max-w-xl space-y-5">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm font-medium text-blue-200">
               <i className="bi bi-shield-lock-fill text-base" aria-hidden="true" />
               PlasmaXAI doctor workspace
             </div>
             <h1 className="text-5xl font-semibold tracking-tight">
-              Review malignant plasma-cell findings in a calm, interactive clinical interface.
+              Welcome to a trusted workspace for plasma-cell microscopy review and clinical documentation.
             </h1>
             <p className="text-lg leading-8 text-slate-300">
-              Built for explainable case review, saved histories, patient comparison, and report-driven workflows.
+              Sign in to review case-level evidence, correlate focus maps with morphology, compare prior specimens, and export doctor-ready reports.
             </p>
           </div>
           <div className="mt-auto grid gap-4 md:grid-cols-3">
@@ -59,7 +59,7 @@ export function AuthShell({
               </div>
               <Button href="/" variant="secondary" size="sm">
                 <i className="bi bi-house-door-fill text-sm" aria-hidden="true" />
-                Return to home
+                Back to home
               </Button>
             </div>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{title}</h2>

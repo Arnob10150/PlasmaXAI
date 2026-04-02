@@ -164,6 +164,7 @@ export function ImageReviewPanel({
           <Badge variant={overlayAvailable ? "success" : "neutral"}>
             {overlayAvailable ? "Focus map ready" : "Image only"}
           </Badge>
+          <Badge variant="neutral">Wheel to zoom, drag to pan</Badge>
           <Badge variant={riskLevel?.toLowerCase() === "high" ? "danger" : riskLevel?.toLowerCase() === "moderate" ? "warning" : "neutral"}>
             {riskLevel ? `${riskLevel} risk` : "Awaiting inference"}
           </Badge>
@@ -209,11 +210,12 @@ export function ImageReviewPanel({
                 </div>
 
                 <div className="overflow-hidden rounded-[24px] border border-white/10 bg-black/40">
-                  <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full">
-                    <div className="relative aspect-[4/3] min-h-[260px] w-full overflow-hidden bg-slate-950 sm:min-h-[340px] lg:min-h-[420px]">
+                  <TransformComponent wrapperClass="!h-full !w-full !cursor-grab active:!cursor-grabbing" contentClass="!h-full !w-full">
+                    <div className="relative aspect-[4/3] min-h-[260px] w-full overflow-hidden bg-slate-950 touch-none sm:min-h-[340px] lg:min-h-[420px]">
                       <img
                         alt={imageName}
-                        className="h-full w-full object-contain"
+                        className="h-full w-full object-contain select-none"
+                        draggable={false}
                         src={imageUrl}
                         style={filterStyle}
                       />

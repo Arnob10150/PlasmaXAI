@@ -214,10 +214,6 @@ export function RegisterForm() {
       <Button className="w-full" type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Creating account..." : "Create doctor account"}
       </Button>
-      <Button className="w-full" href="/" type="button" variant="ghost">
-        <i className="bi bi-arrow-left-circle text-sm" aria-hidden="true" />
-        Return to home page
-      </Button>
       <p className="text-center text-sm text-slate-500">
         Already have an account? {" "}
         <Link href="/login" className="font-medium text-blue-700">

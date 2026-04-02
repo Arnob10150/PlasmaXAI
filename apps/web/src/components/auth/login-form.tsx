@@ -53,7 +53,7 @@ export function LoginForm() {
       const selectedDoctor = getDemoDoctorByCredentials(values.email, values.password);
 
       if (!selectedDoctor) {
-        const message = "Use one of the configured doctor accounts to access the workspace.";
+        const message = "Use one of the configured doctor sign-ins to access the workspace.";
         setSubmitError(message);
         toast.error(message);
         return;
@@ -171,10 +171,6 @@ export function LoginForm() {
       <Button className="w-full" type="button" variant="secondary" onClick={sendMagicLink}>
         <i className="bi bi-send-fill text-sm" aria-hidden="true" />
         Continue with magic link
-      </Button>
-      <Button className="w-full" href="/" type="button" variant="ghost">
-        <i className="bi bi-arrow-left-circle text-sm" aria-hidden="true" />
-        Return to home page
       </Button>
     </form>
   );

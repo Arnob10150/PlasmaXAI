@@ -22,9 +22,9 @@ const highlights = [
 ];
 
 const metrics = [
-  { label: "Model AUC", value: "97.76%", iconClass: "bi bi-graph-up-arrow" },
-  { label: "Plasma recall", value: "94.63%", iconClass: "bi bi-bullseye" },
-  { label: "Saved case timeline", value: "Built-in", iconClass: "bi bi-clock-history" },
+  { label: "Validation AUC", value: "97.76%", iconClass: "bi bi-graph-up-arrow" },
+  { label: "Sensitivity to suspicious plasma cells", value: "94.63%", iconClass: "bi bi-bullseye" },
+  { label: "Longitudinal patient archive", value: "Always available", iconClass: "bi bi-clock-history" },
 ];
 
 export default function Home() {
@@ -64,25 +64,22 @@ export default function Home() {
           >
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-4 py-2 text-sm font-medium text-blue-700 shadow-sm">
               <i className="bi bi-shield-check text-base" aria-hidden="true" />
-              Explainable plasma cell review for doctor accounts
+              Explainable plasma cell review for doctors
             </div>
             <div className="space-y-4">
               <h1 className="max-w-4xl text-5xl font-semibold tracking-tight text-slate-950 sm:text-6xl">
-                A modern clinical website for reviewing plasma-cell cases with confidence.
+                Welcome to a trusted clinical workspace for plasma-cell review, patient follow-up, and report-ready decisions.
               </h1>
               <p className="max-w-2xl text-lg leading-8 text-slate-600">
-                PlasmaXAI combines prediction, counterfactual explanation, clinical insight, saved history, and downloadable reports in one interactive review environment.
+                PlasmaXAI brings microscopy review, explainable findings, longitudinal case history, and clinician-ready reporting into one calm review environment.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-4">
               <Button asChild size="lg">
-                <Link href="/dashboard">
-                  Open dashboard
+                <Link href="/login">
+                  Enter doctor workspace
                   <i className="bi bi-arrow-right text-base" aria-hidden="true" />
                 </Link>
-              </Button>
-              <Button asChild variant="secondary" size="lg">
-                <Link href="/cases/case-001">Preview case</Link>
               </Button>
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
@@ -199,10 +196,10 @@ export default function Home() {
           />
           <div className="mt-8 flex flex-wrap gap-4">
             <Button asChild size="lg" variant="secondary">
-              <Link href="/dashboard">Explore workspace</Link>
+              <Link href="/login">Enter doctor sign in</Link>
             </Button>
             <Button asChild size="lg" variant="ghost-light">
-              <Link href="/login">Sign in</Link>
+              <Link href="/register">Create account</Link>
             </Button>
           </div>
         </section>

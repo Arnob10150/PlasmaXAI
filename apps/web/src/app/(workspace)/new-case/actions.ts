@@ -7,8 +7,6 @@ import { hasSupabaseConfig, shouldUseFilesystemLocalStore, shouldUseHostedDemoFa
 import { buildCaseReportPdf } from "@/lib/reports/pdf-report";
 import { storageConfig } from "@/lib/constants";
 import { queueCaseInference, type InferenceResult } from "@/lib/inference/service";
-import { createLocalCase, updateLocalCaseInference } from "@/lib/local-cases/store";
-import { getLocalWorkspaceSettings } from "@/lib/local-settings/store";
 import { getHostedDemoWorkspaceSettings } from "@/lib/demo/session-settings";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/auth";
@@ -187,7 +185,10 @@ export async function createCaseAction(
     try {
       const settings = shouldUseHostedDemoFallback()
         ? await getHostedDemoWorkspaceSettings()
-        : await getLocalWorkspaceSettings();
+        : await (async () => {
+            const { getLocalWorkspaceSettings } = await import("@/lib/local-settings/store");
+            return getLocalWorkspaceSettings();
+          })();
       let hostedInferenceResult: InferenceResult | null = null;
 
       if (shouldUseHostedDemoFallback()) {
@@ -229,17 +230,20 @@ export async function createCaseAction(
             imageMimeType: preparedImageMimeType ?? uploadedFile?.type ?? null,
             inferenceResult: hostedInferenceResult,
           })
-        : await createLocalCase({
-            patientCode,
-            patientName,
-            sex,
-            dateOfBirth,
-            caseTitle,
-            clinicalNote,
-            initialStatus: settings.defaultCaseStatus,
-            imageFile: uploadedFile,
-            imageReference,
-          });
+        : await (async () => {
+            const { createLocalCase } = await import("@/lib/local-cases/store");
+            return createLocalCase({
+              patientCode,
+              patientName,
+              sex,
+              dateOfBirth,
+              caseTitle,
+              clinicalNote,
+              initialStatus: settings.defaultCaseStatus,
+              imageFile: uploadedFile,
+              imageReference,
+            });
+          })();
 
       const localImagePath = localCase.images[0]?.storagePath ?? null;
 
@@ -254,6 +258,7 @@ export async function createCaseAction(
           });
 
           if (result.queued && result.result) {
+            const { updateLocalCaseInference } = await import("@/lib/local-cases/store");
             await updateLocalCaseInference(localCase.id, {
               predictedClass: result.result.prediction.predictedClassText,
               confidence: result.result.prediction.confidence,

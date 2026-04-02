@@ -7,7 +7,6 @@ import {
   updateHostedDemoCaseReview,
   updateHostedDemoCaseWorkbench,
 } from "@/lib/demo/session-store";
-import { deleteLocalCase, updateLocalCaseReview, updateLocalCaseWorkbench } from "@/lib/local-cases/store";
 import { buildDefaultReportDraft, buildDefaultReviewChecklist, normalizeReportDraft, normalizeReviewChecklist } from "@/lib/review-workspace";
 import { hasSupabaseConfig, shouldUseFilesystemLocalStore, shouldUseHostedDemoFallback } from "@/lib/supabase/config";
 import { requireUser } from "@/lib/supabase/auth";
@@ -29,6 +28,7 @@ export async function updateCaseReviewAction(formData: FormData) {
           notes: notes || null,
         });
       } else {
+        const { updateLocalCaseReview } = await import("@/lib/local-cases/store");
         await updateLocalCaseReview({
           caseId,
           title: title || null,
@@ -91,6 +91,7 @@ export async function deleteCaseAction(formData: FormData) {
     if (shouldUseHostedDemoFallback()) {
       await deleteHostedDemoCase(caseId);
     } else {
+      const { deleteLocalCase } = await import("@/lib/local-cases/store");
       await deleteLocalCase(caseId);
     }
   } else {
@@ -168,6 +169,7 @@ export async function saveCaseWorkbenchAction(
           reportDraft: nextDraft,
         });
       } else {
+        const { updateLocalCaseWorkbench } = await import("@/lib/local-cases/store");
         await updateLocalCaseWorkbench({
           caseId,
           reviewChecklist: parsedChecklist.length ? parsedChecklist : buildDefaultReviewChecklist(),

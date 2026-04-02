@@ -5,11 +5,6 @@ import {
   getHostedDemoDoctorByEmail,
   getHostedDemoPatients as getSessionDemoPatients,
 } from "@/lib/demo/session-store";
-import {
-  ensureLocalCaseReport,
-  listLocalCases,
-  listLocalPatients,
-} from "@/lib/local-cases/store";
 import { getDisplayCaseTitle, getDisplayPatientCode, getDisplayPatientName } from "@/lib/patient-display";
 import { buildDefaultReportDraft, buildDefaultReviewChecklist, type ReportDraft, type ReviewChecklistItem } from "@/lib/review-workspace";
 import { hasSupabaseConfig, shouldUseFilesystemLocalStore, shouldUseHostedDemoFallback } from "@/lib/supabase/config";
@@ -90,6 +85,10 @@ export interface PatientDetail {
   highRiskCount: number;
   latestCase: CaseSummary | null;
   previousCase: CaseSummary | null;
+}
+
+async function getLocalCasesStore() {
+  return import("@/lib/local-cases/store");
 }
 
 interface FetchCaseOptions {
@@ -290,7 +289,7 @@ async function addSignedUrls<T extends { storage_path: string }>(
 async function fetchCases(options: FetchCaseOptions = {}) {
   if (!hasSupabaseConfig()) {
     let items = shouldUseFilesystemLocalStore()
-      ? await listLocalCases()
+      ? await (await getLocalCasesStore()).listLocalCases()
       : shouldUseHostedDemoFallback()
         ? await getSessionDemoCases()
         : getHostedDemoCases();
@@ -517,7 +516,7 @@ export async function getPatientsData() {
   if (!hasSupabaseConfig()) {
     const [patients, cases] = await Promise.all([
       shouldUseFilesystemLocalStore()
-        ? listLocalPatients()
+        ? (await getLocalCasesStore()).listLocalPatients()
         : shouldUseHostedDemoFallback()
           ? getSessionDemoPatients()
           : Promise.resolve(getHostedDemoPatients()),
@@ -598,7 +597,7 @@ export async function getPatientDetail(patientId: string): Promise<PatientDetail
   if (!hasSupabaseConfig()) {
     const [patients, patientCases] = await Promise.all([
       shouldUseFilesystemLocalStore()
-        ? listLocalPatients()
+        ? (await getLocalCasesStore()).listLocalPatients()
         : shouldUseHostedDemoFallback()
           ? getSessionDemoPatients()
           : Promise.resolve(getHostedDemoPatients()),
@@ -719,6 +718,7 @@ export async function getReportsData() {
       );
     }
 
+    const { listLocalCases, ensureLocalCaseReport } = await getLocalCasesStore();
     const localCases = await listLocalCases();
 
     for (const item of localCases) {
@@ -786,7 +786,7 @@ export async function getReportsData() {
 export async function getCaseDetail(caseId: string) {
   if (!hasSupabaseConfig()) {
     const localCases = shouldUseFilesystemLocalStore()
-      ? await listLocalCases()
+      ? await (await getLocalCasesStore()).listLocalCases()
       : shouldUseHostedDemoFallback()
         ? await getSessionDemoCases()
         : getHostedDemoCases();

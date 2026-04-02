@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { updateLocalWorkspaceSettings } from "@/lib/local-settings/store";
 import { getHostedDemoWorkspaceSettings, setHostedDemoWorkspaceSettings } from "@/lib/demo/session-settings";
 import { hasSupabaseConfig, shouldUseFilesystemLocalStore } from "@/lib/supabase/config";
 
@@ -30,6 +29,7 @@ export async function updateSettingsAction(
       if (!shouldUseFilesystemLocalStore()) {
         await setHostedDemoWorkspaceSettings(payload);
       } else {
+        const { updateLocalWorkspaceSettings } = await import("@/lib/local-settings/store");
         await updateLocalWorkspaceSettings(payload);
       }
     } else {

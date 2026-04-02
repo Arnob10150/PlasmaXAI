@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { updateHostedDemoDoctorProfile } from "@/lib/demo/session-store";
-import { updateLocalDoctorProfile } from "@/lib/local-doctors/store";
 import { hasSupabaseConfig, shouldUseFilesystemLocalStore, shouldUseHostedDemoFallback } from "@/lib/supabase/config";
 import { requireUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -38,6 +37,7 @@ export async function updateProfileAction(
           organizationName,
         });
       } else if (shouldUseFilesystemLocalStore()) {
+        const { updateLocalDoctorProfile } = await import("@/lib/local-doctors/store");
         await updateLocalDoctorProfile(user.email ?? "", {
           fullName,
           specialization,

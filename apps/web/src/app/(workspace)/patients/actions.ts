@@ -7,11 +7,6 @@ import {
   updateHostedDemoPatient,
 } from "@/lib/demo/session-store";
 import { hasSupabaseConfig, shouldUseFilesystemLocalStore, shouldUseHostedDemoFallback } from "@/lib/supabase/config";
-import {
-  createLocalPatient,
-  deleteLocalPatient,
-  updateLocalPatient,
-} from "@/lib/local-cases/store";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/supabase/auth";
 
@@ -126,6 +121,7 @@ export async function createPatientAction(
         dateOfBirth,
       });
     } else {
+      const { createLocalPatient } = await import("@/lib/local-cases/store");
       await createLocalPatient({
         patientCode,
         patientName,
@@ -203,6 +199,7 @@ export async function updatePatientAction(
         dateOfBirth,
       });
     } else {
+      const { updateLocalPatient } = await import("@/lib/local-cases/store");
       await updateLocalPatient(patientId, {
         patientCode,
         patientName,
@@ -279,6 +276,7 @@ export async function deletePatientAction(
     if (shouldUseHostedDemoFallback()) {
       await deleteHostedDemoPatient(patientId);
     } else {
+      const { deleteLocalPatient } = await import("@/lib/local-cases/store");
       await deleteLocalPatient(patientId);
     }
     await refreshPatientViews(patientId);

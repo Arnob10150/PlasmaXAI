@@ -30,6 +30,9 @@ export function NewCaseForm({
   const [clientCaseId, setClientCaseId] = useState("");
   const [browserImageKey, setBrowserImageKey] = useState("");
   const [isImagePrepared, setIsImagePrepared] = useState(true);
+  const [preparedImageDataUrl, setPreparedImageDataUrl] = useState("");
+  const [preparedImageFileName, setPreparedImageFileName] = useState("");
+  const [preparedImageMimeType, setPreparedImageMimeType] = useState("");
 
   useEffect(() => {
     const nextId = `case-${Math.random().toString(36).slice(2, 10)}`;
@@ -42,47 +45,85 @@ export function NewCaseForm({
     [clientCaseId],
   );
 
+  async function buildPreparedImageDataUrl(file: File) {
+    const fileDataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === "string" && reader.result) {
+          resolve(reader.result);
+          return;
+        }
+
+        reject(new Error("Unable to read image file."));
+      };
+      reader.onerror = () => reject(new Error("Unable to read image file."));
+      reader.readAsDataURL(file);
+    });
+
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const nextImage = new window.Image();
+      nextImage.onload = () => resolve(nextImage);
+      nextImage.onerror = () => reject(new Error("Unable to decode image."));
+      nextImage.src = fileDataUrl;
+    });
+
+    const maxDimension = 512;
+    const scale = Math.min(1, maxDimension / Math.max(image.width, image.height, 1));
+    const width = Math.max(1, Math.round(image.width * scale));
+    const height = Math.max(1, Math.round(image.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      return fileDataUrl;
+    }
+
+    context.drawImage(image, 0, 0, width, height);
+    return canvas.toDataURL("image/jpeg", 0.9);
+  }
+
   async function handleImageSelection(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
 
     if (!file || !hiddenStorageKey) {
       setIsImagePrepared(true);
+      setPreparedImageDataUrl("");
+      setPreparedImageFileName("");
+      setPreparedImageMimeType("");
       return;
     }
 
     setIsImagePrepared(false);
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const result = typeof reader.result === "string" ? reader.result : "";
-        if (!result) {
-          return;
-        }
 
-        window.localStorage.setItem(
-          hiddenStorageKey,
-          JSON.stringify({
-            fileName: file.name,
-            mimeType: file.type || "image/*",
-            dataUrl: result,
-            savedAt: Date.now(),
-          }),
-        );
-        setIsImagePrepared(true);
-      } catch {
-        setIsImagePrepared(false);
-      }
-    };
-    reader.onerror = () => {
+    try {
+      const result = await buildPreparedImageDataUrl(file);
+      window.localStorage.setItem(
+        hiddenStorageKey,
+        JSON.stringify({
+          fileName: file.name,
+          mimeType: "image/jpeg",
+          dataUrl: result,
+          savedAt: Date.now(),
+        }),
+      );
+      setPreparedImageDataUrl(result);
+      setPreparedImageFileName(file.name);
+      setPreparedImageMimeType("image/jpeg");
+      setIsImagePrepared(true);
+    } catch {
       setIsImagePrepared(false);
-    };
-    reader.readAsDataURL(file);
+    }
   }
 
   return (
     <form action={formAction} className="space-y-6">
       <input type="hidden" name="clientCaseId" value={clientCaseId} />
       <input type="hidden" name="browserImageKey" value={browserImageKey} />
+      <input type="hidden" name="preparedImageDataUrl" value={preparedImageDataUrl} />
+      <input type="hidden" name="preparedImageFileName" value={preparedImageFileName} />
+      <input type="hidden" name="preparedImageMimeType" value={preparedImageMimeType} />
       <div className="grid gap-5 xl:grid-cols-[1.02fr_0.98fr]">
         <div className="rounded-[30px] border border-dashed border-blue-300 bg-[linear-gradient(180deg,#eff6ff,#f8fbff)] p-6 text-center sm:p-8">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-blue-700 shadow-sm">

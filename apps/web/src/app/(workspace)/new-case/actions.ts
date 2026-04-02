@@ -171,6 +171,9 @@ export async function createCaseAction(
   const imageReference = toNullableString(formData.get("imageReference"));
   const clientCaseId = toNullableString(formData.get("clientCaseId"));
   const browserImageKey = toNullableString(formData.get("browserImageKey"));
+  const preparedImageDataUrl = toNullableString(formData.get("preparedImageDataUrl"));
+  const preparedImageFileName = toNullableString(formData.get("preparedImageFileName"));
+  const preparedImageMimeType = toNullableString(formData.get("preparedImageMimeType"));
   const imageFile = formData.get("imageFile");
   const uploadedFile = imageFile instanceof File && imageFile.size > 0 ? imageFile : null;
 
@@ -188,8 +191,10 @@ export async function createCaseAction(
       let hostedInferenceResult: InferenceResult | null = null;
 
       if (shouldUseHostedDemoFallback()) {
-        const hostedImageDataUrl = uploadedFile ? await fileToDataUrl(uploadedFile) : null;
-        const hostedImagePath = imageReference || uploadedFile?.name || "uploaded-image";
+        const hostedImageDataUrl =
+          preparedImageDataUrl || (uploadedFile ? await fileToDataUrl(uploadedFile) : null);
+        const hostedImagePath =
+          imageReference || preparedImageFileName || uploadedFile?.name || "uploaded-image";
 
         if (hostedImageDataUrl || imageReference) {
           try {
@@ -220,8 +225,8 @@ export async function createCaseAction(
             clinicalNote,
             initialStatus: hostedInferenceResult ? "report_ready" : settings.defaultCaseStatus,
             imageReference: uploadedFile ? browserImageKey || imageReference : imageReference,
-            imageFileName: uploadedFile?.name ?? null,
-            imageMimeType: uploadedFile?.type ?? null,
+            imageFileName: preparedImageFileName ?? uploadedFile?.name ?? null,
+            imageMimeType: preparedImageMimeType ?? uploadedFile?.type ?? null,
             inferenceResult: hostedInferenceResult,
           })
         : await createLocalCase({

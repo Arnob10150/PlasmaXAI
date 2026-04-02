@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getLocalWorkspaceSettings, updateLocalWorkspaceSettings } from "@/lib/local-settings/store";
+import { updateLocalWorkspaceSettings } from "@/lib/local-settings/store";
+import { getHostedDemoWorkspaceSettings, setHostedDemoWorkspaceSettings } from "@/lib/demo/session-settings";
 import { hasSupabaseConfig, shouldUseFilesystemLocalStore } from "@/lib/supabase/config";
 
 export interface SettingsActionState {
@@ -27,15 +28,13 @@ export async function updateSettingsAction(
 
     if (!hasSupabaseConfig()) {
       if (!shouldUseFilesystemLocalStore()) {
-        return {
-          error: "Hosted demo mode is read-only until Supabase is configured.",
-          success: null,
-        };
+        await setHostedDemoWorkspaceSettings(payload);
+      } else {
+        await updateLocalWorkspaceSettings(payload);
       }
-
-      await updateLocalWorkspaceSettings(payload);
     } else {
-      await getLocalWorkspaceSettings();
+      await setHostedDemoWorkspaceSettings(payload);
+      await getHostedDemoWorkspaceSettings();
     }
 
     revalidatePath("/settings");

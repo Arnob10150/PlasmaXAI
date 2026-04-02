@@ -11,7 +11,15 @@ export function getSupabasePublishableKey() {
 }
 
 export function isHostedDeployment() {
-  return Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+  return Boolean(
+    process.env.VERCEL ||
+      process.env.VERCEL_ENV ||
+      process.env.VERCEL_URL ||
+      process.env.VERCEL_REGION ||
+      process.env.AWS_REGION ||
+      process.env.LAMBDA_TASK_ROOT ||
+      process.cwd().startsWith("/var/task"),
+  );
 }
 
 export function hasSupabaseConfig() {

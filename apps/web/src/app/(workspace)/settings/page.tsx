@@ -2,9 +2,15 @@ import { updateSettingsAction } from "@/app/(workspace)/settings/actions";
 import { WorkspaceSettingsForm } from "@/components/settings/workspace-settings-form";
 import { Badge } from "@/components/ui/badge";
 import { getLocalWorkspaceSettings } from "@/lib/local-settings/store";
+import { getHostedDemoWorkspaceSettings } from "@/lib/demo/session-settings";
+import { hasSupabaseConfig, shouldUseFilesystemLocalStore } from "@/lib/supabase/config";
 
 export default async function SettingsPage() {
-  const settings = await getLocalWorkspaceSettings();
+  const settings = hasSupabaseConfig()
+    ? await getHostedDemoWorkspaceSettings()
+    : shouldUseFilesystemLocalStore()
+      ? await getLocalWorkspaceSettings()
+      : await getHostedDemoWorkspaceSettings();
 
   return (
     <div className="space-y-6">

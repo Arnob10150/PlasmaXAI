@@ -189,6 +189,7 @@ function SubmitButton() {
 
 function AnalysisLaunchOverlay() {
   const { pending } = useFormStatus();
+  const spinnerDots = Array.from({ length: 8 });
 
   if (!pending) {
     return null;
@@ -207,8 +208,21 @@ function AnalysisLaunchOverlay() {
         <p className="mt-3 text-center text-sm leading-7 text-slate-300">
           Preparing the uploaded microscopy image, contacting the inference service, and assembling the review workspace for this case.
         </p>
-        <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/10">
-          <div className="h-full w-1/2 animate-pulse rounded-full bg-blue-400" />
+        <div className="mt-6 flex justify-center" aria-hidden="true">
+          <div className="relative h-16 w-16">
+            <div className="absolute inset-0 animate-spin [animation-duration:1.15s]">
+              {spinnerDots.map((_, index) => (
+                <span
+                  key={index}
+                  className="absolute left-1/2 top-1/2 h-2.5 w-2.5 rounded-full bg-blue-300 shadow-[0_0_14px_rgba(125,211,252,0.35)]"
+                  style={{
+                    opacity: 0.2 + index * 0.09,
+                    transform: `translate(-50%, -50%) rotate(${index * 45}deg) translateY(-23px) scale(${0.72 + index * 0.04})`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
         </div>
         <div className="mt-6 grid gap-3 text-sm text-slate-300 sm:grid-cols-3">
           <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Image intake</div>

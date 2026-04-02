@@ -288,13 +288,13 @@ export function ImageReviewPanel({
           </TransformWrapper>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_320px]">
           <section className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <div className="flex items-center gap-2 text-base font-semibold text-slate-950">
               <i className="bi bi-sliders text-base text-blue-700" aria-hidden="true" />
               Microscopy controls
             </div>
-            <div className="mt-5 grid gap-5 text-sm text-slate-600 md:grid-cols-3">
+            <div className="mt-5 grid gap-5 text-sm text-slate-600 xl:grid-cols-3">
               <div>
                 <div className="mb-2 flex items-center justify-between">
                   <label className="font-medium text-slate-700">Brightness</label>
@@ -327,7 +327,7 @@ export function ImageReviewPanel({
             </div>
             <div className="mt-5 rounded-[22px] bg-slate-50 p-4">
               <p className="font-medium text-slate-900">Overlay guide</p>
-              <p className="mt-2 text-xs leading-5 text-slate-500">
+              <p className="mt-2 text-sm leading-6 text-slate-500">
                 Warm regions highlight the parts of the cell receiving the strongest review emphasis. Use the overlay to support morphology review, not as a standalone diagnosis.
               </p>
             </div>

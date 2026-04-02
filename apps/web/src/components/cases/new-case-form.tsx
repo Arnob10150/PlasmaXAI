@@ -10,6 +10,47 @@ const initialState: CreateCaseState = {
   error: null,
 };
 
+const NEW_CASE_SESSION_KEY = "plasmaxai-new-case-draft";
+
+interface NewCaseDraftState {
+  clientCaseId: string;
+  browserImageKey: string;
+  patientCode: string;
+  patientName: string;
+  caseTitle: string;
+  sex: string;
+  dateOfBirth: string;
+  clinicalNote: string;
+  imageReference: string;
+  preparedImageDataUrl: string;
+  preparedImageFileName: string;
+  preparedImageMimeType: string;
+}
+
+function createDraftIdentifiers() {
+  const nextId = `case-${Math.random().toString(36).slice(2, 10)}`;
+  return {
+    clientCaseId: nextId,
+    browserImageKey: `browser-storage://${nextId}`,
+  };
+}
+
+function createEmptyDraftState(): NewCaseDraftState {
+  return {
+    ...createDraftIdentifiers(),
+    patientCode: "",
+    patientName: "",
+    caseTitle: "",
+    sex: "",
+    dateOfBirth: "",
+    clinicalNote: "",
+    imageReference: "",
+    preparedImageDataUrl: "",
+    preparedImageFileName: "",
+    preparedImageMimeType: "",
+  };
+}
+
 function SubmitButton() {
   const { pending } = useFormStatus();
 
@@ -21,29 +62,128 @@ function SubmitButton() {
   );
 }
 
+function AnalysisLaunchOverlay() {
+  const { pending } = useFormStatus();
+
+  if (!pending) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/72 px-6 backdrop-blur-sm">
+      <div className="w-full max-w-xl rounded-[32px] border border-white/10 bg-slate-950 px-6 py-8 text-white shadow-2xl">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-white/5">
+          <i className="bi bi-cpu-fill text-3xl text-blue-300" aria-hidden="true" />
+        </div>
+        <p className="mt-6 text-center text-xs font-medium uppercase tracking-[0.25em] text-blue-200">
+          PlasmaXAI
+        </p>
+        <h3 className="mt-3 text-center text-2xl font-semibold">Building analysis workspace</h3>
+        <p className="mt-3 text-center text-sm leading-7 text-slate-300">
+          Preparing the uploaded microscopy image, contacting the inference service, and assembling the review workspace for this case.
+        </p>
+        <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/10">
+          <div className="h-full w-1/2 animate-pulse rounded-full bg-blue-400" />
+        </div>
+        <div className="mt-6 grid gap-3 text-sm text-slate-300 sm:grid-cols-3">
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Image intake</div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Model inference</div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">Workspace assembly</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function NewCaseForm({
   action,
 }: {
   action: (state: CreateCaseState, formData: FormData) => Promise<CreateCaseState>;
 }) {
   const [state, formAction] = useActionState(action, initialState);
-  const [clientCaseId, setClientCaseId] = useState("");
-  const [browserImageKey, setBrowserImageKey] = useState("");
+  const [draft, setDraft] = useState<NewCaseDraftState>(createEmptyDraftState);
   const [isImagePrepared, setIsImagePrepared] = useState(true);
-  const [preparedImageDataUrl, setPreparedImageDataUrl] = useState("");
-  const [preparedImageFileName, setPreparedImageFileName] = useState("");
-  const [preparedImageMimeType, setPreparedImageMimeType] = useState("");
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    const nextId = `case-${Math.random().toString(36).slice(2, 10)}`;
-    setClientCaseId(nextId);
-    setBrowserImageKey(`browser-storage://${nextId}`);
+    try {
+      const raw = window.sessionStorage.getItem(NEW_CASE_SESSION_KEY);
+      if (!raw) {
+        setDraft(createEmptyDraftState());
+        setIsHydrated(true);
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as Partial<NewCaseDraftState>;
+      const identifiers =
+        parsed.clientCaseId && parsed.browserImageKey
+          ? {
+              clientCaseId: parsed.clientCaseId,
+              browserImageKey: parsed.browserImageKey,
+            }
+          : createDraftIdentifiers();
+
+      setDraft({
+        ...createEmptyDraftState(),
+        ...parsed,
+        ...identifiers,
+      });
+    } catch {
+      setDraft(createEmptyDraftState());
+    } finally {
+      setIsHydrated(true);
+    }
   }, []);
 
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    window.sessionStorage.setItem(NEW_CASE_SESSION_KEY, JSON.stringify(draft));
+  }, [draft, isHydrated]);
+
   const hiddenStorageKey = useMemo(
-    () => (clientCaseId ? `plasmaxai-upload:${clientCaseId}` : ""),
-    [clientCaseId],
+    () => (draft.clientCaseId ? `plasmaxai-upload:${draft.clientCaseId}` : ""),
+    [draft.clientCaseId],
   );
+
+  useEffect(() => {
+    if (!hiddenStorageKey || !draft.preparedImageDataUrl) {
+      return;
+    }
+
+    window.localStorage.setItem(
+      hiddenStorageKey,
+      JSON.stringify({
+        fileName: draft.preparedImageFileName || "prepared-image.jpg",
+        mimeType: draft.preparedImageMimeType || "image/jpeg",
+        dataUrl: draft.preparedImageDataUrl,
+        savedAt: Date.now(),
+      }),
+    );
+  }, [
+    draft.preparedImageDataUrl,
+    draft.preparedImageFileName,
+    draft.preparedImageMimeType,
+    hiddenStorageKey,
+  ]);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    const controller = new AbortController();
+    fetch("/api/inference/health", {
+      cache: "no-store",
+      signal: controller.signal,
+    }).catch(() => {
+      // Warmup is opportunistic; the actual submit path still handles errors.
+    });
+
+    return () => controller.abort();
+  }, [isHydrated]);
 
   async function buildPreparedImageDataUrl(file: File) {
     const fileDataUrl = await new Promise<string>((resolve, reject) => {
@@ -89,9 +229,12 @@ export function NewCaseForm({
 
     if (!file || !hiddenStorageKey) {
       setIsImagePrepared(true);
-      setPreparedImageDataUrl("");
-      setPreparedImageFileName("");
-      setPreparedImageMimeType("");
+      setDraft((current) => ({
+        ...current,
+        preparedImageDataUrl: "",
+        preparedImageFileName: "",
+        preparedImageMimeType: "",
+      }));
       return;
     }
 
@@ -108,9 +251,12 @@ export function NewCaseForm({
           savedAt: Date.now(),
         }),
       );
-      setPreparedImageDataUrl(result);
-      setPreparedImageFileName(file.name);
-      setPreparedImageMimeType("image/jpeg");
+      setDraft((current) => ({
+        ...current,
+        preparedImageDataUrl: result,
+        preparedImageFileName: file.name,
+        preparedImageMimeType: "image/jpeg",
+      }));
       setIsImagePrepared(true);
     } catch {
       setIsImagePrepared(false);
@@ -119,11 +265,12 @@ export function NewCaseForm({
 
   return (
     <form action={formAction} className="space-y-6">
-      <input type="hidden" name="clientCaseId" value={clientCaseId} />
-      <input type="hidden" name="browserImageKey" value={browserImageKey} />
-      <input type="hidden" name="preparedImageDataUrl" value={preparedImageDataUrl} />
-      <input type="hidden" name="preparedImageFileName" value={preparedImageFileName} />
-      <input type="hidden" name="preparedImageMimeType" value={preparedImageMimeType} />
+      <AnalysisLaunchOverlay />
+      <input type="hidden" name="clientCaseId" value={draft.clientCaseId} />
+      <input type="hidden" name="browserImageKey" value={draft.browserImageKey} />
+      <input type="hidden" name="preparedImageDataUrl" value={draft.preparedImageDataUrl} />
+      <input type="hidden" name="preparedImageFileName" value={draft.preparedImageFileName} />
+      <input type="hidden" name="preparedImageMimeType" value={draft.preparedImageMimeType} />
       <div className="grid gap-5 xl:grid-cols-[1.02fr_0.98fr]">
         <div className="rounded-[30px] border border-dashed border-blue-300 bg-[linear-gradient(180deg,#eff6ff,#f8fbff)] p-6 text-center sm:p-8">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-blue-700 shadow-sm">
@@ -141,7 +288,6 @@ export function NewCaseForm({
             <input
               accept="image/*"
               className="block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-slate-950 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white"
-              name="imageFile"
               onChange={handleImageSelection}
               type="file"
             />
@@ -156,11 +302,14 @@ export function NewCaseForm({
               className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4"
               name="imageReference"
               placeholder="Optional legacy path or storage reference"
+              value={draft.imageReference}
+              onChange={(event) => setDraft((current) => ({ ...current, imageReference: event.target.value }))}
             />
             <div className="mt-4 flex flex-wrap gap-2">
               <Badge variant="info">Microscopy upload</Badge>
               <Badge variant="neutral">Case-ready intake</Badge>
               {!isImagePrepared ? <Badge variant="warning">Preparing uploaded image</Badge> : null}
+              {draft.preparedImageDataUrl ? <Badge variant="success">Prepared upload kept in session</Badge> : null}
             </div>
           </div>
         </div>
@@ -173,14 +322,26 @@ export function NewCaseForm({
                   <i className="bi bi-person-vcard text-base text-blue-700" aria-hidden="true" />
                   Patient code
                 </label>
-                <input name="patientCode" className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4" placeholder="PT-00124" />
+                <input
+                  name="patientCode"
+                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4"
+                  placeholder="PT-00124"
+                  value={draft.patientCode}
+                  onChange={(event) => setDraft((current) => ({ ...current, patientCode: event.target.value }))}
+                />
               </div>
               <div>
                 <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
                   <i className="bi bi-person-fill text-base text-blue-700" aria-hidden="true" />
                   Patient name
                 </label>
-                <input name="patientName" className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4" placeholder="Optional patient name" />
+                <input
+                  name="patientName"
+                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4"
+                  placeholder="Optional patient name"
+                  value={draft.patientName}
+                  onChange={(event) => setDraft((current) => ({ ...current, patientName: event.target.value }))}
+                />
               </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
@@ -189,14 +350,25 @@ export function NewCaseForm({
                   <i className="bi bi-file-earmark-medical text-base text-blue-700" aria-hidden="true" />
                   Case title
                 </label>
-                <input name="caseTitle" className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4" placeholder="Follow-up marrow smear" />
+                <input
+                  name="caseTitle"
+                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4"
+                  placeholder="Follow-up marrow smear"
+                  value={draft.caseTitle}
+                  onChange={(event) => setDraft((current) => ({ ...current, caseTitle: event.target.value }))}
+                />
               </div>
               <div>
                 <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
                   <i className="bi bi-gender-ambiguous text-base text-blue-700" aria-hidden="true" />
                   Sex
                 </label>
-                <select name="sex" className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4">
+                <select
+                  name="sex"
+                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4"
+                  value={draft.sex}
+                  onChange={(event) => setDraft((current) => ({ ...current, sex: event.target.value }))}
+                >
                   <option value="">Select</option>
                   <option value="Female">Female</option>
                   <option value="Male">Male</option>
@@ -209,7 +381,13 @@ export function NewCaseForm({
                 <i className="bi bi-calendar3 text-base text-blue-700" aria-hidden="true" />
                 Date of birth
               </label>
-              <input name="dateOfBirth" type="date" className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4" />
+              <input
+                name="dateOfBirth"
+                type="date"
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4"
+                value={draft.dateOfBirth}
+                onChange={(event) => setDraft((current) => ({ ...current, dateOfBirth: event.target.value }))}
+              />
             </div>
             <div>
               <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
@@ -220,6 +398,8 @@ export function NewCaseForm({
                 name="clinicalNote"
                 className="min-h-32 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3"
                 placeholder="Add context for the reviewing doctor..."
+                value={draft.clinicalNote}
+                onChange={(event) => setDraft((current) => ({ ...current, clinicalNote: event.target.value }))}
               />
             </div>
             <div className="flex flex-wrap gap-2">
@@ -238,7 +418,7 @@ export function NewCaseForm({
                 Please wait a moment while the uploaded image is prepared for the analysis workspace.
               </div>
             ) : null}
-            <div className={!isImagePrepared ? "pointer-events-none opacity-60" : ""}>
+            <div className={!isImagePrepared || !isHydrated ? "pointer-events-none opacity-60" : ""}>
               <SubmitButton />
             </div>
           </div>

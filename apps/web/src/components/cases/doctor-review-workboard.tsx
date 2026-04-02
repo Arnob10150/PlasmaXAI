@@ -1,10 +1,16 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import type { CaseWorkbenchActionState } from "@/app/(workspace)/cases/[id]/actions";
 import { Button } from "@/components/ui/button";
-import type { ReportDraft, ReviewChecklistItem, ReviewChecklistLane } from "@/lib/review-workspace";
+import {
+  normalizeReportDraft,
+  normalizeReviewChecklist,
+  type ReportDraft,
+  type ReviewChecklistItem,
+  type ReviewChecklistLane,
+} from "@/lib/review-workspace";
 
 const initialState: CaseWorkbenchActionState = {
   error: null,
@@ -47,6 +53,43 @@ export function DoctorReviewWorkboard({
   const [state, formAction] = useActionState(action, initialState);
   const [checklist, setChecklist] = useState<ReviewChecklistItem[]>(initialChecklist);
   const [draft, setDraft] = useState<ReportDraft>(initialDraft);
+  const [isSessionReady, setIsSessionReady] = useState(false);
+  const storageKey = useMemo(() => `plasmaxai-workboard:${caseId}`, [caseId]);
+
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem(storageKey);
+      if (!raw) {
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as {
+        checklist?: ReviewChecklistItem[];
+        draft?: ReportDraft;
+      };
+
+      setChecklist(normalizeReviewChecklist(parsed.checklist, []));
+      setDraft(normalizeReportDraft(parsed.draft, initialDraft));
+    } catch {
+      // Keep server defaults if the cached session draft is invalid.
+    } finally {
+      setIsSessionReady(true);
+    }
+  }, [initialChecklist, initialDraft, storageKey]);
+
+  useEffect(() => {
+    if (!isSessionReady) {
+      return;
+    }
+
+    window.sessionStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        checklist,
+        draft,
+      }),
+    );
+  }, [checklist, draft, isSessionReady, storageKey]);
 
   const groupedChecklist = useMemo(
     () =>

@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { decodeCookiePayload, encodeCookiePayload } from "@/lib/demo/cookie-codec";
 import type { LocalWorkspaceSettings } from "@/lib/local-settings/store";
 
 const SETTINGS_COOKIE = "plasmaxai-demo-settings";
@@ -19,15 +20,15 @@ export async function getHostedDemoWorkspaceSettings(): Promise<LocalWorkspaceSe
     return demoDefaultWorkspaceSettings;
   }
 
-  try {
-    const parsed = JSON.parse(raw) as Partial<LocalWorkspaceSettings>;
-    return {
-      ...demoDefaultWorkspaceSettings,
-      ...parsed,
-    };
-  } catch {
+  const parsed = decodeCookiePayload<Partial<LocalWorkspaceSettings>>(raw);
+  if (!parsed) {
     return demoDefaultWorkspaceSettings;
   }
+
+  return {
+    ...demoDefaultWorkspaceSettings,
+    ...parsed,
+  };
 }
 
 export async function setHostedDemoWorkspaceSettings(
@@ -40,7 +41,7 @@ export async function setHostedDemoWorkspaceSettings(
   };
 
   const cookieStore = await cookies();
-  cookieStore.set(SETTINGS_COOKIE, JSON.stringify(next), {
+  cookieStore.set(SETTINGS_COOKIE, encodeCookiePayload(next), {
     httpOnly: false,
     sameSite: "lax",
     secure: true,

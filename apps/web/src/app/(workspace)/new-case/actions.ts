@@ -39,6 +39,30 @@ async function fileToDataUrl(file: File) {
   return `data:${file.type || "application/octet-stream"};base64,${bytes.toString("base64")}`;
 }
 
+function dataUrlToFile(
+  dataUrl: string | null,
+  fileName: string | null,
+  mimeType: string | null,
+) {
+  if (!dataUrl?.startsWith("data:")) {
+    return null;
+  }
+
+  try {
+    const [meta, encoded] = dataUrl.split(",", 2);
+    const inferredMimeType =
+      mimeType?.trim() || meta.match(/^data:([^;]+);base64$/)?.[1] || "application/octet-stream";
+    const safeFileName = sanitizeFileName(fileName?.trim() || `prepared-image-${Date.now()}.jpg`);
+    const bytes = Buffer.from(encoded ?? "", "base64");
+
+    return new File([bytes], safeFileName, {
+      type: inferredMimeType,
+    });
+  } catch {
+    return null;
+  }
+}
+
 async function resolveOrganizationId(userId: string) {
   const supabase = await createClient();
   const { data: profile } = await supabase
@@ -174,6 +198,9 @@ export async function createCaseAction(
   const preparedImageMimeType = toNullableString(formData.get("preparedImageMimeType"));
   const imageFile = formData.get("imageFile");
   const uploadedFile = imageFile instanceof File && imageFile.size > 0 ? imageFile : null;
+  const preparedImageFile =
+    dataUrlToFile(preparedImageDataUrl, preparedImageFileName, preparedImageMimeType) ?? null;
+  const submissionImageFile = uploadedFile ?? preparedImageFile;
 
   if (!patientCode || !caseTitle) {
     return { error: "Patient code and case title are required." };
@@ -194,9 +221,9 @@ export async function createCaseAction(
 
       if (shouldUseHostedDemoFallback()) {
         const hostedImageDataUrl =
-          preparedImageDataUrl || (uploadedFile ? await fileToDataUrl(uploadedFile) : null);
+          preparedImageDataUrl || (submissionImageFile ? await fileToDataUrl(submissionImageFile) : null);
         const hostedImagePath =
-          imageReference || preparedImageFileName || uploadedFile?.name || "uploaded-image";
+          imageReference || preparedImageFileName || submissionImageFile?.name || "uploaded-image";
 
         if (hostedImageDataUrl || imageReference) {
           try {
@@ -240,9 +267,10 @@ export async function createCaseAction(
             caseTitle,
             clinicalNote,
             initialStatus: hostedInferenceResult ? "report_ready" : settings.defaultCaseStatus,
-            imageReference: uploadedFile ? browserImageKey || imageReference : imageReference,
-            imageFileName: preparedImageFileName ?? uploadedFile?.name ?? null,
-            imageMimeType: preparedImageMimeType ?? uploadedFile?.type ?? null,
+            imageReference:
+              submissionImageFile || preparedImageDataUrl ? browserImageKey || imageReference : imageReference,
+            imageFileName: preparedImageFileName ?? submissionImageFile?.name ?? null,
+            imageMimeType: preparedImageMimeType ?? submissionImageFile?.type ?? null,
             inferenceResult: hostedInferenceResult,
           })
         : await (async () => {
@@ -255,7 +283,7 @@ export async function createCaseAction(
               caseTitle,
               clinicalNote,
               initialStatus: settings.defaultCaseStatus,
-              imageFile: uploadedFile,
+              imageFile: submissionImageFile,
               imageReference,
             });
           })();
@@ -361,9 +389,9 @@ export async function createCaseAction(
     }
 
     const caseCode = buildCaseCode();
-    const uploadedImage = uploadedFile
+    const uploadedImage = submissionImageFile
       ? await uploadCaseImage({
-          file: uploadedFile,
+          file: submissionImageFile,
           patientCode,
           caseCode,
           userId: user.id,

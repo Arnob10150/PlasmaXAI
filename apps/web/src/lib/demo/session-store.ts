@@ -14,6 +14,7 @@ import {
   type ReportDraft,
   type ReviewChecklistItem,
 } from "@/lib/review-workspace";
+import { decodeCookiePayload, encodeCookiePayload } from "@/lib/demo/cookie-codec";
 
 const CASES_COOKIE = "plasmaxai-demo-cases";
 const DOCTORS_COOKIE = "plasmaxai-demo-doctors";
@@ -134,12 +135,16 @@ async function getHostedWorkbenchMap() {
       continue;
     }
 
-    try {
-      const parsed = JSON.parse(entry.value) as {
-        reviewChecklist?: ReviewChecklistItem[];
-        reportDraft?: ReportDraft;
-      };
+    const parsed = decodeCookiePayload<{
+      reviewChecklist?: ReviewChecklistItem[];
+      reportDraft?: ReportDraft;
+    }>(entry.value);
 
+    if (!parsed) {
+      continue;
+    }
+
+    try {
       workbenchByCaseId.set(caseId, {
         reviewChecklist: normalizeReviewChecklist(parsed.reviewChecklist, []),
         reportDraft: normalizeReportDraft(
@@ -171,7 +176,7 @@ async function setHostedCaseWorkbench(
   const cookieStore = await cookies();
   cookieStore.set(
     getCaseWorkbenchCookieName(caseId),
-    JSON.stringify({
+    encodeCookiePayload({
       reviewChecklist: payload.reviewChecklist,
       reportDraft: payload.reportDraft,
     }),
@@ -204,18 +209,19 @@ export async function getHostedDemoCases() {
     return enrichCases(demoCases);
   }
 
-  try {
-    return enrichCases(JSON.parse(raw) as DemoCaseRecord[]);
-  } catch {
+  const parsed = decodeCookiePayload<DemoCaseRecord[]>(raw);
+  if (!parsed) {
     return enrichCases(demoCases);
   }
+
+  return enrichCases(parsed);
 }
 
 export async function setHostedDemoCases(cases: DemoCaseRecord[]) {
   const cookieStore = await cookies();
   cookieStore.set(
     CASES_COOKIE,
-    JSON.stringify(normalizeCases(cases).map(stripCaseWorkbench)),
+    encodeCookiePayload(normalizeCases(cases).map(stripCaseWorkbench)),
     cookieOptions(),
   );
 }
@@ -228,11 +234,12 @@ export async function getHostedDemoDoctors() {
     return seedDoctors();
   }
 
-  try {
-    return JSON.parse(raw) as Array<DemoDoctor & { organizationName: string }>;
-  } catch {
+  const parsed = decodeCookiePayload<Array<DemoDoctor & { organizationName: string }>>(raw);
+  if (!parsed) {
     return seedDoctors();
   }
+
+  return parsed;
 }
 
 export async function getHostedDemoPatients() {
@@ -243,11 +250,12 @@ export async function getHostedDemoPatients() {
     return seedPatients();
   }
 
-  try {
-    return JSON.parse(raw) as ReturnType<typeof seedPatients>;
-  } catch {
+  const parsed = decodeCookiePayload<ReturnType<typeof seedPatients>>(raw);
+  if (!parsed) {
     return seedPatients();
   }
+
+  return parsed;
 }
 
 async function setHostedDemoPatients(
@@ -256,7 +264,9 @@ async function setHostedDemoPatients(
   const cookieStore = await cookies();
   cookieStore.set(
     PATIENTS_COOKIE,
-    JSON.stringify([...patients].sort((left, right) => left.code.localeCompare(right.code))),
+    encodeCookiePayload(
+      [...patients].sort((left, right) => left.code.localeCompare(right.code)),
+    ),
     cookieOptions(),
   );
 }
@@ -291,7 +301,7 @@ export async function updateHostedDemoDoctorProfile(
   );
 
   const cookieStore = await cookies();
-  cookieStore.set(DOCTORS_COOKIE, JSON.stringify(next), cookieOptions());
+  cookieStore.set(DOCTORS_COOKIE, encodeCookiePayload(next), cookieOptions());
   return next.find((doctor) => doctor.email.toLowerCase() === email.toLowerCase()) ?? next[0];
 }
 

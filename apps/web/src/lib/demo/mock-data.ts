@@ -1,3 +1,5 @@
+import type { ReportDraft, ReviewChecklistItem } from "@/lib/review-workspace";
+
 export interface DemoDoctor {
   id: string;
   email: string;
@@ -60,6 +62,8 @@ export interface DemoCaseRecord {
     };
     morphology: Record<string, number>;
   } | null;
+  reviewChecklist?: ReviewChecklistItem[];
+  reportDraft?: ReportDraft | null;
 }
 
 export const demoDoctors: DemoDoctor[] = [

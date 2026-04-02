@@ -38,7 +38,6 @@ export function LoginForm() {
   const {
     register,
     handleSubmit,
-    getValues,
     formState: { errors },
   } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -86,35 +85,6 @@ export function LoginForm() {
     toast.success("Signed in successfully.");
     router.replace(nextPath);
     router.refresh();
-  };
-
-  const sendMagicLink = async () => {
-    if (demoMode) {
-      toast.error("Use the doctor email and password to sign in.");
-      return;
-    }
-
-    const email = getValues("email");
-
-    if (!email) {
-      toast.error("Enter your email first to receive a magic link.");
-      return;
-    }
-
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-      },
-    });
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
-    toast.success("Magic link sent. Check your inbox.");
   };
 
   return (
@@ -167,10 +137,6 @@ export function LoginForm() {
       </div>
       <Button className="w-full" type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Signing in..." : "Sign in"}
-      </Button>
-      <Button className="w-full" type="button" variant="secondary" onClick={sendMagicLink}>
-        <i className="bi bi-send-fill text-sm" aria-hidden="true" />
-        Continue with magic link
       </Button>
     </form>
   );

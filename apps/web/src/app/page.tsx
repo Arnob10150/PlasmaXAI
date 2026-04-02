@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { MotionDiv } from "@/components/motion/motion-div";
+import { PublicFooter } from "@/components/shared/public-footer";
 import { Button } from "@/components/ui/button";
-import { SectionHeading } from "@/components/shared/section-heading";
 
 const highlights = [
   {
     title: "Explainable AI review",
-    body: "See prediction confidence, counterfactual drivers, and clinical insight panels in one calm review workspace.",
+    body: "Review focus maps, morphology profiles, and doctor-facing summaries inside one calm microscopy workspace.",
     iconClass: "bi bi-stars",
   },
   {
@@ -29,7 +29,7 @@ const metrics = [
 
 export default function Home() {
   return (
-    <main className="relative overflow-hidden">
+    <main className="relative min-h-screen overflow-hidden">
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.16),_transparent_34%),radial-gradient(circle_at_80%_20%,_rgba(15,118,110,0.18),_transparent_28%),linear-gradient(180deg,_#f8fbff_0%,_#eef5fb_48%,_#f8fafc_100%)]" />
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/92 backdrop-blur">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4 lg:px-10">
@@ -68,10 +68,10 @@ export default function Home() {
             </div>
             <div className="space-y-4">
               <h1 className="max-w-4xl text-5xl font-semibold tracking-tight text-slate-950 sm:text-6xl">
-                Welcome to a trusted clinical workspace for plasma-cell review, patient follow-up, and report-ready decisions.
+                Review clearly. Correlate confidently. Report decisively.
               </h1>
               <p className="max-w-2xl text-lg leading-8 text-slate-600">
-                PlasmaXAI brings microscopy review, explainable findings, longitudinal case history, and clinician-ready reporting into one calm review environment.
+                PlasmaXAI supports plasma-cell microscopy review with explainable visual cues, patient follow-up, and report-ready documentation for hematology teams.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-4">
@@ -130,18 +130,10 @@ export default function Home() {
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="rounded-2xl border border-slate-200 p-4">
-                        <div className="flex items-center gap-2 text-sm text-slate-500">
-                          <i className="bi bi-stars text-base text-blue-700" aria-hidden="true" />
-                          Counterfactual driver
-                        </div>
-                        <p className="mt-2 font-semibold">NC ratio</p>
+                        <p className="font-semibold text-slate-900">N:C ratio</p>
                       </div>
                       <div className="rounded-2xl border border-slate-200 p-4">
-                        <div className="flex items-center gap-2 text-sm text-slate-500">
-                          <i className="bi bi-clipboard2-pulse-fill text-base text-blue-700" aria-hidden="true" />
-                          Clinical insight
-                        </div>
-                        <p className="mt-2 font-semibold">Chromatic shift cluster</p>
+                        <p className="font-semibold text-slate-900">Chromatic shift cluster</p>
                       </div>
                     </div>
                     <div className="rounded-2xl border border-slate-200 p-4">
@@ -186,24 +178,8 @@ export default function Home() {
             </MotionDiv>
           ))}
         </section>
-
-        <section className="rounded-[36px] border border-slate-200 bg-slate-950 px-8 py-10 text-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]">
-          <SectionHeading
-            eyebrow="Built for doctors"
-            title="Start with a deployable web foundation, then connect your CUDA inference service."
-            description="The first website version already includes a real dashboard, individual account flow, and case-review experience."
-            invert
-          />
-          <div className="mt-8 flex flex-wrap gap-4">
-            <Button asChild size="lg" variant="secondary">
-              <Link href="/login">Enter doctor sign in</Link>
-            </Button>
-            <Button asChild size="lg" variant="ghost-light">
-              <Link href="/register">Create account</Link>
-            </Button>
-          </div>
-        </section>
       </section>
+      <PublicFooter />
     </main>
   );
 }

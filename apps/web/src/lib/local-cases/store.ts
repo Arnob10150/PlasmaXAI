@@ -5,6 +5,14 @@ import { buildCaseReportPdf } from "@/lib/reports/pdf-report";
 import type { InferenceResult } from "@/lib/inference/service";
 import { demoCases, type DemoCaseRecord } from "@/lib/demo/mock-data";
 import { getDisplayCaseTitle, getDisplayPatientCode, getDisplayPatientName } from "@/lib/patient-display";
+import {
+  buildDefaultReportDraft,
+  buildDefaultReviewChecklist,
+  normalizeReportDraft,
+  normalizeReviewChecklist,
+  type ReportDraft,
+  type ReviewChecklistItem,
+} from "@/lib/review-workspace";
 
 export interface LocalPatientRecord {
   id: string;
@@ -163,6 +171,24 @@ async function upsertLocalPatient(options: {
 
   await writeLocalPatients([...patients, nextPatient]);
   return nextPatient;
+}
+
+function buildCaseWorkspaceDefaults(caseItem: Pick<
+  DemoCaseRecord,
+  "prediction" | "explanation" | "analysis" | "caseCode" | "title" | "reviewChecklist" | "reportDraft"
+>) {
+  const fallbackDraft = buildDefaultReportDraft({
+    predictedClass: caseItem.prediction?.predictedClass ?? null,
+    confidence: caseItem.prediction?.confidence ?? null,
+    topFeatures: caseItem.explanation?.topFeatures ?? [],
+    doctorInsight: caseItem.explanation?.clinicalInsightText ?? null,
+    recommendedAction: null,
+  });
+
+  return {
+    reviewChecklist: normalizeReviewChecklist(caseItem.reviewChecklist, caseItem.explanation?.topFeatures ?? []),
+    reportDraft: normalizeReportDraft(caseItem.reportDraft, fallbackDraft),
+  };
 }
 
 export async function listLocalCases() {
@@ -360,6 +386,14 @@ export async function createLocalCase(options: {
         }
       : null,
     analysis: null,
+    reviewChecklist: buildDefaultReviewChecklist(),
+    reportDraft: buildDefaultReportDraft({
+      predictedClass: null,
+      confidence: null,
+      topFeatures: [],
+      doctorInsight: null,
+      recommendedAction: null,
+    }),
   };
 
   await writeLocalCases([nextCase, ...cases]);
@@ -387,6 +421,37 @@ export async function updateLocalCaseReview(options: {
         }
       : item,
   );
+  await writeLocalCases(updated);
+}
+
+export async function updateLocalCaseWorkbench(options: {
+  caseId: string;
+  reviewChecklist: ReviewChecklistItem[];
+  reportDraft: ReportDraft;
+}) {
+  const cases = await readLocalCases();
+  const now = new Date().toISOString();
+
+  const updated = cases.map((item) => {
+    if (item.id !== options.caseId) {
+      return item;
+    }
+
+    const nextDraft = {
+      ...options.reportDraft,
+      updatedAt: now,
+      finalizedAt: options.reportDraft.finalized ? options.reportDraft.finalizedAt ?? now : null,
+    };
+
+    return {
+      ...item,
+      reportDraft: nextDraft,
+      reviewChecklist: options.reviewChecklist,
+      status: nextDraft.finalized ? "report_ready" : item.status,
+      reviewedAt: nextDraft.finalized ? now : item.reviewedAt,
+    };
+  });
+
   await writeLocalCases(updated);
 }
 
@@ -446,6 +511,20 @@ export async function updateLocalCaseInference(
             heatmapPath: null,
           },
           analysis: payload.analysis ?? null,
+          reviewChecklist:
+            item.reviewChecklist && item.reviewChecklist.length
+              ? item.reviewChecklist
+              : buildDefaultReviewChecklist(payload.topFeatures),
+          reportDraft: normalizeReportDraft(
+            item.reportDraft,
+            buildDefaultReportDraft({
+              predictedClass: payload.predictedClass,
+              confidence: payload.confidence,
+              topFeatures: payload.topFeatures,
+              doctorInsight: payload.clinicalInsightText,
+              recommendedAction: null,
+            }),
+          ),
         }
       : item,
   );
@@ -537,6 +616,7 @@ export async function ensureLocalCaseReport(
   if (!result) {
     return null;
   }
+  const workspaceDefaults = buildCaseWorkspaceDefaults(caseItem);
 
   const pdfBytes = await buildCaseReportPdf({
     caseCode: caseItem.caseCode,
@@ -548,6 +628,8 @@ export async function ensureLocalCaseReport(
     clinicalNote: caseItem.notes,
     imagePath: caseItem.images[0]?.storagePath ?? null,
     result,
+    reportDraft: workspaceDefaults.reportDraft,
+    reviewChecklist: workspaceDefaults.reviewChecklist,
   });
 
   const fileName = `${caseItem.caseCode.toLowerCase()}-report.pdf`;

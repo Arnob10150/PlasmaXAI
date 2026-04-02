@@ -5,6 +5,7 @@ import {
   listLocalPatients,
 } from "@/lib/local-cases/store";
 import { getDisplayCaseTitle, getDisplayPatientCode, getDisplayPatientName } from "@/lib/patient-display";
+import { buildDefaultReportDraft, buildDefaultReviewChecklist, type ReportDraft, type ReviewChecklistItem } from "@/lib/review-workspace";
 import { hasSupabaseConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -64,6 +65,8 @@ export interface CaseSummary {
     };
     morphology: Record<string, number>;
   } | null;
+  reviewChecklist?: ReviewChecklistItem[];
+  reportDraft?: ReportDraft | null;
 }
 
 export interface PatientDetail {
@@ -182,6 +185,8 @@ function formatCase(raw: any): CaseSummary {
         }
       : null,
     analysis: raw.analysis ?? null,
+    reviewChecklist: [],
+    reportDraft: null,
   };
 }
 
@@ -241,6 +246,19 @@ async function fetchCases(options: FetchCaseOptions = {}) {
       reports: options.includeReports ? item.reports : [],
       images: options.includeImages ? item.images : [],
       explanation: options.includeExplanation ? item.explanation : null,
+      reviewChecklist:
+        item.reviewChecklist && item.reviewChecklist.length
+          ? item.reviewChecklist
+          : buildDefaultReviewChecklist(item.explanation?.topFeatures ?? []),
+      reportDraft:
+        item.reportDraft ??
+        buildDefaultReportDraft({
+          predictedClass: item.prediction?.predictedClass ?? null,
+          confidence: item.prediction?.confidence ?? null,
+          topFeatures: item.explanation?.topFeatures ?? [],
+          doctorInsight: item.explanation?.clinicalInsightText ?? null,
+          recommendedAction: null,
+        }),
     }));
   }
 
@@ -691,6 +709,19 @@ export async function getCaseDetail(caseId: string) {
             signedUrl: `/api/local-report-file/${localCase.id}`,
           },
         ],
+        reviewChecklist:
+          localCase.reviewChecklist && localCase.reviewChecklist.length
+            ? localCase.reviewChecklist
+            : buildDefaultReviewChecklist(localCase.explanation?.topFeatures ?? []),
+        reportDraft:
+          localCase.reportDraft ??
+          buildDefaultReportDraft({
+            predictedClass: localCase.prediction?.predictedClass ?? null,
+            confidence: localCase.prediction?.confidence ?? null,
+            topFeatures: localCase.explanation?.topFeatures ?? [],
+            doctorInsight: localCase.explanation?.clinicalInsightText ?? null,
+            recommendedAction: null,
+          }),
       };
     }
 
@@ -704,6 +735,19 @@ export async function getCaseDetail(caseId: string) {
             name: getDisplayPatientName(localCase.patient.id, localCase.patient.code, localCase.patient.name),
           }
         : null,
+      reviewChecklist:
+        localCase.reviewChecklist && localCase.reviewChecklist.length
+          ? localCase.reviewChecklist
+          : buildDefaultReviewChecklist(localCase.explanation?.topFeatures ?? []),
+      reportDraft:
+        localCase.reportDraft ??
+        buildDefaultReportDraft({
+          predictedClass: localCase.prediction?.predictedClass ?? null,
+          confidence: localCase.prediction?.confidence ?? null,
+          topFeatures: localCase.explanation?.topFeatures ?? [],
+          doctorInsight: localCase.explanation?.clinicalInsightText ?? null,
+          recommendedAction: null,
+        }),
     };
   }
 

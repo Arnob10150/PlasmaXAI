@@ -18,7 +18,7 @@ export function AuthShell({
 }) {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.18),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(15,118,110,0.18),_transparent_32%),linear-gradient(180deg,_#f8fbff_0%,_#eef5fb_100%)]">
-      <div className="mx-auto grid min-h-screen max-w-7xl gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[1.02fr_0.98fr] lg:px-8">
+      <div className="mx-auto grid min-h-[calc(100vh-76px)] max-w-7xl gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[1.02fr_0.98fr] lg:px-8">
         <section className="hidden overflow-hidden rounded-[36px] border border-white/70 bg-[linear-gradient(180deg,#071125,#0f172a)] p-7 text-white shadow-[0_30px_80px_rgba(15,23,42,0.18)] lg:flex lg:flex-col">
           <LogoLockup invert />
           <div className="mt-12 max-w-xl space-y-5">
@@ -27,10 +27,10 @@ export function AuthShell({
               PlasmaXAI doctor workspace
             </div>
             <h1 className="text-5xl font-semibold tracking-tight">
-              Welcome to a trusted workspace for plasma-cell microscopy review and clinical documentation.
+              Review clearly. Correlate confidently.
             </h1>
             <p className="text-lg leading-8 text-slate-300">
-              Sign in to review case-level evidence, correlate focus maps with morphology, compare prior specimens, and export doctor-ready reports.
+              Sign in to examine focus maps, compare interval cases, and finalize clinician-ready plasma-cell reports.
             </p>
           </div>
           <div className="mt-auto grid gap-4 md:grid-cols-3">
@@ -59,7 +59,7 @@ export function AuthShell({
               </div>
               <Button href="/" variant="secondary" size="sm">
                 <i className="bi bi-house-door-fill text-sm" aria-hidden="true" />
-                Back to home
+                Home
               </Button>
             </div>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{title}</h2>

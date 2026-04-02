@@ -1,0 +1,930 @@
+PLASMAXAI WEBSITE ULTRA-DETAILED SYSTEM RECORD
+==============================================
+
+Document purpose
+----------------
+This file is a deep technical record of the PlasmaXAI website system. It is intended to explain, in practical engineering detail, how the website is structured, how the frontend, backend, database, report generator, and inference service fit together, and how the trained PlasmaXAI model is integrated into the full doctor-facing clinical workflow.
+
+This is not a short summary. It is a system-level implementation record of the current website architecture inside this repository.
+
+
+1. SYSTEM INTENT
+----------------
+The PlasmaXAI website is not just a static research showcase. It is designed as a doctor-facing clinical review workspace for plasma-cell case analysis. The goal is to let a doctor or reviewer:
+
+1. sign in to an individual account
+2. create or upload a case
+3. associate the case with a patient
+4. run PlasmaXAI inference on the uploaded microscopy image
+5. view prediction output and explainability cues in a clinically readable way
+6. edit checklist items and report language before finalizing the case report
+7. revisit the case later from the case history archive
+8. manage patients, cases, settings, and profile information
+
+This means the website is not only a frontend. It is a layered clinical product composed of:
+
+- a Next.js web application
+- a Python inference service
+- a database and storage layer via Supabase when cloud mode is enabled
+- a local persistence layer for offline/demo fallback
+- a PDF clinical reporting engine
+
+
+2. REPOSITORY LAYOUT
+--------------------
+At the repo level, the deployable system is organized primarily under:
+
+- apps/web
+- apps/inference
+- docs
+- research
+- artifacts
+- data
+
+Website app:
+- apps/web
+
+Inference service:
+- apps/inference
+
+Root Vercel multi-service configuration:
+- vercel.json
+
+The root vercel.json defines two services:
+
+1. web
+   - entrypoint: apps/web
+   - routePrefix: /
+   - framework: nextjs
+
+2. inference
+   - entrypoint: apps/inference/app/app.py
+   - routePrefix: /api/inference
+   - memory and maxDuration configured for model execution
+   - includeFiles includes model assets
+
+This means the repository is prepared so the web app and inference app can be deployed together under one Vercel project using Vercel Services.
+
+
+3. WEB APPLICATION ARCHITECTURE
+-------------------------------
+The doctor-facing web application lives in:
+
+- apps/web/src/app
+- apps/web/src/components
+- apps/web/src/lib
+
+The architecture follows a practical Next.js App Router structure:
+
+- app: route definitions and server entrypoints
+- components: UI modules and domain-specific widgets
+- lib: shared logic, storage handlers, auth helpers, report generation, data access, inference bridge, and domain utilities
+
+This is not strict classical MVC in the old Rails sense, but it is structurally similar to a modern React/Next separation:
+
+- views = route pages + components
+- controllers/actions = server actions in route folders
+- models/data layer = Supabase queries, local stores, and normalization utilities
+
+
+4. ROUTING STRUCTURE
+--------------------
+Key public routes:
+
+- /
+- /login
+- /register
+- /about
+- /contact
+
+Key protected workspace routes:
+
+- /dashboard
+- /new-case
+- /cases/[id]
+- /history
+- /patients
+- /patients/[id]
+- /profile
+- /settings
+- /reports
+
+Note:
+- /reports currently redirects to /history because the single archive experience was chosen instead of duplicating report archive and case history as separate but overlapping pages.
+
+Key local utility API routes:
+
+- /api/local-case-file/[caseId]
+- /api/local-report-file/[caseId]
+
+These are used for local/demo mode to serve stored image and report assets without relying on Supabase.
+
+
+5. FRONTEND LAYER BY LAYER
+--------------------------
+
+5.1 Global shell layer
+The main doctor workspace chrome is implemented through:
+
+- apps/web/src/components/workspace/workspace-shell.tsx
+
+Responsibilities:
+- top header
+- left vertical sticky sidebar
+- workspace navigation
+- current doctor identity block
+- sign-out behavior
+- consistent shell styling for all authenticated pages
+
+This shell is the top-level doctor workspace frame. The shell is responsible for making the site feel like one continuous product rather than disconnected pages.
+
+
+5.2 Public landing layer
+The landing page is implemented in:
+
+- apps/web/src/app/page.tsx
+
+Responsibilities:
+- show the product positioning
+- show trust-building UI
+- show core metrics
+- present a preview of a case review experience
+- route users into sign-in or registration
+- display the home-page-only footer
+
+The footer used on the homepage only is implemented in:
+
+- apps/web/src/components/shared/public-footer.tsx
+
+The footer is intentionally not rendered on all pages anymore, because the user requested it be limited to the home page.
+
+
+5.3 Auth layer
+Auth pages are implemented through:
+
+- apps/web/src/components/auth/auth-shell.tsx
+- apps/web/src/components/auth/login-form.tsx
+- apps/web/src/components/auth/register-form.tsx
+
+Responsibilities:
+- provide the branded auth layout
+- run form validation
+- support Supabase auth in hosted mode
+- support local doctor account fallback in local mode
+
+Important current behavior:
+- magic link was removed from the login page per product direction
+- duplicate return-home style actions were removed
+- local fallback users are driven by a stored doctor list rather than a visibly “demo” box on the page
+
+
+5.4 Case review UI layer
+The main case review page is:
+
+- apps/web/src/app/(workspace)/cases/[id]/page.tsx
+
+This page is the most important screen in the product.
+
+It composes several submodules:
+
+- ImageReviewPanel
+- CaseAnalysisDashboard
+- DoctorReviewWorkboard
+- notes/status/report controls
+
+The case review page now follows a top-to-bottom doctor workflow:
+
+1. identify the case and patient
+2. inspect the microscopy image
+3. review the focus map and overlay
+4. read the doctor-facing interpretation and review charts
+5. edit notes and status
+6. edit and finalize the report/checklist workboard
+
+
+5.5 Interactive microscopy viewer layer
+Implemented in:
+
+- apps/web/src/components/cases/image-review-panel.tsx
+
+Responsibilities:
+- render the microscopy image
+- support zoom in / zoom out / reset
+- support mouse-wheel zoom
+- support drag-to-pan
+- support fullscreen
+- render overlay if available
+- render adaptive overlay if no explicit heatmap file exists
+- show top focus cues
+- show a focus-map preview pane
+- allow control of brightness, contrast, and overlay opacity
+
+This component is what makes the review experience feel closer to a proper clinical image workstation rather than a plain image upload card.
+
+
+5.6 Doctor-facing explainability layer
+Implemented mainly in:
+
+- apps/web/src/components/cases/case-analysis-dashboard.tsx
+- apps/web/src/lib/clinical-explainability.ts
+
+This layer transforms raw AI outputs into clinician-readable interpretation blocks.
+
+Visible explainability areas include:
+- doctor-facing review summary
+- focus map interpretation
+- clinical reasoning pathway
+- morphology review profile
+- review evidence mix
+- morphology cue map
+- review confidence band
+- patient interval trend
+
+The important design choice here is that charts are not labeled as raw model internals for doctors. They are framed using clinical review concepts rather than ML engineering concepts.
+
+
+5.7 Interactive review board and editable report layer
+Implemented in:
+
+- apps/web/src/components/cases/doctor-review-workboard.tsx
+- apps/web/src/app/(workspace)/cases/[id]/actions.ts
+- apps/web/src/lib/review-workspace.ts
+
+Responsibilities:
+- maintain a Trello-like checklist board
+- allow items to be added, edited, checked, or deleted
+- organize checklist items into 3 lanes:
+  - Microscopy
+  - Correlation
+  - Finalize
+- store editable report draft fields:
+  - clinicalSummary
+  - morphologySummary
+  - recommendation
+- support save and finalize operations
+
+The user specifically asked that the two main sections inside this workspace be vertical rather than side by side. That layout is now enforced so the checklist board sits above the editable report editor.
+
+
+5.8 Archive and management layer
+Key pages:
+
+- history/page.tsx
+- patients/page.tsx
+- patients/[id]/page.tsx
+- profile/page.tsx
+- settings/page.tsx
+
+Responsibilities:
+- history: case archive, open/edit/delete, access reports
+- patients: patient registry
+- patient detail: patient-level case history and timeline
+- profile: edit doctor identity
+- settings: workspace and report generation preferences
+
+
+6. AUTHENTICATION AND USER IDENTITY
+-----------------------------------
+Auth logic lives in:
+
+- apps/web/src/lib/supabase/auth.ts
+- apps/web/src/lib/supabase/client.ts
+- apps/web/src/lib/supabase/server.ts
+
+There are two modes:
+
+1. hosted/Supabase mode
+2. local fallback mode
+
+Hosted mode:
+- uses Supabase Auth
+- server and browser clients are created through @supabase/ssr helpers
+- requireUser() ensures there is an authenticated user
+- ensureDoctorProfile() upserts the doctor profile into the profiles table
+
+Local mode:
+- activates automatically if Supabase config is missing
+- reads a selected doctor identity from the plasmaxai-demo-user cookie
+- resolves a doctor from local storage rather than remote auth
+
+Local doctor storage:
+- apps/web/src/lib/local-doctors/store.ts
+
+This allows the same UI to remain usable even when the production backend is unavailable.
+
+
+7. DATABASE MODEL
+-----------------
+The cloud database schema is defined in:
+
+- apps/web/supabase/migrations/20260401_initial_schema.sql
+
+Main tables:
+
+organizations
+- groups users/doctors into an organization context
+
+profiles
+- one row per authenticated doctor
+- stores full_name, specialization, organization references, role
+
+patients
+- patient_code
+- full_name
+- sex
+- date_of_birth
+- organization_id
+- created_by
+
+cases
+- case_code
+- patient_id
+- doctor_id
+- title
+- status
+- notes
+- created_at
+- reviewed_at
+
+case_images
+- links images to cases
+- stores storage_path, file_name, mime_type
+
+predictions
+- one prediction row per case
+- stores predicted_class, confidence, risk_level, model_version
+
+explanations
+- one explanation row per case
+- stores counterfactual_text
+- clinical_insight_text
+- top_features_json
+- heatmap_path
+
+reports
+- stores generated report file path
+- report type
+- generation timestamp
+
+review_requests
+- optional review routing table
+
+audit_logs
+- system activity history
+
+Security:
+- row level security is enabled
+- policies are organization-aware
+- the current organization is resolved through current_org_id()
+
+This is a strong clinical multi-user database pattern because it isolates records per organization while still allowing multiple doctors inside the same org to access shared patient/case information.
+
+
+8. LOCAL DATA MODEL
+-------------------
+When cloud mode is absent, the app uses local filesystem-backed stores.
+
+Primary files:
+- apps/web/.local-data/cases.json
+- apps/web/.local-data/patients.json
+- apps/web/.local-data/doctors.json
+- apps/web/.local-data/settings.json
+- apps/web/.local-data/uploads/
+- apps/web/.local-data/reports/
+
+Key local store modules:
+- apps/web/src/lib/local-cases/store.ts
+- apps/web/src/lib/local-doctors/store.ts
+- apps/web/src/lib/local-settings/store.ts
+
+This fallback mode preserves:
+- patients
+- cases
+- doctor identities
+- settings
+- uploaded files
+- generated PDF reports
+
+That local mode is critical because it keeps the site usable for demos, offline review, and staging even before full cloud deployment is configured.
+
+
+9. CASE CREATION FLOW
+---------------------
+Case creation is implemented in:
+
+- apps/web/src/app/(workspace)/new-case/actions.ts
+
+Flow in local mode:
+1. createLocalCase() is called
+2. patient is upserted into the local patient store
+3. image is stored under .local-data/uploads
+4. local case JSON is updated
+5. queueCaseInference() is called
+6. if inference succeeds, updateLocalCaseInference() stores prediction and explanation
+7. route revalidation occurs
+8. user is redirected to /cases/[id]
+
+Flow in Supabase mode:
+1. requireUser() returns authenticated doctor
+2. organization is resolved or created
+3. patient is found or inserted
+4. image is uploaded to Supabase Storage
+5. case row is inserted
+6. case_images row is inserted
+7. queueCaseInference() is called
+8. prediction and explanation tables are populated
+9. PDF report is created and uploaded
+10. reports row is inserted
+11. audit_logs row is inserted
+12. route revalidation occurs
+13. doctor is redirected to the case page
+
+
+10. INFERENCE BRIDGE
+--------------------
+The frontend does not directly execute PyTorch in the browser. Instead, the web app talks to an inference bridge:
+
+- apps/web/src/lib/inference/service.ts
+
+This bridge chooses one of two paths:
+
+1. hosted inference API
+2. local Python fallback
+
+Decision logic:
+- if INFERENCE_API_URL or INFERENCE_URL exists, it attempts HTTP fetch to the inference service
+- if hosted inference fails and the environment allows local fallback, it executes local Python directly
+- in hosted Vercel mode, local Python fallback is disabled by default unless explicitly allowed
+
+This makes the system robust:
+- good for local development
+- compatible with Vercel services
+- does not trap the UI when the hosted API is unavailable
+
+
+11. INFERENCE SERVICE
+---------------------
+The Python inference API lives in:
+
+- apps/inference/app/main.py
+- apps/inference/app/predictor.py
+
+FastAPI layer:
+- defines /health
+- defines POST /cases
+- validates incoming payload using pydantic
+- returns the fully structured inference payload expected by the web app
+
+Core predictor:
+- class PlasmaXAIPredictor in predictor.py
+
+This predictor loads:
+- operating point JSON
+- fusion scalers
+- counterfactual bundle
+- summary/config JSON
+- resnet50 checkpoint
+- densenet121 checkpoint
+- novel fusion checkpoint
+
+The predictor pipeline:
+1. fetch image bytes from URL, local path, or Supabase authenticated storage
+2. decode RGB image
+3. transform image into model tensor
+4. extract morphology features
+5. compute resnet embedding and probability
+6. compute densenet embedding and probability
+7. scale morphology vectors
+8. compute counterfactual-space features
+9. compute score features
+10. run the CounterfactualGuidedFusionNet
+11. softmax outputs into plasma probability
+12. compute modality gates
+13. determine risk level using threshold
+14. create doctor-facing explanation fields
+15. return final structured result
+
+
+12. MODEL INTEGRATION LAYER BY LAYER
+------------------------------------
+The deployed PlasmaXAI inference path is a multi-branch fusion system.
+
+The fusion model defined in predictor.py is:
+- CounterfactualGuidedFusionNet
+
+Branches and internal roles:
+
+1. ResNet branch
+- input: ResNet embedding
+- layer block: LayerNorm -> Linear -> GELU -> Dropout
+- purpose: capture strong image-pattern features from the microscopy image
+
+2. DenseNet branch
+- input: DenseNet embedding
+- layer block: LayerNorm -> Linear -> GELU -> Dropout
+- purpose: capture texture-sensitive image features and complementary CNN context
+
+3. Morphology branch
+- input: engineered morphology vector
+- layer block: LayerNorm -> Linear -> GELU -> Dropout
+- purpose: represent explicit tabular cytomorphology features
+
+4. Counterfactual branch
+- input: counterfactual-space vector built from margin, delta, and prototype shift
+- layer block: LayerNorm -> Linear -> GELU -> Dropout
+- purpose: express how far the sample is from the benign decision region and which features would have to move to lower suspicion
+
+5. Score branch
+- input: compact score vector derived from model outputs
+- layer block: LayerNorm -> Linear -> GELU -> Dropout
+- purpose: preserve calibrated score-level summary signals
+
+Cross-branch control:
+- cf_to_res: counterfactual-conditioned gate into the ResNet feature path
+- cf_to_den: counterfactual-conditioned gate into the DenseNet feature path
+- morph_to_scores: injects morphology-plus-counterfactual context into the score stream
+
+Modality gate:
+- concatenates res, den, morph, cf, score features
+- runs LayerNorm + Linear
+- applies softmax over 4 gating outputs
+- dynamically weights:
+  - resnet branch
+  - densenet branch
+  - morphology branch
+  - counterfactual branch
+
+Fusion:
+- weighted branch combination produces fused_modal
+- fused_modal is concatenated with the unified score branch
+- classifier head:
+  - LayerNorm
+  - Linear
+  - GELU
+  - Dropout
+  - Linear to 2 classes
+
+This is the actual mechanism that connects image embeddings, morphology vectors, and counterfactual reasoning into one deployable decision path.
+
+
+13. EXPLAINABILITY INTEGRATION
+------------------------------
+Explainability is not only shown as raw text. It is integrated at multiple system layers:
+
+1. Inference layer
+- topFeatures
+- counterfactualText
+- clinicalInsightText
+- modalityGates
+- morphology metrics
+- class probabilities
+
+2. Data persistence layer
+- explanations table in Supabase
+- local case store in local mode
+
+3. UI interpretation layer
+- clinical-explainability.ts transforms those fields into doctor-facing blocks
+
+4. Case analysis dashboard
+- focus map interpretation
+- clinical reasoning pathway
+- morphology review profile
+- review evidence mix
+- morphology cue map
+
+5. PDF report layer
+- focus map and microscopy overlay
+- clinical reasoning pathway
+- review evidence mix
+- confidence band
+- morphology review profile
+- morphology cue map
+
+This is important because the website is designed so explainability is visible, editable in its report summary, and exportable.
+
+
+14. REPORT GENERATION
+---------------------
+The PDF report engine is:
+
+- apps/web/src/lib/reports/pdf-report.ts
+
+It uses pdf-lib and builds the report procedurally.
+
+Report generation flow:
+1. gather case metadata
+2. gather prediction result
+3. gather explanation result
+4. gather report draft edits if present
+5. gather review checklist items if present
+6. embed microscopy image
+7. draw structured PDF sections
+
+Important report sections:
+- title and case identity
+- clinical case context
+- microscopy review image
+- focus map and microscopy overlay
+- explainability diagrams
+- clinical review summary
+- doctor-facing interpretation
+- what would lower suspicion
+- recommended doctor actions
+- doctor review checklist
+
+The current report generation path already accepts:
+- reportDraft
+- reviewChecklist
+
+That means doctor edits from the case page can flow into the generated report, rather than treating the PDF as a fixed model output.
+
+
+15. CHECKLIST AND REPORT EDITING FLOW
+-------------------------------------
+This is a key layer in the website.
+
+Files:
+- apps/web/src/components/cases/doctor-review-workboard.tsx
+- apps/web/src/lib/review-workspace.ts
+- apps/web/src/app/(workspace)/cases/[id]/actions.ts
+- apps/web/src/lib/local-cases/store.ts
+
+The workflow:
+1. default checklist is created based on top features
+2. default report draft is created based on prediction and explanation
+3. doctor edits checklist items
+4. doctor edits report fields
+5. saveCaseWorkbenchAction persists these changes
+6. updateLocalCaseWorkbench or cloud equivalent updates case workspace state
+7. ensureLocalCaseReport or cloud report generation uses the edited content
+8. final report is downloaded with doctor-adjusted wording
+
+This is what makes the website clinically useful instead of being only a passive AI dashboard.
+
+
+16. CRUD CAPABILITIES
+---------------------
+The website supports CRUD operations across the main doctor-facing entities.
+
+Patients:
+- createPatientAction
+- updatePatientAction
+- deletePatientAction
+
+Cases:
+- createCaseAction
+- updateCaseReviewAction
+- deleteCaseAction
+
+Doctor profile:
+- updateProfileAction
+
+Workspace settings:
+- updateSettingsAction
+
+History archive:
+- open
+- edit
+- delete
+- report access
+
+Local stores back these operations in local mode, and Supabase backs them in cloud mode.
+
+
+17. SETTINGS LAYER
+------------------
+Settings are managed through:
+
+- apps/web/src/app/(workspace)/settings/actions.ts
+- apps/web/src/lib/local-settings/store.ts
+
+Current settings include:
+- includeFocusMapInReport
+- includeExplainabilityCharts
+- autoGenerateReportAfterAnalysis
+- defaultCaseStatus
+- compactDashboardCards
+
+These settings are part of the productization layer because they let the workspace behavior be tuned without rewriting core logic.
+
+
+18. LOCAL MODE VS HOSTED MODE
+-----------------------------
+This website supports two operating modes.
+
+Local mode:
+- no Supabase required
+- local JSON and file stores
+- local doctors
+- local case images
+- local reports
+- optional local Python inference fallback
+
+Hosted mode:
+- Supabase Auth
+- Supabase Postgres
+- Supabase Storage
+- Vercel Services
+- FastAPI inference endpoint
+
+This dual-mode design is one of the biggest practical strengths of the system because:
+- it is demo-friendly
+- it is resilient during setup
+- it is deployable later without rewriting the whole app
+
+
+19. DEPLOYMENT MODEL
+--------------------
+Deployment is defined by:
+
+- root vercel.json
+
+The intended production path is:
+
+Frontend service:
+- Next.js app under apps/web
+
+Inference service:
+- Python FastAPI service under apps/inference
+
+External services:
+- Supabase Auth
+- Supabase Postgres
+- Supabase Storage
+
+This means the runtime deployment is effectively:
+
+Doctor browser
+  -> Next.js web service
+     -> Supabase auth/session/database/storage
+     -> inference service for model execution
+     -> report generation inside web service
+
+
+20. END-TO-END DATA FLOW
+------------------------
+Full hosted case flow:
+
+1. doctor signs in
+2. auth session is available to the Next server layer
+3. doctor creates a patient or selects an existing one
+4. doctor uploads microscopy image
+5. image is stored in Supabase Storage
+6. case row is created
+7. image metadata row is created
+8. inference bridge posts to /api/inference/cases
+9. inference service loads PlasmaXAI and analyzes the case image
+10. structured result returns:
+    - predicted class
+    - confidence
+    - risk level
+    - probabilities
+    - modality gates
+    - morphology vector
+    - top features
+    - counterfactual text
+    - clinical insight text
+11. web app stores prediction row
+12. web app stores explanation row
+13. web app generates PDF report
+14. PDF uploaded to report bucket
+15. report row stored
+16. case page reads all of that back into the doctor-facing review UI
+17. doctor edits notes, checklist, and report summary
+18. doctor finalizes and downloads report
+19. case remains accessible through history and patient timeline
+
+
+21. WHY THIS WEBSITE IS CLINICALLY STRONGER THAN A SIMPLE MODEL DEMO
+--------------------------------------------------------------------
+Many model demos stop at:
+- upload image
+- show confidence
+- show one chart
+
+PlasmaXAI website goes further by providing:
+- account-aware workspace
+- patient registry
+- case archive
+- case editing
+- report editing
+- focus-map viewer
+- explainability dashboards
+- PDF export
+- local fallback mode
+- deployable inference separation
+
+That makes it closer to a true clinical decision-support workspace than a research-only frontend.
+
+
+22. FILES MOST IMPORTANT FOR FUTURE DEVELOPMENT
+-----------------------------------------------
+If future engineering work continues, these are the highest-leverage files:
+
+Frontend entry and shell:
+- apps/web/src/app/page.tsx
+- apps/web/src/components/workspace/workspace-shell.tsx
+
+Case review:
+- apps/web/src/app/(workspace)/cases/[id]/page.tsx
+- apps/web/src/components/cases/image-review-panel.tsx
+- apps/web/src/components/cases/case-analysis-dashboard.tsx
+- apps/web/src/components/cases/doctor-review-workboard.tsx
+
+Server actions:
+- apps/web/src/app/(workspace)/new-case/actions.ts
+- apps/web/src/app/(workspace)/cases/[id]/actions.ts
+- apps/web/src/app/(workspace)/patients/actions.ts
+- apps/web/src/app/(workspace)/profile/actions.ts
+- apps/web/src/app/(workspace)/settings/actions.ts
+
+Persistence:
+- apps/web/src/lib/supabase/workspace-data.ts
+- apps/web/src/lib/local-cases/store.ts
+- apps/web/src/lib/local-doctors/store.ts
+- apps/web/src/lib/local-settings/store.ts
+
+Reports:
+- apps/web/src/lib/reports/pdf-report.ts
+- apps/web/src/lib/review-workspace.ts
+
+Inference bridge:
+- apps/web/src/lib/inference/service.ts
+
+Python inference:
+- apps/inference/app/main.py
+- apps/inference/app/predictor.py
+
+Database:
+- apps/web/supabase/migrations/20260401_initial_schema.sql
+
+Deployment:
+- vercel.json
+
+
+23. VERIFIED PUBLIC AUTHOR DETAILS USED IN THE SITE COPY
+--------------------------------------------------------
+For the professional About/Contact wording, the public web evidence I could verify is:
+
+1. Arnob Aich Anurag appears on the IEEE AIUB Student Branch website as:
+   - volunteer
+   - BSc. in CSE
+
+2. Arnob Aich Anurag appears on the ICT Olympiad Bangladesh ambassador page under:
+   - American International University Bangladesh
+
+Because I did not find a reliable public page confirming the exact title “IEEE AIUB Student Branch CS Chapter Chairperson,” the About page wording was written professionally but conservatively so it remains accurate and defensible.
+
+
+24. CURRENT STATE OF THE WEBSITE
+--------------------------------
+At the time of writing this record, the website includes:
+
+- responsive multi-page doctor workspace
+- local and cloud-capable account flow
+- patient CRUD
+- case CRUD
+- profile update
+- settings update
+- history archive
+- interactive microscopy viewer
+- explainability dashboard
+- editable review checklist
+- editable report draft
+- PDF report generation with multiple diagram sections
+- Vercel multi-service deployment structure
+
+This means the site is not just a mockup. It is a working application architecture with a real inference path and persistence model.
+
+
+25. FINAL ENGINEERING SUMMARY
+-----------------------------
+PlasmaXAI website is a full-stack clinical review system built on a layered architecture:
+
+Presentation layer:
+- Next.js App Router UI
+
+Interaction layer:
+- React components for review, editing, and navigation
+
+Server action layer:
+- case/patient/profile/settings mutations
+
+Data access layer:
+- Supabase queries and local JSON/file stores
+
+Inference bridge:
+- TypeScript service that decides between hosted API and local Python
+
+Model service layer:
+- FastAPI inference app
+
+Model runtime layer:
+- PyTorch + timm + engineered morphology + counterfactual-guided fusion
+
+Output layer:
+- explainability UI + generated doctor-facing PDF reports
+
+This layered design is what allows the project to function as a deployable medical AI workspace rather than just a notebook result viewer.
+

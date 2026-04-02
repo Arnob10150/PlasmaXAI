@@ -1,16 +1,21 @@
 import { notFound } from "next/navigation";
-import { deleteCaseAction, updateCaseReviewAction } from "@/app/(workspace)/cases/[id]/actions";
+import {
+  deleteCaseAction,
+  saveCaseWorkbenchAction,
+  updateCaseReviewAction,
+} from "@/app/(workspace)/cases/[id]/actions";
 import { CaseAnalysisDashboard } from "@/components/cases/case-analysis-dashboard";
+import { DoctorReviewWorkboard } from "@/components/cases/doctor-review-workboard";
 import { ImageReviewPanel } from "@/components/cases/image-review-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  buildClinicalChecklist,
   buildDoctorFacingCounterfactual,
   buildDoctorFacingInsight,
   buildMorphologyFindings,
   formatClinicalFeatureLabel,
 } from "@/lib/clinical-explainability";
+import { buildDefaultReportDraft, buildDefaultReviewChecklist } from "@/lib/review-workspace";
 import {
   formatCaseDate,
   formatConfidence,
@@ -122,15 +127,20 @@ export default async function CaseReviewPage({
     topFeatures: caseItem.explanation?.topFeatures ?? [],
     morphology: caseItem.analysis?.morphology ?? null,
   });
-  const clinicalChecklist = buildClinicalChecklist({
-    predictedClass: caseItem.prediction?.predictedClass ?? null,
-    confidence: caseItem.prediction?.confidence ?? null,
-    riskLevel: caseItem.prediction?.riskLevel ?? null,
-    topFeatures: caseItem.explanation?.topFeatures ?? [],
-    morphology: caseItem.analysis?.morphology ?? null,
-  });
   const intervalComment = buildIntervalComment(caseItem, previousCase);
   const image = caseItem.images[0] ?? null;
+  const reviewChecklist = caseItem.reviewChecklist?.length
+    ? caseItem.reviewChecklist
+    : buildDefaultReviewChecklist(caseItem.explanation?.topFeatures ?? []);
+  const reportDraft =
+    caseItem.reportDraft ??
+    buildDefaultReportDraft({
+      predictedClass: caseItem.prediction?.predictedClass ?? null,
+      confidence: caseItem.prediction?.confidence ?? null,
+      topFeatures: caseItem.explanation?.topFeatures ?? [],
+      doctorInsight,
+      recommendedAction: buildRecommendedAction(caseItem.prediction?.riskLevel, caseItem.prediction?.confidence),
+    });
 
   return (
     <div className="space-y-5">
@@ -362,22 +372,12 @@ export default async function CaseReviewPage({
         topFeatures={caseItem.explanation?.topFeatures ?? []}
       />
 
-      <div className="grid gap-4 xl:grid-cols-1">
-        <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-          <h3 className="inline-flex items-center gap-2 text-lg font-semibold text-slate-950">
-            <i className="bi bi-clipboard-heart text-base text-blue-700" aria-hidden="true" />
-            Doctor review checklist
-          </h3>
-          <ul className="mt-4 space-y-2 text-sm leading-7 text-slate-600">
-            {clinicalChecklist.map((item) => (
-              <li key={item} className="flex gap-2">
-                <span className="mt-1 text-blue-700">-</span>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      </div>
+      <DoctorReviewWorkboard
+        action={saveCaseWorkbenchAction}
+        caseId={caseItem.id}
+        initialChecklist={reviewChecklist}
+        initialDraft={reportDraft}
+      />
     </div>
   );
 }

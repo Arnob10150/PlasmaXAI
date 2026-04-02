@@ -211,17 +211,30 @@ export function CaseAnalysisDashboard({
   const primaryFeatureText = topFeatures.length
     ? topFeatures.slice(0, 3).map((item) => formatFeatureLabel(item)).join(", ")
     : "case-specific morphology drivers";
-  const cueLadder = morphologyData.slice(0, 4).map((item, index) => ({
-    ...item,
-    descriptor:
-      item.value >= 80
-        ? "Strong alignment"
-        : item.value >= 55
-          ? "Moderate alignment"
-          : index === 0
-            ? "Supportive cue"
-            : "Secondary cue",
-  }));
+  const focusMapInterpretation = [
+    {
+      title: "Dominant hotspot",
+      detail: topFeatures[0]
+        ? `${formatFeatureLabel(topFeatures[0])} aligns with the brightest review region in the current overlay.`
+        : "The overlay currently concentrates on the dominant cell region for review.",
+      iconClass: "bi bi-brightness-high-fill",
+      tone: "bg-rose-50 text-rose-700",
+    },
+    {
+      title: "Secondary emphasis",
+      detail: topFeatures[1]
+        ? `${formatFeatureLabel(topFeatures[1])} provides supporting context around the main hotspot.`
+        : "Secondary emphasis appears along the surrounding cell contour and stain variation.",
+      iconClass: "bi bi-stars",
+      tone: "bg-amber-50 text-amber-700",
+    },
+    {
+      title: "Review caution",
+      detail: "Use the focus map to guide microscopy attention, then confirm the same area visually before sign-out.",
+      iconClass: "bi bi-shield-check",
+      tone: "bg-emerald-50 text-emerald-700",
+    },
+  ];
   const reasoningPath = [
     {
       label: "Microscopy field",
@@ -314,14 +327,14 @@ export function CaseAnalysisDashboard({
             Doctor-facing review summary
           </p>
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            Use this interpretation block to align the AI-supported review with smear correlation, interval context, and the final doctor decision.
+            Use this interpretation block to align the current review with smear correlation, interval context, and the final doctor decision.
           </p>
         </div>
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="rounded-[20px] bg-white p-4 shadow-sm">
             <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-800">
               <i className="bi bi-journal-medical text-sm text-blue-700" aria-hidden="true" />
-              AI interpretive note
+              Clinical interpretation note
             </p>
             <p className="mt-3 text-sm leading-7 text-slate-600">{interpretiveNote}</p>
           </div>
@@ -347,29 +360,25 @@ export function CaseAnalysisDashboard({
           <div className="mb-4 flex items-center justify-between">
             <div>
               <p className="inline-flex items-center gap-2 text-base font-semibold text-slate-950">
-                <i className="bi bi-bar-chart-steps text-sm text-blue-700" aria-hidden="true" />
-                Cue alignment ladder
+                <i className="bi bi-badge-ad text-sm text-blue-700" aria-hidden="true" />
+                Focus map interpretation
               </p>
-              <p className="text-sm text-slate-500">How prominently each leading cue aligns with the current suspicious pattern.</p>
+              <p className="text-sm text-slate-500">A quick doctor-facing guide to what the overlay is emphasizing in this case.</p>
             </div>
-            <Badge variant="info">Explainability view</Badge>
+            <Badge variant="info">Overlay reading guide</Badge>
           </div>
-          <div className="space-y-4">
-            {cueLadder.map((item) => (
-              <div key={item.name} className="rounded-[20px] border border-slate-200 bg-slate-50 p-4">
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium text-slate-900">{item.name}</p>
-                  <span className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">{item.descriptor}</span>
+          <div className="space-y-3">
+            {focusMapInterpretation.map((item) => (
+              <div key={item.title} className="rounded-[20px] border border-slate-200 bg-slate-50 p-4">
+                <div className="flex items-start gap-3">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${item.tone}`}>
+                    <i className={`${item.iconClass} text-base`} aria-hidden="true" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-950">{item.title}</p>
+                    <p className="mt-1 text-sm leading-6 text-slate-600">{item.detail}</p>
+                  </div>
                 </div>
-                <div className="h-3 overflow-hidden rounded-full bg-white">
-                  <div
-                    className="h-full rounded-full bg-[linear-gradient(90deg,#2563eb,#0f766e)]"
-                    style={{ width: `${Math.max(8, item.value)}%` }}
-                  />
-                </div>
-                <p className="mt-2 text-xs leading-5 text-slate-500">
-                  The current specimen shows {item.descriptor.toLowerCase()} for this cue within the overall review pattern.
-                </p>
               </div>
             ))}
           </div>

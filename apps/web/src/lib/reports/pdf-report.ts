@@ -9,6 +9,7 @@ import {
   formatClinicalFeatureLabel,
 } from "@/lib/clinical-explainability";
 import type { InferenceResult } from "@/lib/inference/service";
+import type { ReportDraft, ReviewChecklistItem } from "@/lib/review-workspace";
 
 interface ReportInput {
   caseCode: string;
@@ -20,6 +21,8 @@ interface ReportInput {
   clinicalNote: string | null;
   imagePath: string | null;
   result: InferenceResult;
+  reportDraft?: ReportDraft | null;
+  reviewChecklist?: ReviewChecklistItem[];
 }
 
 const pageWidth = 595.28;
@@ -363,7 +366,7 @@ function drawFocusMapPanel(
   items: Array<{ label: string; value: number }>,
   riskLevel: string,
 ) {
-  const panelHeight = 252;
+  const panelHeight = 286;
   let next = ensureSpace(state, pdfDoc, panelHeight + 10);
 
   next.page.drawRectangle({
@@ -376,7 +379,7 @@ function drawFocusMapPanel(
     borderWidth: 1,
   });
 
-  next.page.drawText("AI focus map and overlay", {
+  next.page.drawText("Focus map and microscopy overlay", {
     x: margin + 16,
     y: next.y - 22,
     size: 13,
@@ -384,18 +387,18 @@ function drawFocusMapPanel(
     color: titleColor,
   });
 
-  next.page.drawText("Warm overlays highlight regions receiving higher review emphasis over the microscopy image. Use this as supportive visual guidance, not as a standalone diagnosis.", {
+  next.page.drawText("Warm overlays indicate the image regions receiving the strongest review emphasis during case interpretation.", {
     x: margin + 16,
     y: next.y - 40,
-    size: 10.5,
+    size: 10,
     font: bodyFont,
     color: bodyColor,
   });
 
   const frameX = margin + 16;
   const frameY = next.y - panelHeight + 18;
-  const frameWidth = 286;
-  const frameHeight = 162;
+  const frameWidth = 252;
+  const frameHeight = 172;
 
   next.page.drawRectangle({
     x: frameX,
@@ -450,18 +453,18 @@ function drawFocusMapPanel(
     });
   }
 
-  const legendX = frameX + frameWidth + 18;
-  const legendWidth = contentWidth - frameWidth - 50;
+  const legendX = frameX + frameWidth + 20;
+  const legendWidth = contentWidth - frameWidth - 52;
   next.page.drawText("How to read this panel", {
     x: legendX,
-    y: next.y - 66,
+    y: next.y - 64,
     size: 11,
     font: titleFont,
     color: titleColor,
   });
 
   const legendIntro = wrapText(
-    "Red and amber regions mark areas that contributed most strongly to the final review score.",
+    "Red and amber regions mark the zones most responsible for the current review result.",
     bodyFont,
     10,
     legendWidth,
@@ -469,14 +472,14 @@ function drawFocusMapPanel(
   for (const [index, line] of legendIntro.entries()) {
     next.page.drawText(line, {
       x: legendX,
-      y: next.y - 84 - index * 13,
+      y: next.y - 82 - index * 12,
       size: 10,
       font: bodyFont,
       color: bodyColor,
     });
   }
 
-  let legendY = next.y - 118;
+  let legendY = next.y - 112;
   next.page.drawText("Highlighted cues", {
     x: legendX,
     y: legendY,
@@ -487,8 +490,8 @@ function drawFocusMapPanel(
   legendY -= 16;
 
   for (const item of items.slice(0, 3)) {
-    const lines = wrapText(item.label, bodyFont, 10, legendWidth - 12);
-    next.page.drawText("-", {
+    const lines = wrapText(item.label, bodyFont, 9.5, legendWidth - 16);
+    next.page.drawText("\u2022", {
       x: legendX,
       y: legendY,
       size: 11,
@@ -498,21 +501,36 @@ function drawFocusMapPanel(
     for (const [index, line] of lines.entries()) {
       next.page.drawText(line, {
         x: legendX + 12,
-        y: legendY - index * 13,
-        size: 10,
+        y: legendY - index * 12,
+        size: 9.5,
         font: bodyFont,
         color: bodyColor,
       });
     }
-    legendY -= lines.length * 13 + 6;
+    legendY -= lines.length * 12 + 6;
   }
 
   next.page.drawText(`Current review level: ${riskLevel} suspicion`, {
     x: legendX,
-    y: frameY + 8,
-    size: 10.5,
+    y: frameY + 28,
+    size: 10,
     font: titleFont,
     color: accentBlue,
+  });
+  const footerLines = wrapText(
+    "Use the overlay to guide microscope attention, then confirm the same field visually before sign-out.",
+    bodyFont,
+    9.5,
+    legendWidth,
+  );
+  footerLines.forEach((line, index) => {
+    next.page.drawText(line, {
+      x: legendX,
+      y: frameY + 12 - index * 11,
+      size: 9.5,
+      font: bodyFont,
+      color: bodyColor,
+    });
   });
 
   next.y -= panelHeight + 10;
@@ -583,6 +601,85 @@ function drawConfidenceBand(
   return next;
 }
 
+function drawReviewProfilePanel(
+  state: { page: PDFPage; y: number },
+  pdfDoc: PDFDocument,
+  titleFont: PDFFont,
+  bodyFont: PDFFont,
+  items: Array<{ label: string; value: number }>,
+) {
+  const panelHeight = 152;
+  let next = ensureSpace(state, pdfDoc, panelHeight + 10);
+
+  next.page.drawRectangle({
+    x: margin,
+    y: next.y - panelHeight,
+    width: contentWidth,
+    height: panelHeight,
+    color: softBlue,
+    borderColor,
+    borderWidth: 1,
+  });
+
+  next.page.drawText("Morphology review profile", {
+    x: margin + 16,
+    y: next.y - 22,
+    size: 13,
+    font: titleFont,
+    color: titleColor,
+  });
+
+  next.page.drawText("Summarizes the strongest morphology dimensions contributing to the current diagnostic interpretation.", {
+    x: margin + 16,
+    y: next.y - 40,
+    size: 10.5,
+    font: bodyFont,
+    color: bodyColor,
+  });
+
+  const cards = items.slice(0, 4);
+  const gap = 12;
+  const boxWidth = Math.floor((contentWidth - 32 - gap) / 2);
+  const baseX = margin + 16;
+  const baseY = next.y - 72;
+
+  cards.forEach((item, index) => {
+    const col = index % 2;
+    const row = Math.floor(index / 2);
+    const x = baseX + col * (boxWidth + gap);
+    const y = baseY - row * 38;
+
+    next.page.drawRectangle({
+      x,
+      y,
+      width: boxWidth,
+      height: 28,
+      color: white,
+      borderColor,
+      borderWidth: 1,
+    });
+
+    next.page.drawText(item.label, {
+      x: x + 10,
+      y: y + 17,
+      size: 9.5,
+      font: bodyFont,
+      color: titleColor,
+    });
+
+    next.page.drawText(`${Math.round(item.value * 100)}%`, {
+      x: x + boxWidth - 34,
+      y: y + 17,
+      size: 9.5,
+      font: titleFont,
+      color: accentBlue,
+    });
+  });
+
+  next.y -= panelHeight + 10;
+  return next;
+}
+
 function drawCueBars(
   state: { page: PDFPage; y: number },
   pdfDoc: PDFDocument,
@@ -603,7 +700,7 @@ function drawCueBars(
     borderWidth: 1,
   });
 
-  next.page.drawText("Morphology cue profile", {
+  next.page.drawText("Morphology cue map", {
     x: margin + 16,
     y: next.y - 22,
     size: 13,
@@ -748,7 +845,7 @@ function drawExplainabilityDiagramPanel(
   bodyFont: PDFFont,
   cueLabels: string[],
 ) {
-  const panelHeight = 188;
+  const panelHeight = 178;
   let next = ensureSpace(state, pdfDoc, panelHeight + 10);
 
   next.page.drawRectangle({
@@ -764,7 +861,7 @@ function drawExplainabilityDiagramPanel(
   next.page.drawText("Clinical reasoning pathway", {
     x: margin + 16,
     y: next.y - 22,
-    size: 13,
+    size: 12.5,
     font: titleFont,
     color: titleColor,
   });
@@ -772,27 +869,34 @@ function drawExplainabilityDiagramPanel(
   next.page.drawText("How PlasmaXAI moves from image review to cue localization and then to a doctor-facing summary.", {
     x: margin + 16,
     y: next.y - 40,
-    size: 10.5,
+    size: 10,
     font: bodyFont,
     color: bodyColor,
   });
 
+  const boxGap = 10;
+  const innerWidth = contentWidth - 36;
+  const boxWidth = Math.floor((innerWidth - boxGap * 2) / 3);
+  const boxY = next.y - 140;
+  const baseX = margin + 18;
+  const boxPositions = [baseX, baseX + boxWidth + boxGap, baseX + (boxWidth + boxGap) * 2];
+
   const boxes = [
     {
-      x: margin + 18,
+      x: boxPositions[0],
       label: "Microscopy image",
       detail: "Original field of\ncell morphology",
       color: softBlue,
     },
     {
-      x: margin + 195,
+      x: boxPositions[1],
       label: "Focus map + cues",
       detail: cueLabels.slice(0, 2).join("\n") || "Localized cues",
       color: softTeal,
     },
     {
-      x: margin + 372,
-      label: "Clinical interpretation",
+      x: boxPositions[2],
+      label: "Clinical summary",
       detail: "Doctor-facing\nreview summary",
       color: softAmber,
     },
@@ -801,9 +905,9 @@ function drawExplainabilityDiagramPanel(
   for (const [index, box] of boxes.entries()) {
     next.page.drawRectangle({
       x: box.x,
-      y: next.y - 146,
-      width: 150,
-      height: 86,
+      y: boxY,
+      width: boxWidth,
+      height: 78,
       color: box.color,
       borderColor,
       borderWidth: 1,
@@ -811,25 +915,25 @@ function drawExplainabilityDiagramPanel(
 
     next.page.drawText(box.label, {
       x: box.x + 12,
-      y: next.y - 84,
-      size: 11,
+      y: next.y - 82,
+      size: 10,
       font: titleFont,
       color: titleColor,
     });
 
-    const detailLines = box.detail.split("\n");
+    const detailLines = wrapText(box.detail.replaceAll("\n", " "), bodyFont, 8.8, boxWidth - 24);
     detailLines.forEach((line, lineIndex) => {
       next.page.drawText(line, {
         x: box.x + 12,
-        y: next.y - 106 - lineIndex * 14,
-        size: 9.5,
+        y: next.y - 100 - lineIndex * 11,
+        size: 8.8,
         font: bodyFont,
         color: bodyColor,
       });
     });
 
     if (index < boxes.length - 1) {
-      const arrowStartX = box.x + 150;
+      const arrowStartX = box.x + boxWidth;
       const arrowY = next.y - 103;
       next.page.drawLine({
         start: { x: arrowStartX + 8, y: arrowY },
@@ -876,6 +980,21 @@ export async function buildCaseReportPdf(input: ReportInput) {
   const reviewChecklist = buildClinicalChecklist(explainabilityInput);
   const doctorFacingCounterfactual = buildDoctorFacingCounterfactual(explainabilityInput);
   const doctorFacingInsight = buildDoctorFacingInsight(explainabilityInput);
+  const reportDraft = input.reportDraft ?? {
+    clinicalSummary: doctorFacingInsight,
+    morphologySummary:
+      morphologyFindings.join(" ") ||
+      "Morphology review findings were not available for this case at report generation time.",
+    recommendation:
+      "Correlate the AI-supported impression with direct microscopy review before final sign-out.",
+    finalized: false,
+    finalizedAt: null,
+    updatedAt: null,
+  };
+  const checklistItems =
+    input.reviewChecklist?.length
+      ? input.reviewChecklist.map((item) => `[x] ${item.text}`)
+      : reviewChecklist.map((item) => `[x] ${item}`);
   const cueBarsFromMorphology = Object.entries(input.result.morphology ?? {})
     .sort((left, right) => Math.abs(right[1]) - Math.abs(left[1]))
     .slice(0, 4)
@@ -989,6 +1108,7 @@ export async function buildCaseReportPdf(input: ReportInput) {
     ["Case title", input.caseTitle],
     ["Patient identifier", `${input.patientCode}${input.patientName ? ` - ${input.patientName}` : ""}`],
     ["Current assessment", `${input.result.prediction.predictedClassText} (${input.result.prediction.riskLevel} suspicion)`],
+    ["Report status", reportDraft.finalized ? `Finalized${reportDraft.finalizedAt ? ` - ${new Date(reportDraft.finalizedAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}` : ""}` : "Draft - editable before sign-out"],
     ["Doctor note", input.clinicalNote ?? "No note added at case creation."],
   ]);
 
@@ -1019,6 +1139,7 @@ export async function buildCaseReportPdf(input: ReportInput) {
     input.result.prediction.confidence,
     input.result.prediction.riskLevel,
   );
+  state = drawReviewProfilePanel(state, pdfDoc, titleFont, bodyFont, cueBars);
   state = drawCueBars(state, pdfDoc, titleFont, bodyFont, cueBars);
 
   state = drawSectionTitle(state, pdfDoc, titleFont, "Clinical review summary");
@@ -1030,8 +1151,12 @@ export async function buildCaseReportPdf(input: ReportInput) {
   ]);
 
   state = drawSectionTitle(state, pdfDoc, titleFont, "Doctor-facing interpretation");
-  state = drawParagraph(state, pdfDoc, bodyFont, doctorFacingInsight, {
+  state = drawParagraph(state, pdfDoc, bodyFont, reportDraft.clinicalSummary || doctorFacingInsight, {
     size: 11,
+    gapAfter: 8,
+  });
+  state = drawParagraph(state, pdfDoc, bodyFont, reportDraft.morphologySummary, {
+    size: 10.5,
     gapAfter: 8,
   });
   state = drawBulletList(state, pdfDoc, bodyFont, morphologyFindings);
@@ -1043,6 +1168,10 @@ export async function buildCaseReportPdf(input: ReportInput) {
   });
 
   state = drawSectionTitle(state, pdfDoc, titleFont, "Recommended doctor actions");
+  state = drawParagraph(state, pdfDoc, bodyFont, reportDraft.recommendation, {
+    size: 10.5,
+    gapAfter: 8,
+  });
   state = drawBulletList(state, pdfDoc, bodyFont, [
     "Correlate the highlighted morphology pattern with the smear field and any marrow findings before final sign-out.",
     "Use the focus map as supportive localization for review, especially when checking the dominant atypical region.",
@@ -1050,7 +1179,7 @@ export async function buildCaseReportPdf(input: ReportInput) {
   ]);
 
   state = drawSectionTitle(state, pdfDoc, titleFont, "Doctor review checklist");
-  state = drawBulletList(state, pdfDoc, bodyFont, reviewChecklist);
+  state = drawBulletList(state, pdfDoc, bodyFont, checklistItems);
 
   return pdfDoc.save();
 }

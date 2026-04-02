@@ -509,7 +509,7 @@ export async function getDashboardData() {
 }
 
 export async function getCaseHistoryData() {
-  return fetchCases({ includeReports: true });
+  return fetchCases({ includeReports: true, includeImages: true });
 }
 
 export async function getPatientsData() {
@@ -601,7 +601,7 @@ export async function getPatientDetail(patientId: string): Promise<PatientDetail
         : shouldUseHostedDemoFallback()
           ? getSessionDemoPatients()
           : Promise.resolve(getHostedDemoPatients()),
-      fetchCases({ patientId, includeReports: true }),
+      fetchCases({ patientId, includeReports: true, includeImages: true }),
     ]);
     const patient = patients.find((item) => item.id === patientId) ?? null;
 
@@ -644,7 +644,7 @@ export async function getPatientDetail(patientId: string): Promise<PatientDetail
     return null;
   }
 
-  const patientCases = await fetchCases({ patientId, includeReports: true });
+  const patientCases = await fetchCases({ patientId, includeReports: true, includeImages: true });
 
   const signedCases = await Promise.all(
     patientCases.map(async (item) => {

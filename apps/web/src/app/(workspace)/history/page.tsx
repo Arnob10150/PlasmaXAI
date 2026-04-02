@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { deleteCaseAction } from "@/app/(workspace)/cases/[id]/actions";
+import { ReportDownloadButton } from "@/components/cases/report-download-button";
 import { Badge } from "@/components/ui/badge";
 import {
   formatCaseDate,
@@ -99,15 +100,15 @@ export default async function HistoryPage() {
                     Open and edit
                   </Link>
                   {row.reports[0] ? (
-                    <a
+                    <ReportDownloadButton
+                      caseId={row.id}
                       href={row.reports[0].signedUrl ?? row.reports[0].storagePath}
+                      imageUrl={row.images[0]?.signedUrl ?? row.images[0]?.storagePath ?? null}
                       className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 transition hover:text-slate-950"
-                      rel="noreferrer"
-                      target="_blank"
                     >
                       <i className="bi bi-file-earmark-arrow-down-fill text-sm" aria-hidden="true" />
                       Report
-                    </a>
+                    </ReportDownloadButton>
                   ) : null}
                 </div>
 

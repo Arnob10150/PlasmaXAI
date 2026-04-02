@@ -7,6 +7,7 @@ import {
 import { CaseAnalysisDashboard, CaseInterpretationOverview } from "@/components/cases/case-analysis-dashboard";
 import { DoctorReviewWorkboard } from "@/components/cases/doctor-review-workboard";
 import { ImageReviewPanel } from "@/components/cases/image-review-panel";
+import { ReportDownloadButton } from "@/components/cases/report-download-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -295,15 +296,15 @@ export default async function CaseReviewPage({
                 </Button>
               </div>
               {caseItem.prediction ? (
-                <a
+                <ReportDownloadButton
+                  caseId={caseItem.id}
                   className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-medium text-slate-900 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
                   href={caseItem.reports[0]?.signedUrl ?? `/api/local-report-file/${caseItem.id}`}
-                  rel="noreferrer"
-                  target="_blank"
+                  imageUrl={image?.signedUrl ?? image?.storagePath ?? null}
                 >
                   <i className="bi bi-file-earmark-arrow-down-fill text-sm" aria-hidden="true" />
                   Download clinical report
-                </a>
+                </ReportDownloadButton>
               ) : (
                 <Button type="button" variant="secondary" className="w-full" disabled>
                   <i className="bi bi-hourglass-split text-sm" aria-hidden="true" />

@@ -4,6 +4,7 @@ import {
   deletePatientAction,
   updatePatientAction,
 } from "@/app/(workspace)/patients/actions";
+import { ReportDownloadButton } from "@/components/cases/report-download-button";
 import { PatientProfileForm } from "@/components/patients/patient-profile-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -175,15 +176,15 @@ export default async function PatientDetailPage({
                         Open
                       </Button>
                       {item.reports[0] ? (
-                        <a
+                        <ReportDownloadButton
+                          caseId={item.id}
                           className="inline-flex items-center gap-2 text-sm font-medium text-blue-700 transition hover:text-blue-800"
                           href={item.reports[0].signedUrl ?? item.reports[0].storagePath}
-                          rel="noreferrer"
-                          target="_blank"
+                          imageUrl={item.images[0]?.signedUrl ?? item.images[0]?.storagePath ?? null}
                         >
                           <i className="bi bi-file-earmark-pdf-fill text-base" aria-hidden="true" />
                           Report
-                        </a>
+                        </ReportDownloadButton>
                       ) : null}
                     </div>
                   </div>

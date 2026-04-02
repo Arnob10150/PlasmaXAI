@@ -20,6 +20,7 @@ interface ReportInput {
   specialization: string | null;
   clinicalNote: string | null;
   imagePath: string | null;
+  imageDataUrl?: string | null;
   result: InferenceResult;
   reportDraft?: ReportDraft | null;
   reviewChecklist?: ReviewChecklistItem[];
@@ -48,7 +49,29 @@ function isPng(bytes: Uint8Array) {
   return bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
 }
 
-async function loadImageBytes(imagePath: string | null) {
+function decodeDataUrlBytes(dataUrl: string | null | undefined) {
+  if (!dataUrl?.startsWith("data:")) {
+    return null;
+  }
+
+  try {
+    const [, encoded] = dataUrl.split(",", 2);
+    if (!encoded) {
+      return null;
+    }
+
+    return new Uint8Array(Buffer.from(encoded, "base64"));
+  } catch {
+    return null;
+  }
+}
+
+async function loadImageBytes(imagePath: string | null, imageDataUrl?: string | null) {
+  const embeddedBytes = decodeDataUrlBytes(imageDataUrl) ?? decodeDataUrlBytes(imagePath);
+  if (embeddedBytes) {
+    return embeddedBytes;
+  }
+
   if (!imagePath) {
     return null;
   }
@@ -259,8 +282,8 @@ function drawKeyValuePanel(
   return next;
 }
 
-async function embedCaseImage(pdfDoc: PDFDocument, imagePath: string | null) {
-  const bytes = await loadImageBytes(imagePath);
+async function embedCaseImage(pdfDoc: PDFDocument, imagePath: string | null, imageDataUrl?: string | null) {
+  const bytes = await loadImageBytes(imagePath, imageDataUrl);
   if (!bytes) {
     return null;
   }
@@ -366,7 +389,7 @@ function drawFocusMapPanel(
   items: Array<{ label: string; value: number }>,
   riskLevel: string,
 ) {
-  const panelHeight = 286;
+  const panelHeight = 332;
   let next = ensureSpace(state, pdfDoc, panelHeight + 10);
 
   next.page.drawRectangle({
@@ -397,8 +420,8 @@ function drawFocusMapPanel(
 
   const frameX = margin + 16;
   const frameY = next.y - panelHeight + 18;
-  const frameWidth = 252;
-  const frameHeight = 172;
+  const frameWidth = 220;
+  const frameHeight = 184;
 
   next.page.drawRectangle({
     x: frameX,
@@ -444,17 +467,25 @@ function drawFocusMapPanel(
       });
     }
   } else {
-    next.page.drawText("Focus map preview is unavailable because no case image could be embedded in this report.", {
-      x: frameX + 18,
-      y: frameY + frameHeight / 2,
-      size: 11,
-      font: bodyFont,
-      color: bodyColor,
+    const unavailableLines = wrapText(
+      "Focus map preview is unavailable because no case image could be embedded in this report.",
+      bodyFont,
+      10,
+      frameWidth - 32,
+    );
+    unavailableLines.forEach((line, index) => {
+      next.page.drawText(line, {
+        x: frameX + 16,
+        y: frameY + frameHeight / 2 + 12 - index * 12,
+        size: 10,
+        font: bodyFont,
+        color: bodyColor,
+      });
     });
   }
 
-  const legendX = frameX + frameWidth + 20;
-  const legendWidth = contentWidth - frameWidth - 52;
+  const legendX = frameX + frameWidth + 18;
+  const legendWidth = contentWidth - frameWidth - 50;
   next.page.drawText("How to read this panel", {
     x: legendX,
     y: next.y - 64,
@@ -466,34 +497,34 @@ function drawFocusMapPanel(
   const legendIntro = wrapText(
     "Red and amber regions mark the zones most responsible for the current review result.",
     bodyFont,
-    10,
+    9.8,
     legendWidth,
   );
+  let legendCursorY = next.y - 82;
   for (const [index, line] of legendIntro.entries()) {
     next.page.drawText(line, {
       x: legendX,
-      y: next.y - 82 - index * 12,
-      size: 10,
+      y: legendCursorY - index * 12,
+      size: 9.8,
       font: bodyFont,
       color: bodyColor,
     });
   }
-
-  let legendY = next.y - 112;
+  legendCursorY -= legendIntro.length * 12 + 10;
   next.page.drawText("Highlighted cues", {
     x: legendX,
-    y: legendY,
+    y: legendCursorY,
     size: 10.5,
     font: titleFont,
     color: accentTeal,
   });
-  legendY -= 16;
+  legendCursorY -= 16;
 
   for (const item of items.slice(0, 3)) {
     const lines = wrapText(item.label, bodyFont, 9.5, legendWidth - 16);
     next.page.drawText("\u2022", {
       x: legendX,
-      y: legendY,
+      y: legendCursorY,
       size: 11,
       font: titleFont,
       color: accentBlue,
@@ -501,22 +532,24 @@ function drawFocusMapPanel(
     for (const [index, line] of lines.entries()) {
       next.page.drawText(line, {
         x: legendX + 12,
-        y: legendY - index * 12,
+        y: legendCursorY - index * 12,
         size: 9.5,
         font: bodyFont,
         color: bodyColor,
       });
     }
-    legendY -= lines.length * 12 + 6;
+    legendCursorY -= lines.length * 12 + 8;
   }
 
+  legendCursorY -= 2;
   next.page.drawText(`Current review level: ${riskLevel} suspicion`, {
     x: legendX,
-    y: frameY + 28,
-    size: 10,
+    y: legendCursorY,
+    size: 9.8,
     font: titleFont,
     color: accentBlue,
   });
+  legendCursorY -= 16;
   const footerLines = wrapText(
     "Use the overlay to guide microscope attention, then confirm the same field visually before sign-out.",
     bodyFont,
@@ -526,7 +559,7 @@ function drawFocusMapPanel(
   footerLines.forEach((line, index) => {
     next.page.drawText(line, {
       x: legendX,
-      y: frameY + 12 - index * 11,
+      y: legendCursorY - index * 11,
       size: 9.5,
       font: bodyFont,
       color: bodyColor,
@@ -964,7 +997,7 @@ export async function buildCaseReportPdf(input: ReportInput) {
   const pdfDoc = await PDFDocument.create();
   const titleFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const bodyFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const caseImage = await embedCaseImage(pdfDoc, input.imagePath);
+  const caseImage = await embedCaseImage(pdfDoc, input.imagePath, input.imageDataUrl);
 
   const explainabilityInput = {
     predictedClass: input.result.prediction.predictedClassText,

@@ -2,14 +2,17 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
+import { getDemoDoctorByEmail } from "@/lib/demo/mock-data";
 import { getLocalDoctorByEmail } from "@/lib/local-doctors/store";
-import { hasSupabaseConfig } from "@/lib/supabase/config";
+import { hasSupabaseConfig, shouldUseFilesystemLocalStore } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 async function getDemoUser(): Promise<User> {
   const cookieStore = await cookies();
   const selectedEmail = cookieStore.get("plasmaxai-demo-user")?.value;
-  const selectedDoctor = await getLocalDoctorByEmail(selectedEmail);
+  const selectedDoctor = shouldUseFilesystemLocalStore()
+    ? await getLocalDoctorByEmail(selectedEmail)
+    : getDemoDoctorByEmail(selectedEmail);
 
   return {
     id: selectedDoctor.id,
@@ -17,7 +20,10 @@ async function getDemoUser(): Promise<User> {
     user_metadata: {
       full_name: selectedDoctor.fullName,
       specialization: selectedDoctor.specialization,
-      organization_name: selectedDoctor.organizationName,
+      organization_name:
+        "organizationName" in selectedDoctor
+          ? selectedDoctor.organizationName
+          : "PlasmaXAI Clinical Lab",
     },
     aud: "authenticated",
     created_at: new Date().toISOString(),

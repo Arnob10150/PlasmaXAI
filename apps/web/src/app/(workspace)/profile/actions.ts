@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { updateLocalDoctorProfile } from "@/lib/local-doctors/store";
-import { hasSupabaseConfig } from "@/lib/supabase/config";
+import { hasSupabaseConfig, shouldUseFilesystemLocalStore } from "@/lib/supabase/config";
 import { requireUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -30,6 +30,13 @@ export async function updateProfileAction(
     const user = await requireUser();
 
     if (!hasSupabaseConfig()) {
+      if (!shouldUseFilesystemLocalStore()) {
+        return {
+          error: "Hosted demo mode is read-only until Supabase is configured.",
+          success: null,
+        };
+      }
+
       await updateLocalDoctorProfile(user.email ?? "", {
         fullName,
         specialization,

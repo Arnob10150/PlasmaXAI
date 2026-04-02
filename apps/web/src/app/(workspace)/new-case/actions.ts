@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { hasSupabaseConfig } from "@/lib/supabase/config";
+import { hasSupabaseConfig, shouldUseFilesystemLocalStore } from "@/lib/supabase/config";
 import { buildCaseReportPdf } from "@/lib/reports/pdf-report";
 import { storageConfig } from "@/lib/constants";
 import { queueCaseInference, type InferenceResult } from "@/lib/inference/service";
@@ -170,6 +170,12 @@ export async function createCaseAction(
   }
 
   if (!hasSupabaseConfig()) {
+    if (!shouldUseFilesystemLocalStore()) {
+      return {
+        error: "Hosted demo mode is read-only until Supabase storage and database settings are configured.",
+      };
+    }
+
     let localCaseId: string | null = null;
 
     try {

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { hasSupabaseConfig } from "@/lib/supabase/config";
+import { hasSupabaseConfig, shouldUseFilesystemLocalStore } from "@/lib/supabase/config";
 import {
   createLocalPatient,
   deleteLocalPatient,
@@ -113,6 +113,14 @@ export async function createPatientAction(
   }
 
   try {
+    if (!shouldUseFilesystemLocalStore()) {
+      return {
+        error: "Hosted demo mode is read-only until Supabase is configured.",
+        success: null,
+        redirectTo: null,
+      };
+    }
+
     await createLocalPatient({
       patientCode,
       patientName,
@@ -181,6 +189,14 @@ export async function updatePatientAction(
   }
 
   try {
+    if (!shouldUseFilesystemLocalStore()) {
+      return {
+        error: "Hosted demo mode is read-only until Supabase is configured.",
+        success: null,
+        redirectTo: null,
+      };
+    }
+
     await updateLocalPatient(patientId, {
       patientCode,
       patientName,
@@ -253,6 +269,14 @@ export async function deletePatientAction(
   }
 
   try {
+    if (!shouldUseFilesystemLocalStore()) {
+      return {
+        error: "Hosted demo mode is read-only until Supabase is configured.",
+        success: null,
+        redirectTo: null,
+      };
+    }
+
     await deleteLocalPatient(patientId);
     await refreshPatientViews(patientId);
     return { error: null, success: "Patient record removed.", redirectTo: "/patients" };

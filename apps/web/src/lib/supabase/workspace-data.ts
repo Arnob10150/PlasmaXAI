@@ -1,4 +1,5 @@
 import { storageConfig } from "@/lib/constants";
+import { demoCases, demoDoctors, type DemoCaseRecord } from "@/lib/demo/mock-data";
 import {
   ensureLocalCaseReport,
   listLocalCases,
@@ -6,7 +7,7 @@ import {
 } from "@/lib/local-cases/store";
 import { getDisplayCaseTitle, getDisplayPatientCode, getDisplayPatientName } from "@/lib/patient-display";
 import { buildDefaultReportDraft, buildDefaultReviewChecklist, type ReportDraft, type ReviewChecklistItem } from "@/lib/review-workspace";
-import { hasSupabaseConfig } from "@/lib/supabase/config";
+import { hasSupabaseConfig, shouldUseFilesystemLocalStore } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 export type BadgeTone = "neutral" | "info" | "success" | "warning" | "danger";
@@ -190,6 +191,66 @@ function formatCase(raw: any): CaseSummary {
   };
 }
 
+function getHostedDemoCases() {
+  return demoCases.map((item) => ({
+    ...item,
+    title: getDisplayCaseTitle(item.caseCode, item.title),
+    patient: item.patient
+      ? {
+          ...item.patient,
+          code: getDisplayPatientCode(item.patient.id, item.patient.code),
+          name: getDisplayPatientName(item.patient.id, item.patient.code, item.patient.name),
+        }
+      : null,
+    reviewChecklist:
+      item.reviewChecklist && item.reviewChecklist.length
+        ? item.reviewChecklist
+        : buildDefaultReviewChecklist(item.explanation?.topFeatures ?? []),
+    reportDraft:
+      item.reportDraft ??
+      buildDefaultReportDraft({
+        predictedClass: item.prediction?.predictedClass ?? null,
+        confidence: item.prediction?.confidence ?? null,
+        topFeatures: item.explanation?.topFeatures ?? [],
+        doctorInsight: item.explanation?.clinicalInsightText ?? null,
+        recommendedAction: null,
+      }),
+  }));
+}
+
+function getHostedDemoPatients() {
+  const now = new Date().toISOString();
+  const unique = new Map<
+    string,
+    {
+      id: string;
+      code: string;
+      name: string | null;
+      sex: string | null;
+      dateOfBirth: string | null;
+      createdAt: string;
+      updatedAt: string;
+    }
+  >();
+
+  for (const item of demoCases) {
+    if (!item.patient) continue;
+    if (!unique.has(item.patient.id)) {
+      unique.set(item.patient.id, {
+        id: item.patient.id,
+        code: item.patient.code,
+        name: item.patient.name ?? null,
+        sex: null,
+        dateOfBirth: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+  }
+
+  return [...unique.values()].sort((left, right) => left.code.localeCompare(right.code));
+}
+
 function isBucketPath(value: string) {
   return !/^https?:\/\//i.test(value) && !/^[a-zA-Z]:\\/.test(value);
 }
@@ -223,7 +284,7 @@ async function addSignedUrls<T extends { storage_path: string }>(
 
 async function fetchCases(options: FetchCaseOptions = {}) {
   if (!hasSupabaseConfig()) {
-    let items = await listLocalCases();
+    let items = shouldUseFilesystemLocalStore() ? await listLocalCases() : getHostedDemoCases();
 
     if (options.patientId) {
       items = items.filter((item) => item.patient?.id === options.patientId);
@@ -445,7 +506,10 @@ export async function getCaseHistoryData() {
 
 export async function getPatientsData() {
   if (!hasSupabaseConfig()) {
-    const [patients, cases] = await Promise.all([listLocalPatients(), fetchCases()]);
+    const [patients, cases] = await Promise.all([
+      shouldUseFilesystemLocalStore() ? listLocalPatients() : Promise.resolve(getHostedDemoPatients()),
+      fetchCases(),
+    ]);
 
     return patients
       .map((patient) => {
@@ -520,7 +584,7 @@ export async function getPatientsData() {
 export async function getPatientDetail(patientId: string): Promise<PatientDetail | null> {
   if (!hasSupabaseConfig()) {
     const [patients, patientCases] = await Promise.all([
-      listLocalPatients(),
+      shouldUseFilesystemLocalStore() ? listLocalPatients() : Promise.resolve(getHostedDemoPatients()),
       fetchCases({ patientId, includeReports: true }),
     ]);
     const patient = patients.find((item) => item.id === patientId) ?? null;
@@ -616,6 +680,23 @@ export async function getPatientDetail(patientId: string): Promise<PatientDetail
 
 export async function getReportsData() {
   if (!hasSupabaseConfig()) {
+    if (!shouldUseFilesystemLocalStore()) {
+      return getHostedDemoCases().flatMap((item) =>
+        item.reports.map((report) => ({
+          id: report.id,
+          title: `${item.caseCode} report`,
+          generatedAt: report.generatedAt,
+          storagePath: report.storagePath,
+          reportType: report.reportType,
+          patientCode: item.patient?.code ?? "Unknown",
+          patientName: item.patient?.name ?? null,
+          caseId: item.id,
+          caseCode: item.caseCode,
+          signedUrl: report.signedUrl ?? null,
+        })),
+      );
+    }
+
     const localCases = await listLocalCases();
 
     for (const item of localCases) {
@@ -682,14 +763,14 @@ export async function getReportsData() {
 
 export async function getCaseDetail(caseId: string) {
   if (!hasSupabaseConfig()) {
-    const localCases = await listLocalCases();
+    const localCases = shouldUseFilesystemLocalStore() ? await listLocalCases() : getHostedDemoCases();
     const localCase = localCases.find((item) => item.id === caseId) ?? null;
 
     if (!localCase) {
       return null;
     }
 
-    if (localCase.prediction && !localCase.reports.length) {
+    if (shouldUseFilesystemLocalStore() && localCase.prediction && !localCase.reports.length) {
       return {
         ...localCase,
         title: getDisplayCaseTitle(localCase.caseCode, localCase.title),

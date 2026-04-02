@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { deleteLocalCase, updateLocalCaseReview, updateLocalCaseWorkbench } from "@/lib/local-cases/store";
 import { buildDefaultReportDraft, buildDefaultReviewChecklist, normalizeReportDraft, normalizeReviewChecklist } from "@/lib/review-workspace";
-import { hasSupabaseConfig } from "@/lib/supabase/config";
+import { hasSupabaseConfig, shouldUseFilesystemLocalStore } from "@/lib/supabase/config";
 import { requireUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -15,6 +15,10 @@ export async function updateCaseReviewAction(formData: FormData) {
   const notes = typeof formData.get("notes") === "string" ? String(formData.get("notes")).trim() : "";
 
   if (!hasSupabaseConfig()) {
+    if (!shouldUseFilesystemLocalStore()) {
+      return;
+    }
+
     if (caseId) {
       await updateLocalCaseReview({
         caseId,
@@ -74,6 +78,13 @@ export async function deleteCaseAction(formData: FormData) {
   }
 
   if (!hasSupabaseConfig()) {
+    if (!shouldUseFilesystemLocalStore()) {
+      if (redirectTo) {
+        redirect(redirectTo);
+      }
+      return;
+    }
+
     await deleteLocalCase(caseId);
   } else {
     const user = await requireUser();
@@ -143,6 +154,13 @@ export async function saveCaseWorkbenchAction(
     };
 
     if (!hasSupabaseConfig()) {
+      if (!shouldUseFilesystemLocalStore()) {
+        return {
+          error: "Hosted demo mode is read-only until Supabase is configured.",
+          success: null,
+        };
+      }
+
       await updateLocalCaseWorkbench({
         caseId,
         reviewChecklist: parsedChecklist.length ? parsedChecklist : buildDefaultReviewChecklist(),

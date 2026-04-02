@@ -10,6 +10,18 @@ export function getSupabasePublishableKey() {
   );
 }
 
+export function isHostedDeployment() {
+  return Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
+}
+
 export function hasSupabaseConfig() {
   return Boolean(getSupabaseUrl() && getSupabasePublishableKey());
+}
+
+export function shouldUseFilesystemLocalStore() {
+  return !hasSupabaseConfig() && !isHostedDeployment();
+}
+
+export function shouldUseHostedDemoFallback() {
+  return !hasSupabaseConfig() && isHostedDeployment();
 }

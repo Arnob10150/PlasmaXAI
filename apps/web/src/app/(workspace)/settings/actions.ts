@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getLocalWorkspaceSettings, updateLocalWorkspaceSettings } from "@/lib/local-settings/store";
-import { hasSupabaseConfig } from "@/lib/supabase/config";
+import { hasSupabaseConfig, shouldUseFilesystemLocalStore } from "@/lib/supabase/config";
 
 export interface SettingsActionState {
   error: string | null;
@@ -26,6 +26,13 @@ export async function updateSettingsAction(
     };
 
     if (!hasSupabaseConfig()) {
+      if (!shouldUseFilesystemLocalStore()) {
+        return {
+          error: "Hosted demo mode is read-only until Supabase is configured.",
+          success: null,
+        };
+      }
+
       await updateLocalWorkspaceSettings(payload);
     } else {
       await getLocalWorkspaceSettings();

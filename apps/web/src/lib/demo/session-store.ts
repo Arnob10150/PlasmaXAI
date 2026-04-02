@@ -18,6 +18,7 @@ import {
 const CASES_COOKIE = "plasmaxai-demo-cases";
 const DOCTORS_COOKIE = "plasmaxai-demo-doctors";
 const PATIENTS_COOKIE = "plasmaxai-demo-patients";
+const CASE_WORKBENCH_COOKIE_PREFIX = "plasmaxai-demo-workbench-";
 
 function cookieOptions() {
   return {
@@ -79,24 +80,144 @@ function normalizeCases(items: DemoCaseRecord[]) {
   );
 }
 
+function buildCaseWorkspaceDefaults(caseItem: Pick<
+  DemoCaseRecord,
+  "prediction" | "explanation" | "reviewChecklist" | "reportDraft"
+>) {
+  return {
+    reviewChecklist: normalizeReviewChecklist(
+      caseItem.reviewChecklist,
+      caseItem.explanation?.topFeatures ?? [],
+    ),
+    reportDraft: normalizeReportDraft(
+      caseItem.reportDraft,
+      buildDefaultReportDraft({
+        predictedClass: caseItem.prediction?.predictedClass ?? null,
+        confidence: caseItem.prediction?.confidence ?? null,
+        topFeatures: caseItem.explanation?.topFeatures ?? [],
+        doctorInsight: caseItem.explanation?.clinicalInsightText ?? null,
+        recommendedAction: null,
+      }),
+    ),
+  };
+}
+
+function getCaseWorkbenchCookieName(caseId: string) {
+  return `${CASE_WORKBENCH_COOKIE_PREFIX}${caseId}`;
+}
+
+function stripCaseWorkbench(caseItem: DemoCaseRecord): DemoCaseRecord {
+  return {
+    ...caseItem,
+    reviewChecklist: undefined,
+    reportDraft: undefined,
+  };
+}
+
+async function getHostedWorkbenchMap() {
+  const cookieStore = await cookies();
+  const entries = cookieStore
+    .getAll()
+    .filter((cookie) => cookie.name.startsWith(CASE_WORKBENCH_COOKIE_PREFIX));
+
+  const workbenchByCaseId = new Map<
+    string,
+    {
+      reviewChecklist: ReviewChecklistItem[];
+      reportDraft: ReportDraft;
+    }
+  >();
+
+  for (const entry of entries) {
+    const caseId = entry.name.slice(CASE_WORKBENCH_COOKIE_PREFIX.length);
+    if (!caseId) {
+      continue;
+    }
+
+    try {
+      const parsed = JSON.parse(entry.value) as {
+        reviewChecklist?: ReviewChecklistItem[];
+        reportDraft?: ReportDraft;
+      };
+
+      workbenchByCaseId.set(caseId, {
+        reviewChecklist: normalizeReviewChecklist(parsed.reviewChecklist, []),
+        reportDraft: normalizeReportDraft(
+          parsed.reportDraft,
+          buildDefaultReportDraft({
+            predictedClass: null,
+            confidence: null,
+            topFeatures: [],
+            doctorInsight: null,
+            recommendedAction: null,
+          }),
+        ),
+      });
+    } catch {
+      continue;
+    }
+  }
+
+  return workbenchByCaseId;
+}
+
+async function setHostedCaseWorkbench(
+  caseId: string,
+  payload: {
+    reviewChecklist: ReviewChecklistItem[];
+    reportDraft: ReportDraft;
+  },
+) {
+  const cookieStore = await cookies();
+  cookieStore.set(
+    getCaseWorkbenchCookieName(caseId),
+    JSON.stringify({
+      reviewChecklist: payload.reviewChecklist,
+      reportDraft: payload.reportDraft,
+    }),
+    cookieOptions(),
+  );
+}
+
+async function deleteHostedCaseWorkbench(caseId: string) {
+  const cookieStore = await cookies();
+  cookieStore.delete(getCaseWorkbenchCookieName(caseId));
+}
+
 export async function getHostedDemoCases() {
   const cookieStore = await cookies();
   const raw = cookieStore.get(CASES_COOKIE)?.value;
+  const workbenchByCaseId = await getHostedWorkbenchMap();
+
+  const enrichCases = (items: DemoCaseRecord[]) =>
+    normalizeCases(items).map((item) => {
+      const defaults = buildCaseWorkspaceDefaults(item);
+      const storedWorkbench = workbenchByCaseId.get(item.id);
+      return {
+        ...item,
+        reviewChecklist: storedWorkbench?.reviewChecklist ?? defaults.reviewChecklist,
+        reportDraft: storedWorkbench?.reportDraft ?? defaults.reportDraft,
+      };
+    });
 
   if (!raw) {
-    return normalizeCases(demoCases);
+    return enrichCases(demoCases);
   }
 
   try {
-    return normalizeCases(JSON.parse(raw) as DemoCaseRecord[]);
+    return enrichCases(JSON.parse(raw) as DemoCaseRecord[]);
   } catch {
-    return normalizeCases(demoCases);
+    return enrichCases(demoCases);
   }
 }
 
 export async function setHostedDemoCases(cases: DemoCaseRecord[]) {
   const cookieStore = await cookies();
-  cookieStore.set(CASES_COOKIE, JSON.stringify(normalizeCases(cases)), cookieOptions());
+  cookieStore.set(
+    CASES_COOKIE,
+    JSON.stringify(normalizeCases(cases).map(stripCaseWorkbench)),
+    cookieOptions(),
+  );
 }
 
 export async function getHostedDemoDoctors() {
@@ -423,13 +544,24 @@ export async function updateHostedDemoCaseWorkbench(options: {
 }) {
   const cases = await getHostedDemoCases();
   const now = new Date().toISOString();
+  const normalizedChecklist = normalizeReviewChecklist(options.reviewChecklist, []);
+  const normalizedDraft = normalizeReportDraft(
+    options.reportDraft,
+    buildDefaultReportDraft({
+      predictedClass: null,
+      confidence: null,
+      topFeatures: [],
+      doctorInsight: null,
+      recommendedAction: null,
+    }),
+  );
   const nextCases = cases.map((item) => {
     if (item.id !== options.caseId) {
       return item;
     }
 
     const nextDraft = {
-      ...normalizeReportDraft(options.reportDraft, item.reportDraft ?? options.reportDraft),
+      ...normalizeReportDraft(normalizedDraft, item.reportDraft ?? normalizedDraft),
       updatedAt: now,
       finalizedAt: options.reportDraft.finalized
         ? options.reportDraft.finalizedAt ?? now
@@ -438,16 +570,20 @@ export async function updateHostedDemoCaseWorkbench(options: {
 
     return {
       ...item,
-      reviewChecklist: normalizeReviewChecklist(
-        options.reviewChecklist,
-        item.explanation?.topFeatures ?? [],
-      ),
+      reviewChecklist: normalizedChecklist,
       reportDraft: nextDraft,
       status: nextDraft.finalized ? "report_ready" : item.status,
       reviewedAt: nextDraft.finalized ? now : item.reviewedAt,
     };
   });
 
+  const caseItem = nextCases.find((item) => item.id === options.caseId);
+  if (caseItem) {
+    await setHostedCaseWorkbench(options.caseId, {
+      reviewChecklist: normalizedChecklist,
+      reportDraft: caseItem.reportDraft ?? normalizedDraft,
+    });
+  }
   await setHostedDemoCases(nextCases);
 }
 
@@ -457,5 +593,6 @@ export async function deleteHostedDemoCase(caseId: string) {
     throw new Error("Case record was not found.");
   }
 
+  await deleteHostedCaseWorkbench(caseId);
   await setHostedDemoCases(cases.filter((item) => item.id !== caseId));
 }

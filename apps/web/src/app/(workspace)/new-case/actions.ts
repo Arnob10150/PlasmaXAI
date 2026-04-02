@@ -190,6 +190,7 @@ export async function createCaseAction(
             return getLocalWorkspaceSettings();
           })();
       let hostedInferenceResult: InferenceResult | null = null;
+      let hostedInferenceReason: string | null = null;
 
       if (shouldUseHostedDemoFallback()) {
         const hostedImageDataUrl =
@@ -210,10 +211,24 @@ export async function createCaseAction(
 
             if (inferenceResponse.queued && inferenceResponse.result) {
               hostedInferenceResult = inferenceResponse.result;
+            } else {
+              hostedInferenceReason = inferenceResponse.reason ?? "Hosted inference service could not complete the analysis.";
             }
-          } catch {
+          } catch (error) {
             hostedInferenceResult = null;
+            hostedInferenceReason =
+              error instanceof Error
+                ? error.message
+                : "Hosted inference service could not complete the analysis.";
           }
+        }
+
+        if ((hostedImageDataUrl || imageReference) && !hostedInferenceResult) {
+          return {
+            error:
+              hostedInferenceReason ??
+              "Hosted inference service is unavailable right now. Please redeploy and try again.",
+          };
         }
       }
 

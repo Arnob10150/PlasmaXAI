@@ -2,6 +2,18 @@
 name = "plasmaxai-inference-service"
 version = "1.2.0"
 requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.116.0",
+  "uvicorn[standard]>=0.35.0",
+  "torch",
+  "torchvision",
+  "timm",
+  "numpy",
+  "opencv-python-headless",
+  "pillow",
+  "joblib",
+  "scikit-learn",
+]
 
 [tool.vercel.scripts]
 build = "python build.py"

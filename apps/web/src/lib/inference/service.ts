@@ -204,6 +204,10 @@ function canUseLocalPythonFallback() {
   return !isHostedDeployment();
 }
 
+function canUseHostedHeuristicFallback() {
+  return process.env.PLASMAXAI_ENABLE_HEURISTIC_FALLBACK === "1";
+}
+
 async function runLocalInference(payload: QueueInferencePayload): Promise<QueueInferenceResult> {
   const scriptPath = path.join(
     process.cwd(),
@@ -266,9 +270,11 @@ export async function queueCaseInference(payload: QueueInferencePayload) {
       return { queued: true as const, reason: null, result };
     } catch (error) {
       if (!canUseLocalPythonFallback()) {
-        const fallback = buildHeuristicInference(payload);
-        if (fallback) {
-          return fallback;
+        if (canUseHostedHeuristicFallback()) {
+          const fallback = buildHeuristicInference(payload);
+          if (fallback) {
+            return fallback;
+          }
         }
 
         return {
@@ -287,9 +293,11 @@ export async function queueCaseInference(payload: QueueInferencePayload) {
     return runLocalInference(payload);
   }
 
-  const fallback = buildHeuristicInference(payload);
-  if (fallback) {
-    return fallback;
+  if (canUseHostedHeuristicFallback()) {
+    const fallback = buildHeuristicInference(payload);
+    if (fallback) {
+      return fallback;
+    }
   }
 
   return {

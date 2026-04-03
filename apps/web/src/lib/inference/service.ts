@@ -208,7 +208,7 @@ function canUseHostedHeuristicFallback() {
 
 async function warmHostedInference(baseUrl: string) {
   try {
-    await fetch(`${baseUrl.replace(/\/$/, "")}/health?warm=1`, {
+    await fetch(`${baseUrl.replace(/\/$/, "")}/health`, {
       method: "GET",
       cache: "no-store",
     });

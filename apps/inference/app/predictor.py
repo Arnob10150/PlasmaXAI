@@ -6,6 +6,7 @@ import os
 import urllib.parse
 import urllib.request
 import base64
+import gc
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -85,6 +86,7 @@ class PredictorConfig:
     device: torch.device
     supabase_url: str
     supabase_service_role_key: str
+    low_memory_mode: bool
 
 
 def _resolve_asset_directories(project_root: Path) -> tuple[Path, Path]:
@@ -107,14 +109,21 @@ class PlasmaXAIPredictor:
     def __init__(self, config: PredictorConfig):
         self.config = config
         self.device = config.device
-        self._loaded = False
+        self._assets_loaded = False
+        self._runtime_loaded = False
 
     @property
     def loaded(self) -> bool:
-        return self._loaded
+        return self._assets_loaded and (
+            self.config.low_memory_mode or self._runtime_loaded
+        )
 
     def warmup(self) -> None:
-        self._ensure_loaded()
+        if self.config.low_memory_mode:
+            self._ensure_assets_loaded()
+            return
+
+        self._ensure_runtime_loaded()
 
     def _load_backbone(self, model_name: str, checkpoint_path: Path):
         model = timm.create_model(model_name, pretrained=False, num_classes=2).to(self.device)
@@ -122,8 +131,8 @@ class PlasmaXAIPredictor:
         model.eval()
         return model
 
-    def _ensure_loaded(self) -> None:
-        if self._loaded:
+    def _ensure_assets_loaded(self) -> None:
+        if self._assets_loaded:
             return
 
         root = self.config.novel_outputs_dir
@@ -134,8 +143,18 @@ class PlasmaXAIPredictor:
         self.feature_blocks = self.scalers["feature_blocks"]
         fusion_config = self.base_summary["best_fusion_config"]
 
-        self.resnet = self._load_backbone("resnet50", self.config.checkpoints_dir / "resnet50_final.pth")
-        self.densenet = self._load_backbone("densenet121", self.config.checkpoints_dir / "densenet121_final.pth")
+        self.threshold = float(self.operating_point.get("threshold", 0.5))
+        self.transform = transforms.Compose(
+            [
+                transforms.Resize((224, 224)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ]
+        )
+        self._assets_loaded = True
+
+    def _load_fusion_model(self):
+        fusion_config = self.base_summary["best_fusion_config"]
         self.model = CounterfactualGuidedFusionNet(
             res_dim=len(self.feature_blocks[0]),
             den_dim=len(self.feature_blocks[1]),
@@ -146,17 +165,33 @@ class PlasmaXAIPredictor:
             tabular_dim=fusion_config["tabular_dim"],
             dropout=fusion_config["dropout"],
         ).to(self.device)
-        self.model.load_state_dict(torch.load(root / "novel_fusion_model.pth", map_location=self.device))
-        self.model.eval()
-        self.threshold = float(self.operating_point.get("threshold", 0.5))
-        self.transform = transforms.Compose(
-            [
-                transforms.Resize((224, 224)),
-                transforms.ToTensor(),
-                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ]
+        self.model.load_state_dict(
+            torch.load(self.config.novel_outputs_dir / "novel_fusion_model.pth", map_location=self.device)
         )
-        self._loaded = True
+        self.model.eval()
+
+    def _ensure_runtime_loaded(self) -> None:
+        self._ensure_assets_loaded()
+        if self._runtime_loaded:
+            return
+
+        self.resnet = self._load_backbone("resnet50", self.config.checkpoints_dir / "resnet50_final.pth")
+        self.densenet = self._load_backbone("densenet121", self.config.checkpoints_dir / "densenet121_final.pth")
+        self._load_fusion_model()
+        self._runtime_loaded = True
+
+    def _release_runtime_models(self) -> None:
+        for attribute in ("resnet", "densenet", "model"):
+            if hasattr(self, attribute):
+                module = getattr(self, attribute)
+                try:
+                    module.cpu()
+                except Exception:
+                    pass
+                delattr(self, attribute)
+
+        self._runtime_loaded = False
+        gc.collect()
 
     def _fetch_bytes(
         self,
@@ -267,7 +302,7 @@ class PlasmaXAIPredictor:
         image_bucket: str | None = None,
         image_data_url: str | None = None,
     ) -> dict[str, Any]:
-        self._ensure_loaded()
+        self._ensure_assets_loaded()
         image_bytes = self._fetch_bytes(
             image_path,
             image_bucket=image_bucket,
@@ -275,89 +310,94 @@ class PlasmaXAIPredictor:
         )
         image_rgb = self._decode_rgb(image_bytes)
         image_tensor = self._image_tensor(image_bytes)
+        self._ensure_runtime_loaded()
 
-        res_emb, res_prob = self._extract_backbone_embedding(self.resnet, image_tensor)
-        den_emb, den_prob = self._extract_backbone_embedding(self.densenet, image_tensor)
-        morph = self._extract_morphological_features(image_rgb)
-        morph_df = np.array([[morph[col] for col in MORPH_FEATURE_COLUMNS]], dtype=np.float32)
-        x_scaled = self.cf_bundle["scaler"].transform(morph_df)
-        clf = self.cf_bundle["model"]
-        margin = clf.decision_function(x_scaled)
-        plasma_prob_cf = clf.predict_proba(x_scaled)[:, 1]
-        weights = clf.coef_[0]
-        denom = float(np.dot(weights, weights) + 1e-8)
-        delta = (-np.maximum(margin, 0.0)[:, None] / denom) * weights[None, :]
-        proto_delta = self.cf_bundle["benign_proto"][None, :] - x_scaled
-        cf_features = np.concatenate(
-            [
-                delta,
-                proto_delta,
-                np.array(
-                    [[margin[0], np.linalg.norm(delta[0]), np.abs(delta[0]).sum(), np.linalg.norm(proto_delta[0])]],
-                    dtype=np.float32,
-                ),
-            ],
-            axis=1,
-        )
-        score_features = np.array(
-            [[float(res_prob.item()), float(den_prob.item()), float(plasma_prob_cf[0])]],
-            dtype=np.float32,
-        )
+        try:
+            res_emb, res_prob = self._extract_backbone_embedding(self.resnet, image_tensor)
+            den_emb, den_prob = self._extract_backbone_embedding(self.densenet, image_tensor)
+            morph = self._extract_morphological_features(image_rgb)
+            morph_df = np.array([[morph[col] for col in MORPH_FEATURE_COLUMNS]], dtype=np.float32)
+            x_scaled = self.cf_bundle["scaler"].transform(morph_df)
+            clf = self.cf_bundle["model"]
+            margin = clf.decision_function(x_scaled)
+            plasma_prob_cf = clf.predict_proba(x_scaled)[:, 1]
+            weights = clf.coef_[0]
+            denom = float(np.dot(weights, weights) + 1e-8)
+            delta = (-np.maximum(margin, 0.0)[:, None] / denom) * weights[None, :]
+            proto_delta = self.cf_bundle["benign_proto"][None, :] - x_scaled
+            cf_features = np.concatenate(
+                [
+                    delta,
+                    proto_delta,
+                    np.array(
+                        [[margin[0], np.linalg.norm(delta[0]), np.abs(delta[0]).sum(), np.linalg.norm(proto_delta[0])]],
+                        dtype=np.float32,
+                    ),
+                ],
+                axis=1,
+            )
+            score_features = np.array(
+                [[float(res_prob.item()), float(den_prob.item()), float(plasma_prob_cf[0])]],
+                dtype=np.float32,
+            )
 
-        morph_tensor = torch.tensor(self.scalers["morph"].transform(morph_df), dtype=torch.float32, device=self.device)
-        cf_tensor = torch.tensor(self.scalers["cf"].transform(cf_features), dtype=torch.float32, device=self.device)
-        score_tensor = torch.tensor(self.scalers["scores"].transform(score_features), dtype=torch.float32, device=self.device)
+            morph_tensor = torch.tensor(self.scalers["morph"].transform(morph_df), dtype=torch.float32, device=self.device)
+            cf_tensor = torch.tensor(self.scalers["cf"].transform(cf_features), dtype=torch.float32, device=self.device)
+            score_tensor = torch.tensor(self.scalers["scores"].transform(score_features), dtype=torch.float32, device=self.device)
 
-        with torch.no_grad():
-            logits, gates = self.model(res_emb, den_emb, morph_tensor, cf_tensor, score_tensor)
-            prob = torch.softmax(logits, dim=1)[:, 1].item()
-            gates = gates.squeeze(0).cpu().numpy().tolist()
+            with torch.no_grad():
+                logits, gates = self.model(res_emb, den_emb, morph_tensor, cf_tensor, score_tensor)
+                prob = torch.softmax(logits, dim=1)[:, 1].item()
+                gates = gates.squeeze(0).cpu().numpy().tolist()
 
-        top_features = self._top_counterfactual_features(delta[0])
-        prediction = "plasma" if prob >= self.threshold else "non_plasma"
-        risk_level = self._risk_level(prob)
-        confidence = prob if prediction == "plasma" else 1.0 - prob
-        counterfactual_text = (
-            f"Minimal benign shift would most strongly reduce {', '.join(top_features)}. "
-            f"Current decision margin is {float(margin[0]):.3f} relative to the calibrated PlasmaXAI boundary."
-        )
-        dominant_modality = ["resnet50", "densenet121", "morphology", "counterfactual"][int(np.argmax(gates))]
-        clinical_insight_text = (
-            f"The case is driven primarily by the {dominant_modality} branch with supportive shifts in {', '.join(top_features)}. "
-            f"Calibrated malignant probability is {prob:.3f} against a deployment threshold of {self.threshold:.2f}."
-        )
+            top_features = self._top_counterfactual_features(delta[0])
+            prediction = "plasma" if prob >= self.threshold else "non_plasma"
+            risk_level = self._risk_level(prob)
+            confidence = prob if prediction == "plasma" else 1.0 - prob
+            counterfactual_text = (
+                f"Minimal benign shift would most strongly reduce {', '.join(top_features)}. "
+                f"Current decision margin is {float(margin[0]):.3f} relative to the calibrated PlasmaXAI boundary."
+            )
+            dominant_modality = ["resnet50", "densenet121", "morphology", "counterfactual"][int(np.argmax(gates))]
+            clinical_insight_text = (
+                f"The case is driven primarily by the {dominant_modality} branch with supportive shifts in {', '.join(top_features)}. "
+                f"Calibrated malignant probability is {prob:.3f} against a deployment threshold of {self.threshold:.2f}."
+            )
 
-        return {
-            "framework": "PlasmaXAI",
-            "modelVersion": "PlasmaXAI-novel",
-            "device": str(self.device),
-            "threshold": self.threshold,
-            "prediction": {
-                "label": prediction,
-                "confidence": float(confidence),
-                "plasmaProbability": float(prob),
-                "riskLevel": risk_level,
-                "predictedClassText": "Malignant plasma cell likely" if prediction == "plasma" else "Non-plasma / benign leaning",
-            },
-            "probabilities": {
-                "plasmaxai": float(prob),
-                "resnet50": float(res_prob.item()),
-                "densenet121": float(den_prob.item()),
-                "counterfactual": float(plasma_prob_cf[0]),
-            },
-            "modalityGates": {
-                "resnet50": float(gates[0]),
-                "densenet121": float(gates[1]),
-                "morphology": float(gates[2]),
-                "counterfactual": float(gates[3]),
-            },
-            "explanation": {
-                "counterfactualText": counterfactual_text,
-                "clinicalInsightText": clinical_insight_text,
-                "topFeatures": top_features,
-            },
-            "morphology": morph,
-        }
+            return {
+                "framework": "PlasmaXAI",
+                "modelVersion": "PlasmaXAI-novel",
+                "device": str(self.device),
+                "threshold": self.threshold,
+                "prediction": {
+                    "label": prediction,
+                    "confidence": float(confidence),
+                    "plasmaProbability": float(prob),
+                    "riskLevel": risk_level,
+                    "predictedClassText": "Malignant plasma cell likely" if prediction == "plasma" else "Non-plasma / benign leaning",
+                },
+                "probabilities": {
+                    "plasmaxai": float(prob),
+                    "resnet50": float(res_prob.item()),
+                    "densenet121": float(den_prob.item()),
+                    "counterfactual": float(plasma_prob_cf[0]),
+                },
+                "modalityGates": {
+                    "resnet50": float(gates[0]),
+                    "densenet121": float(gates[1]),
+                    "morphology": float(gates[2]),
+                    "counterfactual": float(gates[3]),
+                },
+                "explanation": {
+                    "counterfactualText": counterfactual_text,
+                    "clinicalInsightText": clinical_insight_text,
+                    "topFeatures": top_features,
+                },
+                "morphology": morph,
+            }
+        finally:
+            if self.config.low_memory_mode:
+                self._release_runtime_models()
 
 
 @lru_cache(maxsize=1)
@@ -367,6 +407,16 @@ def get_predictor() -> PlasmaXAIPredictor:
     default_project_root = staged_asset_root if staged_asset_root.exists() else Path(__file__).resolve().parents[3]
     project_root = Path(os.environ.get("PLASMAXAI_PROJECT_ROOT", default_project_root))
     novel_outputs_dir, checkpoints_dir = _resolve_asset_directories(project_root)
+    low_memory_env = os.environ.get("PLASMAXAI_LOW_MEMORY_MODE")
+    if low_memory_env is None:
+        low_memory_mode = bool(
+            os.environ.get("RENDER")
+            or os.environ.get("RENDER_SERVICE_ID")
+            or os.environ.get("RENDER_INSTANCE_ID")
+        )
+    else:
+        low_memory_mode = low_memory_env == "1"
+
     config = PredictorConfig(
         project_root=project_root,
         novel_outputs_dir=novel_outputs_dir,
@@ -374,5 +424,6 @@ def get_predictor() -> PlasmaXAIPredictor:
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         supabase_url=os.environ.get("SUPABASE_URL", ""),
         supabase_service_role_key=os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""),
+        low_memory_mode=low_memory_mode,
     )
     return PlasmaXAIPredictor(config)

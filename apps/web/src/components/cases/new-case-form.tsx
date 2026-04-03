@@ -16,7 +16,7 @@ const PREPARED_IMAGE_STORAGE_PREFIX = "plasmaxai-upload:";
 const MAX_PREPARED_IMAGE_DIMENSION = 320;
 const PREPARED_IMAGE_QUALITY = 0.88;
 const INFERENCE_WARMUP_INTERVAL_MS = 45_000;
-const INFERENCE_WARMUP_URL = "/api/inference/health?warm=1";
+const INFERENCE_WARMUP_URL = "/api/inference/health";
 
 interface NewCaseDraftState {
   clientCaseId: string;

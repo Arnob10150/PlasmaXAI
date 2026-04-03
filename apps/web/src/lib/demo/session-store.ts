@@ -20,6 +20,7 @@ const CASES_COOKIE = "plasmaxai-demo-cases";
 const DOCTORS_COOKIE = "plasmaxai-demo-doctors";
 const PATIENTS_COOKIE = "plasmaxai-demo-patients";
 const CASE_WORKBENCH_COOKIE_PREFIX = "plasmaxai-demo-workbench-";
+const COOKIE_CHUNK_SIZE = 3000;
 
 function cookieOptions() {
   return {
@@ -107,6 +108,76 @@ function getCaseWorkbenchCookieName(caseId: string) {
   return `${CASE_WORKBENCH_COOKIE_PREFIX}${caseId}`;
 }
 
+function getChunkCookieName(baseName: string, index: number) {
+  return `${baseName}.${index}`;
+}
+
+function getChunkCookieNames(baseName: string, value: string) {
+  const chunks: string[] = [];
+  for (let offset = 0; offset < value.length; offset += COOKIE_CHUNK_SIZE) {
+    chunks.push(value.slice(offset, offset + COOKIE_CHUNK_SIZE));
+  }
+
+  return chunks.map((chunk, index) => ({
+    name: chunks.length === 1 ? baseName : getChunkCookieName(baseName, index),
+    value: chunk,
+  }));
+}
+
+function parseChunkCookieIndex(baseName: string, cookieName: string) {
+  if (!cookieName.startsWith(`${baseName}.`)) {
+    return null;
+  }
+
+  const suffix = cookieName.slice(baseName.length + 1);
+  return /^\d+$/.test(suffix) ? Number(suffix) : null;
+}
+
+async function clearCookieEntry(baseName: string) {
+  const cookieStore = await cookies();
+  const existing = cookieStore
+    .getAll()
+    .filter(
+      (cookie) => cookie.name === baseName || parseChunkCookieIndex(baseName, cookie.name) !== null,
+    );
+
+  for (const cookie of existing) {
+    cookieStore.delete(cookie.name);
+  }
+}
+
+async function readChunkedCookie(baseName: string) {
+  const cookieStore = await cookies();
+  const single = cookieStore.get(baseName)?.value;
+  if (single) {
+    return single;
+  }
+
+  const chunks = cookieStore
+    .getAll()
+    .map((cookie) => ({
+      index: parseChunkCookieIndex(baseName, cookie.name),
+      value: cookie.value,
+    }))
+    .filter((cookie): cookie is { index: number; value: string } => cookie.index !== null)
+    .sort((left, right) => left.index - right.index);
+
+  if (!chunks.length) {
+    return null;
+  }
+
+  return chunks.map((chunk) => chunk.value).join("");
+}
+
+async function writeChunkedCookie(baseName: string, value: string) {
+  const cookieStore = await cookies();
+  await clearCookieEntry(baseName);
+
+  for (const chunk of getChunkCookieNames(baseName, value)) {
+    cookieStore.set(chunk.name, chunk.value, cookieOptions());
+  }
+}
+
 function stripCaseWorkbench(caseItem: DemoCaseRecord): DemoCaseRecord {
   return {
     ...caseItem,
@@ -117,9 +188,22 @@ function stripCaseWorkbench(caseItem: DemoCaseRecord): DemoCaseRecord {
 
 async function getHostedWorkbenchMap() {
   const cookieStore = await cookies();
-  const entries = cookieStore
-    .getAll()
-    .filter((cookie) => cookie.name.startsWith(CASE_WORKBENCH_COOKIE_PREFIX));
+  const entryNames = new Set(
+    cookieStore
+      .getAll()
+      .filter((cookie) => cookie.name.startsWith(CASE_WORKBENCH_COOKIE_PREFIX))
+      .map((cookie) => {
+        const suffix = cookie.name.slice(CASE_WORKBENCH_COOKIE_PREFIX.length);
+        const dotIndex = suffix.lastIndexOf(".");
+        const chunkSuffix = dotIndex >= 0 ? suffix.slice(dotIndex + 1) : "";
+
+        if (dotIndex >= 0 && /^\d+$/.test(chunkSuffix)) {
+          return `${CASE_WORKBENCH_COOKIE_PREFIX}${suffix.slice(0, dotIndex)}`;
+        }
+
+        return cookie.name;
+      }),
+  );
 
   const workbenchByCaseId = new Map<
     string,
@@ -129,8 +213,8 @@ async function getHostedWorkbenchMap() {
     }
   >();
 
-  for (const entry of entries) {
-    const caseId = entry.name.slice(CASE_WORKBENCH_COOKIE_PREFIX.length);
+  for (const entryName of entryNames) {
+    const caseId = entryName.slice(CASE_WORKBENCH_COOKIE_PREFIX.length);
     if (!caseId) {
       continue;
     }
@@ -138,7 +222,7 @@ async function getHostedWorkbenchMap() {
     const parsed = decodeCookiePayload<{
       reviewChecklist?: ReviewChecklistItem[];
       reportDraft?: ReportDraft;
-    }>(entry.value);
+    }>(await readChunkedCookie(entryName));
 
     if (!parsed) {
       continue;
@@ -173,25 +257,21 @@ async function setHostedCaseWorkbench(
     reportDraft: ReportDraft;
   },
 ) {
-  const cookieStore = await cookies();
-  cookieStore.set(
+  await writeChunkedCookie(
     getCaseWorkbenchCookieName(caseId),
     encodeCookiePayload({
       reviewChecklist: payload.reviewChecklist,
       reportDraft: payload.reportDraft,
     }),
-    cookieOptions(),
   );
 }
 
 async function deleteHostedCaseWorkbench(caseId: string) {
-  const cookieStore = await cookies();
-  cookieStore.delete(getCaseWorkbenchCookieName(caseId));
+  await clearCookieEntry(getCaseWorkbenchCookieName(caseId));
 }
 
 export async function getHostedDemoCases() {
-  const cookieStore = await cookies();
-  const raw = cookieStore.get(CASES_COOKIE)?.value;
+  const raw = await readChunkedCookie(CASES_COOKIE);
   const workbenchByCaseId = await getHostedWorkbenchMap();
 
   const enrichCases = (items: DemoCaseRecord[]) =>
@@ -218,17 +298,14 @@ export async function getHostedDemoCases() {
 }
 
 export async function setHostedDemoCases(cases: DemoCaseRecord[]) {
-  const cookieStore = await cookies();
-  cookieStore.set(
+  await writeChunkedCookie(
     CASES_COOKIE,
     encodeCookiePayload(normalizeCases(cases).map(stripCaseWorkbench)),
-    cookieOptions(),
   );
 }
 
 export async function getHostedDemoDoctors() {
-  const cookieStore = await cookies();
-  const raw = cookieStore.get(DOCTORS_COOKIE)?.value;
+  const raw = await readChunkedCookie(DOCTORS_COOKIE);
 
   if (!raw) {
     return seedDoctors();
@@ -243,8 +320,7 @@ export async function getHostedDemoDoctors() {
 }
 
 export async function getHostedDemoPatients() {
-  const cookieStore = await cookies();
-  const raw = cookieStore.get(PATIENTS_COOKIE)?.value;
+  const raw = await readChunkedCookie(PATIENTS_COOKIE);
 
   if (!raw) {
     return seedPatients();
@@ -261,13 +337,11 @@ export async function getHostedDemoPatients() {
 async function setHostedDemoPatients(
   patients: Awaited<ReturnType<typeof getHostedDemoPatients>>,
 ) {
-  const cookieStore = await cookies();
-  cookieStore.set(
+  await writeChunkedCookie(
     PATIENTS_COOKIE,
     encodeCookiePayload(
       [...patients].sort((left, right) => left.code.localeCompare(right.code)),
     ),
-    cookieOptions(),
   );
 }
 
@@ -300,8 +374,7 @@ export async function updateHostedDemoDoctorProfile(
       : doctor,
   );
 
-  const cookieStore = await cookies();
-  cookieStore.set(DOCTORS_COOKIE, encodeCookiePayload(next), cookieOptions());
+  await writeChunkedCookie(DOCTORS_COOKIE, encodeCookiePayload(next));
   return next.find((doctor) => doctor.email.toLowerCase() === email.toLowerCase()) ?? next[0];
 }
 

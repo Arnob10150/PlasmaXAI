@@ -410,10 +410,7 @@ def get_predictor() -> PlasmaXAIPredictor:
     low_memory_env = os.environ.get("PLASMAXAI_LOW_MEMORY_MODE")
     if low_memory_env is None:
         low_memory_mode = bool(
-            os.environ.get("RENDER")
-            or os.environ.get("RENDER_SERVICE_ID")
-            or os.environ.get("RENDER_INSTANCE_ID")
-            or os.environ.get("RAILWAY_PROJECT_ID")
+            os.environ.get("RAILWAY_PROJECT_ID")
             or os.environ.get("RAILWAY_SERVICE_ID")
             or os.environ.get("RAILWAY_ENVIRONMENT_ID")
         )

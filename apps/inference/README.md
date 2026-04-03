@@ -5,7 +5,7 @@ FastAPI wrapper around the final PlasmaXAI model artifacts.
 ## Location
 
 - Repository path: `apps/inference`
-- intended deployment target: external Python host such as `Render`, `Railway`, `Fly.io`, or a VM
+- intended deployment target: external Python host such as `Railway`, `Fly.io`, or a VM
 
 ## What it does
 
@@ -95,16 +95,16 @@ Set one of these in the Vercel web project:
 Example:
 
 ```env
-INFERENCE_API_URL=https://plasmaxai-inference.onrender.com
+INFERENCE_API_URL=https://plasmaxai-production.up.railway.app
 ```
 
 ## Docker deployment
 
 This folder now includes a `Dockerfile` so the service can be deployed as a
-container on platforms like Render, Railway, Fly.io, or any OCI-compatible
+container on platforms like Railway, Fly.io, or any OCI-compatible
 host.
 
-For Render:
+For Railway:
 
 - keep `Root Directory` empty
 - set `Dockerfile Path` to `apps/inference/Dockerfile`

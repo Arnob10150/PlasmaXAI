@@ -13,7 +13,7 @@ Deployable applications
 
 2. `apps/inference`
    - FastAPI inference service
-   - deploy separately on Render, Railway, Fly.io, or a VM
+   - deploy separately on Railway, Fly.io, or a VM
 
 
 Root-level Vercel config
@@ -141,7 +141,7 @@ Inference deployment
 Deploy `apps/inference` to an external Python platform.
 
 Recommended options:
-- `Render`
+- `Railway`
 - `Railway`
 - `Fly.io`
 - a Docker-capable VM

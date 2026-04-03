@@ -155,7 +155,7 @@ class PlasmaXAIPredictor:
 
     def _load_fusion_model(self):
         fusion_config = self.base_summary["best_fusion_config"]
-        self.model = CounterfactualGuidedFusionNet(
+        model = CounterfactualGuidedFusionNet(
             res_dim=len(self.feature_blocks[0]),
             den_dim=len(self.feature_blocks[1]),
             morph_dim=len(self.feature_blocks[2]),
@@ -165,10 +165,11 @@ class PlasmaXAIPredictor:
             tabular_dim=fusion_config["tabular_dim"],
             dropout=fusion_config["dropout"],
         ).to(self.device)
-        self.model.load_state_dict(
+        model.load_state_dict(
             torch.load(self.config.novel_outputs_dir / "novel_fusion_model.pth", map_location=self.device)
         )
-        self.model.eval()
+        model.eval()
+        return model
 
     def _ensure_runtime_loaded(self) -> None:
         self._ensure_assets_loaded()
@@ -177,11 +178,11 @@ class PlasmaXAIPredictor:
 
         self.resnet = self._load_backbone("resnet50", self.config.checkpoints_dir / "resnet50_final.pth")
         self.densenet = self._load_backbone("densenet121", self.config.checkpoints_dir / "densenet121_final.pth")
-        self._load_fusion_model()
+        self.model = self._load_fusion_model()
         self._runtime_loaded = True
 
-    def _release_runtime_models(self) -> None:
-        for attribute in ("resnet", "densenet", "model"):
+    def _release_modules(self, *attributes: str) -> None:
+        for attribute in attributes:
             if hasattr(self, attribute):
                 module = getattr(self, attribute)
                 try:
@@ -190,8 +191,11 @@ class PlasmaXAIPredictor:
                     pass
                 delattr(self, attribute)
 
-        self._runtime_loaded = False
         gc.collect()
+
+    def _release_runtime_models(self) -> None:
+        self._release_modules("resnet", "densenet", "model")
+        self._runtime_loaded = False
 
     def _fetch_bytes(
         self,
@@ -285,6 +289,46 @@ class PlasmaXAIPredictor:
                 prob = torch.softmax(model.forward_head(feat_map), dim=1)[:, 1]
         return emb.float(), prob.float()
 
+    def _extract_backbone_embedding_low_memory(
+        self,
+        model_name: str,
+        checkpoint_name: str,
+        image_tensor,
+    ):
+        model = self._load_backbone(model_name, self.config.checkpoints_dir / checkpoint_name)
+        try:
+            return self._extract_backbone_embedding(model, image_tensor)
+        finally:
+            try:
+                model.cpu()
+            except Exception:
+                pass
+            del model
+            gc.collect()
+
+    def _run_fusion_model(self, res_emb, den_emb, morph_tensor, cf_tensor, score_tensor):
+        if self.config.low_memory_mode:
+            model = self._load_fusion_model()
+            try:
+                with torch.no_grad():
+                    logits, gates = model(res_emb, den_emb, morph_tensor, cf_tensor, score_tensor)
+                    prob = torch.softmax(logits, dim=1)[:, 1].item()
+                    gate_values = gates.squeeze(0).cpu().numpy().tolist()
+                return prob, gate_values
+            finally:
+                try:
+                    model.cpu()
+                except Exception:
+                    pass
+                del model
+                gc.collect()
+
+        with torch.no_grad():
+            logits, gates = self.model(res_emb, den_emb, morph_tensor, cf_tensor, score_tensor)
+            prob = torch.softmax(logits, dim=1)[:, 1].item()
+            gate_values = gates.squeeze(0).cpu().numpy().tolist()
+        return prob, gate_values
+
     def _top_counterfactual_features(self, delta: np.ndarray, count: int = 3) -> list[str]:
         ranked = np.argsort(np.abs(delta))[::-1][:count]
         return [MORPH_FEATURE_COLUMNS[idx] for idx in ranked]
@@ -310,11 +354,24 @@ class PlasmaXAIPredictor:
         )
         image_rgb = self._decode_rgb(image_bytes)
         image_tensor = self._image_tensor(image_bytes)
-        self._ensure_runtime_loaded()
 
-        try:
+        if self.config.low_memory_mode:
+            res_emb, res_prob = self._extract_backbone_embedding_low_memory(
+                "resnet50",
+                "resnet50_final.pth",
+                image_tensor,
+            )
+            den_emb, den_prob = self._extract_backbone_embedding_low_memory(
+                "densenet121",
+                "densenet121_final.pth",
+                image_tensor,
+            )
+        else:
+            self._ensure_runtime_loaded()
             res_emb, res_prob = self._extract_backbone_embedding(self.resnet, image_tensor)
             den_emb, den_prob = self._extract_backbone_embedding(self.densenet, image_tensor)
+
+        try:
             morph = self._extract_morphological_features(image_rgb)
             morph_df = np.array([[morph[col] for col in MORPH_FEATURE_COLUMNS]], dtype=np.float32)
             x_scaled = self.cf_bundle["scaler"].transform(morph_df)
@@ -345,10 +402,13 @@ class PlasmaXAIPredictor:
             cf_tensor = torch.tensor(self.scalers["cf"].transform(cf_features), dtype=torch.float32, device=self.device)
             score_tensor = torch.tensor(self.scalers["scores"].transform(score_features), dtype=torch.float32, device=self.device)
 
-            with torch.no_grad():
-                logits, gates = self.model(res_emb, den_emb, morph_tensor, cf_tensor, score_tensor)
-                prob = torch.softmax(logits, dim=1)[:, 1].item()
-                gates = gates.squeeze(0).cpu().numpy().tolist()
+            prob, gates = self._run_fusion_model(
+                res_emb,
+                den_emb,
+                morph_tensor,
+                cf_tensor,
+                score_tensor,
+            )
 
             top_features = self._top_counterfactual_features(delta[0])
             prediction = "plasma" if prob >= self.threshold else "non_plasma"

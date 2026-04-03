@@ -413,6 +413,9 @@ def get_predictor() -> PlasmaXAIPredictor:
             os.environ.get("RENDER")
             or os.environ.get("RENDER_SERVICE_ID")
             or os.environ.get("RENDER_INSTANCE_ID")
+            or os.environ.get("RAILWAY_PROJECT_ID")
+            or os.environ.get("RAILWAY_SERVICE_ID")
+            or os.environ.get("RAILWAY_ENVIRONMENT_ID")
         )
     else:
         low_memory_mode = low_memory_env == "1"

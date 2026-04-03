@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { LogoLockup } from "@/components/shared/logo-lockup";
@@ -33,6 +33,11 @@ export function WorkspaceShell({
   const pathname = usePathname();
   const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   const handleSignOut = async () => {
     if (demoMode) {
@@ -64,47 +69,118 @@ export function WorkspaceShell({
     <div className="dashboard-grid min-h-screen bg-[var(--bg)]">
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/94 backdrop-blur">
         <div className="flex w-full items-center justify-between gap-3 px-3 py-3 sm:px-4 lg:px-6">
-            <div className="flex items-center gap-4">
-              <LogoLockup />
-              <div className="hidden min-w-0 md:block">
-                <p className="text-sm font-semibold text-slate-950">Hematology review workspace</p>
-                <p className="text-xs text-slate-500">Case review, explainability, and reporting</p>
-              </div>
+          <div className="flex items-center gap-4">
+            <LogoLockup />
+            <div className="hidden min-w-0 md:block">
+              <p className="text-sm font-semibold text-slate-950">Hematology review workspace</p>
+              <p className="text-xs text-slate-500">Case review, explainability, and reporting</p>
             </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="hidden items-center gap-2 text-sm text-slate-600 lg:flex">
-                <i className="bi bi-person-badge-fill text-base text-blue-700" aria-hidden="true" />
-                <div className="min-w-0">
-                  <p className="max-w-[160px] truncate font-medium text-slate-900">{doctorName}</p>
-                  <p className="truncate text-xs text-slate-500">{specialization}</p>
-                </div>
-              </div>
-            </div>
-        </div>
-        <nav className="border-t border-slate-200/80 bg-white/92 px-3 py-2 lg:hidden">
-          <div className="scrollbar-soft flex gap-2 overflow-x-auto pb-1">
-            {navigation.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm",
-                    active
-                      ? "border-blue-200 bg-blue-50 text-blue-700"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900",
-                  )}
-                >
-                  <i className={cn(item.iconClass, "text-sm")} aria-hidden="true" />
-                  {item.label}
-                </Link>
-              );
-            })}
           </div>
-        </nav>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="hidden items-center gap-2 text-sm text-slate-600 lg:flex">
+              <i className="bi bi-person-badge-fill text-base text-blue-700" aria-hidden="true" />
+              <div className="min-w-0">
+                <p className="max-w-[160px] truncate font-medium text-slate-900">{doctorName}</p>
+                <p className="truncate text-xs text-slate-500">{specialization}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              aria-label="Open workspace menu"
+              aria-expanded={isMobileMenuOpen}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-950 lg:hidden"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              <i className="bi bi-list text-2xl" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
       </header>
+
+      <AnimatePresence>
+        {isMobileMenuOpen ? (
+          <motion.div
+            className="fixed inset-0 z-[60] lg:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <button
+              type="button"
+              aria-label="Close workspace menu"
+              className="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+            <motion.aside
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ duration: 0.24, ease: "easeOut" }}
+              className="absolute right-0 top-0 flex h-full w-[min(86vw,360px)] flex-col border-l border-white/60 bg-white/96 p-4 shadow-[0_24px_80px_rgba(15,23,42,0.22)] backdrop-blur"
+            >
+              <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-4">
+                <div className="min-w-0">
+                  <p className="text-[11px] uppercase tracking-[0.24em] text-blue-700">Workspace menu</p>
+                  <p className="mt-2 text-base font-semibold text-slate-950">{doctorName}</p>
+                  <p className="text-sm text-slate-500">{specialization}</p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close workspace menu"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:text-slate-950"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <i className="bi bi-x-lg text-lg" aria-hidden="true" />
+                </button>
+              </div>
+
+              <nav className="mt-4 flex flex-col gap-2">
+                {navigation.map((item) => {
+                  const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200",
+                        active
+                          ? "bg-[linear-gradient(135deg,#eff6ff,#eefaf7)] text-slate-950 shadow-sm"
+                          : "border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-950",
+                      )}
+                    >
+                      <i
+                        className={cn(
+                          item.iconClass,
+                          "text-base",
+                          active ? "text-blue-700" : "text-slate-400",
+                        )}
+                        aria-hidden="true"
+                      />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+
+              <div className="mt-auto rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-900">Doctor account</p>
+                <p className="mt-2 truncate text-sm font-medium text-slate-700">{doctorName}</p>
+                <p className="mt-1 text-sm text-slate-500">{specialization}</p>
+                <button
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-600 transition-all duration-200 hover:border-slate-300 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isSigningOut}
+                  onClick={handleSignOut}
+                  type="button"
+                >
+                  <i className="bi bi-box-arrow-right text-base" aria-hidden="true" />
+                  {isSigningOut ? "Signing out..." : "Sign out"}
+                </button>
+              </div>
+            </motion.aside>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <div className="flex w-full gap-4 py-3">
         <aside className="sticky top-[88px] hidden h-[calc(100vh-96px)] w-[292px] shrink-0 self-start overflow-hidden rounded-r-[28px] border-y border-r border-white/70 bg-white/84 p-4 shadow-[0_30px_80px_rgba(15,23,42,0.08)] backdrop-blur lg:flex">
